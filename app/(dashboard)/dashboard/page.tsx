@@ -2,10 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default async function DashboardPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   
-  // Obtener estadísticas básicas
   const { count: videosCount } = await supabase
     .from('videos')
     .select('*', { count: 'exact', head: true })
@@ -33,7 +32,7 @@ export default async function DashboardPage() {
           <CardContent>
             <div className="text-2xl font-bold">{accountsCount || 0}</div>
             <p className="text-xs text-muted-foreground">
-              Instagram, TikTok, YouTube
+              TikTok, Instagram, YouTube
             </p>
           </CardContent>
         </Card>
