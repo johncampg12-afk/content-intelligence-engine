@@ -5,7 +5,7 @@ export async function GET() {
   const redirectUri = process.env.TIKTOK_REDIRECT_URI
   
   console.log('TikTok OAuth endpoint called')
-  console.log('Client ID exists:', !!clientId)
+  console.log('Client ID:', clientId)
   console.log('Redirect URI:', redirectUri)
   
   if (!clientId) {
@@ -13,16 +13,15 @@ export async function GET() {
     return NextResponse.json({ error: 'Missing client ID' }, { status: 500 })
   }
   
+  // Usar la URL correcta de TikTok OAuth
   const params = new URLSearchParams({
     client_key: clientId,
     redirect_uri: redirectUri!,
     scope: 'user.info.basic',
     response_type: 'code',
-    state: Math.random().toString(36).substring(7),
   })
 
-  // Cambiar a open-api.tiktok.com en lugar de www.tiktok.com
-  const authUrl = `https://open-api.tiktok.com/platform/oauth/connect/?${params.toString()}`
+  const authUrl = `https://www.tiktok.com/auth/authorize/?${params.toString()}`
   console.log('Redirecting to:', authUrl)
   
   return NextResponse.redirect(authUrl)
