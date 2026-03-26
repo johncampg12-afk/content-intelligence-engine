@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     .eq('user_id', user.id)
     .eq('platform', 'tiktok')
   
-  const redirectUrl = new URL('/dashboard/settings', baseUrl)
+  const redirectUrl = new URL('/settings', baseUrl)
   redirectUrl.searchParams.set('success', 'tiktok_disconnected')
   return NextResponse.redirect(redirectUrl)
 }

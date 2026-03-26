@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   console.log('Error:', error, error_description)
   
   if (error) {
-    const redirectUrl = new URL('/dashboard/settings', baseUrl)
+    const redirectUrl = new URL('/settings', baseUrl)
     redirectUrl.searchParams.set('error', error)
     if (error_description) {
       redirectUrl.searchParams.set('details', error_description)
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   }
   
   if (!code) {
-    const redirectUrl = new URL('/dashboard/settings', baseUrl)
+    const redirectUrl = new URL('/settings', baseUrl)
     redirectUrl.searchParams.set('error', 'no_code')
     return NextResponse.redirect(redirectUrl)
   }
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     
     if (!tokenData.access_token) {
       console.error('Token error:', tokenData)
-      const redirectUrl = new URL('/dashboard/settings', baseUrl)
+      const redirectUrl = new URL('/settings', baseUrl)
       redirectUrl.searchParams.set('error', 'token_error')
       redirectUrl.searchParams.set('details', tokenData.error || 'unknown')
       return NextResponse.redirect(redirectUrl)
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
     
     if (!tiktokUserId) {
       console.error('User info error:', userInfo)
-      const redirectUrl = new URL('/dashboard/settings', baseUrl)
+      const redirectUrl = new URL('/settings', baseUrl)
       redirectUrl.searchParams.set('error', 'no_user_id')
       return NextResponse.redirect(redirectUrl)
     }
@@ -138,13 +138,13 @@ export async function GET(request: NextRequest) {
         })
     }
     
-    const successUrl = new URL('/dashboard/settings', baseUrl)
+    const successUrl = new URL('/settings', baseUrl)
     successUrl.searchParams.set('success', 'tiktok_connected')
     return NextResponse.redirect(successUrl)
     
   } catch (err) {
     console.error('Callback error:', err)
-    const redirectUrl = new URL('/dashboard/settings', baseUrl)
+    const redirectUrl = new URL('/settings', baseUrl)
     redirectUrl.searchParams.set('error', 'callback_failed')
     return NextResponse.redirect(redirectUrl)
   }
