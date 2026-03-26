@@ -1,10 +1,33 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
+  const cookieStore = await cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // Handle error
+          }
+        },
+      },
+    }
+  )
+  
   const { data: { user } } = await supabase.auth.getUser()
   
+  // Obtener estadísticas básicas
   const { count: videosCount } = await supabase
     .from('videos')
     .select('*', { count: 'exact', head: true })
@@ -32,7 +55,7 @@ export default async function DashboardPage() {
           <CardContent>
             <div className="text-2xl font-bold">{accountsCount || 0}</div>
             <p className="text-xs text-muted-foreground">
-              TikTok, Instagram, YouTube
+              Instagram, TikTok, YouTube
             </p>
           </CardContent>
         </Card>
