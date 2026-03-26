@@ -1,28 +1,15 @@
 import { NextResponse } from 'next/server'
 
 export async function GET() {
-  const clientId = process.env.TIKTOK_CLIENT_ID
-  const redirectUri = process.env.TIKTOK_REDIRECT_URI
-  
-  console.log('TikTok OAuth endpoint called')
-  console.log('Client ID:', clientId)
-  console.log('Redirect URI:', redirectUri)
-  
-  if (!clientId) {
-    console.error('Missing TIKTOK_CLIENT_ID')
-    return NextResponse.json({ error: 'Missing client ID' }, { status: 500 })
-  }
-  
-  // Usar la URL correcta de TikTok OAuth
   const params = new URLSearchParams({
-    client_key: clientId,
-    redirect_uri: redirectUri!,
-    scope: 'user.info.basic',
+    client_key: process.env.TIKTOK_CLIENT_ID!,
+    redirect_uri: process.env.TIKTOK_REDIRECT_URI!,
+    scope: 'user.info.basic',  // Solo scope básico
     response_type: 'code',
+    state: Math.random().toString(36).substring(7),
   })
 
-  const authUrl = `https://www.tiktok.com/auth/authorize/?${params.toString()}`
-  console.log('Redirecting to:', authUrl)
+  const authUrl = `https://www.tiktok.com/v2/auth/authorize/?${params.toString()}`
   
   return NextResponse.redirect(authUrl)
 }
