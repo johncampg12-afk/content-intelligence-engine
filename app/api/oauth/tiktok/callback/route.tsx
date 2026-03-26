@@ -42,19 +42,31 @@ export async function GET(request: NextRequest) {
 
     const tokenData = await tokenResponse.json()
     console.log('Token response status:', tokenResponse.status)
-    console.log('Token data keys:', Object.keys(tokenData))
     
     if (!tokenData.access_token) {
-      console.error('Token error:', JSON.stringify(tokenData, null, 2))
+      console.error('Token error:', tokenData)
       return NextResponse.redirect(`${baseUrl}/dashboard/settings?error=token_error`)
     }
     
-    console.log('Step 2: Token obtained, access_token starts with:', tokenData.access_token.substring(0, 10))
+    console.log('Step 2: Token obtained')
     
-    // Obtener información del usuario
+    // Obtener información del usuario - INCLUIR 'id' en los fields
     console.log('Step 3: Getting user info from TikTok...')
     
-    const fields = 'id,username,display_name,avatar_url,bio_description,follower_count,following_count,video_count'
+    // ¡IMPORTANTE! Incluir 'id' en la lista de campos
+    const fields = [
+      'id',                    // <--- ESTE ES EL QUE FALTABA
+      'username',
+      'display_name',
+      'avatar_url',
+      'bio_description',
+      'follower_count',
+      'following_count',
+      'video_count',
+      'is_verified'
+    ].join(',')
+    
+    console.log('Requesting fields:', fields)
     
     const userInfoResponse = await fetch(
       `https://open.tiktokapis.com/v2/user/info/?fields=${fields}`,
@@ -68,36 +80,34 @@ export async function GET(request: NextRequest) {
     
     const userInfo = await userInfoResponse.json()
     
-    // Log COMPLETO de la respuesta
-    console.log('=== FULL TIKTOK RESPONSE ===')
-    console.log('Status:', userInfoResponse.status)
-    console.log('Response:', JSON.stringify(userInfo, null, 2))
-    console.log('=== END FULL RESPONSE ===')
+    console.log('User info response status:', userInfoResponse.status)
+    console.log('User data keys:', userInfo.data?.user ? Object.keys(userInfo.data.user) : 'no user data')
     
-    // Intentar diferentes formas de extraer el ID
-    let tiktokUserId = null
-    let userData = null
-    
-    if (userInfo.data?.user) {
-      userData = userInfo.data.user
-      tiktokUserId = userData.id
-    } else if (userInfo.user) {
-      userData = userInfo.user
-      tiktokUserId = userData.id
-    } else if (userInfo.data) {
-      userData = userInfo.data
-      tiktokUserId = userData.id
-    }
+    // Extraer datos del usuario
+    const userData = userInfo.data?.user
+    const tiktokUserId = userData?.id
+    const tiktokUsername = userData?.username
+    const tiktokDisplayName = userData?.display_name
+    const tiktokAvatarUrl = userData?.avatar_url
+    const tiktokBio = userData?.bio_description
+    const tiktokFollowers = userData?.follower_count
+    const tiktokFollowing = userData?.following_count
+    const tiktokVideoCount = userData?.video_count
     
     console.log('Extracted user ID:', tiktokUserId)
-    console.log('User data structure:', userData ? Object.keys(userData) : 'null')
+    console.log('Extracted username:', tiktokUsername)
+    console.log('Display name:', tiktokDisplayName)
+    console.log('Followers:', tiktokFollowers)
     
     if (!tiktokUserId) {
-      console.error('Could not find user ID. Full response saved above.')
+      console.error('Could not find user ID. Response:', JSON.stringify(userInfo, null, 2))
       return NextResponse.redirect(`${baseUrl}/dashboard/settings?error=no_user_id`)
     }
     
+    console.log('Step 4: User found successfully')
+    
     // Guardar en Supabase
+    console.log('Step 5: Saving to Supabase...')
     const cookieStore = await cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -123,10 +133,14 @@ export async function GET(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {
+      console.error('No authenticated user')
       return NextResponse.redirect(`${baseUrl}/login`)
     }
     
-    await supabase
+    console.log('Step 6: User authenticated:', user.email)
+    
+    // Guardar la cuenta
+    const { error: upsertError } = await supabase
       .from('connected_accounts')
       .upsert({
         user_id: user.id,
@@ -136,17 +150,33 @@ export async function GET(request: NextRequest) {
         refresh_token: tokenData.refresh_token || null,
         expires_at: new Date(Date.now() + (tokenData.expires_in || 7200) * 1000).toISOString(),
         scope: tokenData.scope || '',
-        metadata: userData || {}
+        metadata: {
+          username: tiktokUsername,
+          display_name: tiktokDisplayName,
+          avatar_url: tiktokAvatarUrl,
+          bio: tiktokBio,
+          followers: tiktokFollowers,
+          following: tiktokFollowing,
+          video_count: tiktokVideoCount
+        }
       }, {
         onConflict: 'user_id,platform'
       })
     
+    if (upsertError) {
+      console.error('Supabase error:', upsertError)
+      return NextResponse.redirect(`${baseUrl}/dashboard/settings?error=db_error&details=${encodeURIComponent(upsertError.message)}`)
+    }
+    
+    console.log('Step 7: Successfully saved to Supabase')
     console.log('=== TIKTOK CALLBACK SUCCESS ===')
+    
     return NextResponse.redirect(`${baseUrl}/dashboard/settings?success=tiktok_connected`)
     
   } catch (err) {
     console.error('=== TIKTOK CALLBACK ERROR ===')
     console.error(err)
-    return NextResponse.redirect(`${baseUrl}/dashboard/settings?error=exception`)
+    const errorMessage = err instanceof Error ? err.message : String(err)
+    return NextResponse.redirect(`${baseUrl}/dashboard/settings?error=exception&details=${encodeURIComponent(errorMessage)}`)
   }
 }
