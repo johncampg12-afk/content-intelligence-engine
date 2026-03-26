@@ -4,7 +4,7 @@ export async function GET() {
   const params = new URLSearchParams({
     client_key: process.env.TIKTOK_CLIENT_ID!,
     redirect_uri: process.env.TIKTOK_REDIRECT_URI!,
-    scope: 'user.info.basic,video.list,video.insights',
+    scope: 'user.info.basic',  // Solo scope básico
     response_type: 'code',
     state: Math.random().toString(36).substring(7),
   })
