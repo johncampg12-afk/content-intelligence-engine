@@ -3,6 +3,8 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
 export async function POST(request: NextRequest) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL!
+  
   const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -17,9 +19,7 @@ export async function POST(request: NextRequest) {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
             )
-          } catch {
-            // Handle error
-          }
+          } catch {}
         },
       },
     }
@@ -28,7 +28,8 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   
   if (!user) {
-    return NextResponse.redirect('/login')
+    const redirectUrl = new URL('/login', baseUrl)
+    return NextResponse.redirect(redirectUrl)
   }
   
   // Eliminar la cuenta conectada
@@ -45,5 +46,7 @@ export async function POST(request: NextRequest) {
     .eq('user_id', user.id)
     .eq('platform', 'tiktok')
   
-  return NextResponse.redirect('/dashboard/settings?success=tiktok_disconnected')
+  const redirectUrl = new URL('/dashboard/settings', baseUrl)
+  redirectUrl.searchParams.set('success', 'tiktok_disconnected')
+  return NextResponse.redirect(redirectUrl)
 }

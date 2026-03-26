@@ -8,27 +8,29 @@ export async function GET(request: NextRequest) {
   const error = searchParams.get('error')
   const error_description = searchParams.get('error_description')
   
-  console.log('TikTok callback received')
-  console.log('Code:', code ? 'Yes' : 'No')
-  console.log('Error:', error)
-  console.log('Error description:', error_description)
+  // Obtener la URL base absoluta
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL!
+  
+  console.log('TikTok callback - Code:', code ? 'Yes' : 'No')
+  console.log('Error:', error, error_description)
   
   if (error) {
-    console.error('TikTok OAuth error:', error, error_description)
-    return NextResponse.redirect(`/dashboard/settings?error=tiktok_oauth_failed&details=${error_description || error}`)
+    const redirectUrl = new URL('/dashboard/settings', baseUrl)
+    redirectUrl.searchParams.set('error', error)
+    if (error_description) {
+      redirectUrl.searchParams.set('details', error_description)
+    }
+    return NextResponse.redirect(redirectUrl)
   }
   
   if (!code) {
-    console.error('No code received')
-    return NextResponse.redirect('/dashboard/settings?error=no_code')
+    const redirectUrl = new URL('/dashboard/settings', baseUrl)
+    redirectUrl.searchParams.set('error', 'no_code')
+    return NextResponse.redirect(redirectUrl)
   }
 
   try {
-    console.log('Exchanging code for token...')
-    console.log('Client ID exists:', !!process.env.TIKTOK_CLIENT_ID)
-    console.log('Redirect URI:', process.env.TIKTOK_REDIRECT_URI)
-    
-    // Intercambiar código por token de acceso
+    // Intercambiar código por token
     const tokenResponse = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
       method: 'POST',
       headers: {
@@ -44,15 +46,14 @@ export async function GET(request: NextRequest) {
     })
 
     const tokenData = await tokenResponse.json()
-    console.log('Token response status:', tokenResponse.status)
     
     if (!tokenData.access_token) {
-      console.error('No access token received:', tokenData)
-      const errorMsg = tokenData.error || tokenData.error_description || 'unknown_error'
-      return NextResponse.redirect(`/dashboard/settings?error=no_access_token&details=${errorMsg}`)
+      console.error('Token error:', tokenData)
+      const redirectUrl = new URL('/dashboard/settings', baseUrl)
+      redirectUrl.searchParams.set('error', 'token_error')
+      redirectUrl.searchParams.set('details', tokenData.error || 'unknown')
+      return NextResponse.redirect(redirectUrl)
     }
-    
-    console.log('Access token received successfully')
     
     // Obtener información del usuario
     const userInfoResponse = await fetch(
@@ -66,18 +67,14 @@ export async function GET(request: NextRequest) {
     )
     
     const userInfo = await userInfoResponse.json()
-    console.log('User info response status:', userInfoResponse.status)
-    
     const tiktokUserId = userInfo.data?.user?.id
-    const tiktokUsername = userInfo.data?.user?.username
     
     if (!tiktokUserId) {
-      console.error('Could not get TikTok user ID:', userInfo)
-      throw new Error('Could not get TikTok user ID')
+      console.error('User info error:', userInfo)
+      const redirectUrl = new URL('/dashboard/settings', baseUrl)
+      redirectUrl.searchParams.set('error', 'no_user_id')
+      return NextResponse.redirect(redirectUrl)
     }
-    
-    console.log('TikTok user ID:', tiktokUserId)
-    console.log('TikTok username:', tiktokUsername)
     
     // Guardar en Supabase
     const cookieStore = await cookies()
@@ -94,9 +91,7 @@ export async function GET(request: NextRequest) {
               cookiesToSet.forEach(({ name, value, options }) =>
                 cookieStore.set(name, value, options)
               )
-            } catch {
-              // Handle error
-            }
+            } catch {}
           },
         },
       }
@@ -105,10 +100,11 @@ export async function GET(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {
-      return NextResponse.redirect('/login')
+      const redirectUrl = new URL('/login', baseUrl)
+      return NextResponse.redirect(redirectUrl)
     }
 
-    // Verificar si ya existe una cuenta conectada
+    // Verificar si ya existe
     const { data: existingAccount } = await supabase
       .from('connected_accounts')
       .select('id')
@@ -117,7 +113,6 @@ export async function GET(request: NextRequest) {
       .single()
     
     if (existingAccount) {
-      // Actualizar cuenta existente
       await supabase
         .from('connected_accounts')
         .update({
@@ -129,9 +124,7 @@ export async function GET(request: NextRequest) {
           updated_at: new Date().toISOString(),
         })
         .eq('id', existingAccount.id)
-      console.log('Updated existing TikTok account')
     } else {
-      // Insertar nueva cuenta
       await supabase
         .from('connected_accounts')
         .insert({
@@ -143,14 +136,16 @@ export async function GET(request: NextRequest) {
           expires_at: new Date(Date.now() + tokenData.expires_in * 1000).toISOString(),
           scope: tokenData.scope,
         })
-      console.log('Inserted new TikTok account')
     }
     
-    console.log('TikTok account connected successfully!')
-    return NextResponse.redirect('/dashboard/settings?success=tiktok_connected')
+    const successUrl = new URL('/dashboard/settings', baseUrl)
+    successUrl.searchParams.set('success', 'tiktok_connected')
+    return NextResponse.redirect(successUrl)
     
-  } catch (error) {
-    console.error('TikTok OAuth callback error:', error)
-    return NextResponse.redirect('/dashboard/settings?error=tiktok_callback_failed')
+  } catch (err) {
+    console.error('Callback error:', err)
+    const redirectUrl = new URL('/dashboard/settings', baseUrl)
+    redirectUrl.searchParams.set('error', 'callback_failed')
+    return NextResponse.redirect(redirectUrl)
   }
 }
