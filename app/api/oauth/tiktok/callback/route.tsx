@@ -49,13 +49,12 @@ export async function GET(request: NextRequest) {
     }
     
     console.log('Step 2: Token obtained')
+    console.log('Open ID:', tokenData.open_id)  // <--- Este es el ID único
     
-    // Obtener información del usuario - INCLUIR 'id' en los fields
+    // Obtener información del usuario
     console.log('Step 3: Getting user info from TikTok...')
     
-    // ¡IMPORTANTE! Incluir 'id' en la lista de campos
     const fields = [
-      'id',                    // <--- ESTE ES EL QUE FALTABA
       'username',
       'display_name',
       'avatar_url',
@@ -80,12 +79,9 @@ export async function GET(request: NextRequest) {
     
     const userInfo = await userInfoResponse.json()
     
-    console.log('User info response status:', userInfoResponse.status)
-    console.log('User data keys:', userInfo.data?.user ? Object.keys(userInfo.data.user) : 'no user data')
-    
     // Extraer datos del usuario
     const userData = userInfo.data?.user
-    const tiktokUserId = userData?.id
+    const tiktokUserId = tokenData.open_id  // USAR open_id COMO ID
     const tiktokUsername = userData?.username
     const tiktokDisplayName = userData?.display_name
     const tiktokAvatarUrl = userData?.avatar_url
@@ -94,13 +90,13 @@ export async function GET(request: NextRequest) {
     const tiktokFollowing = userData?.following_count
     const tiktokVideoCount = userData?.video_count
     
-    console.log('Extracted user ID:', tiktokUserId)
+    console.log('Using Open ID as user ID:', tiktokUserId)
     console.log('Extracted username:', tiktokUsername)
     console.log('Display name:', tiktokDisplayName)
     console.log('Followers:', tiktokFollowers)
     
     if (!tiktokUserId) {
-      console.error('Could not find user ID. Response:', JSON.stringify(userInfo, null, 2))
+      console.error('No open_id in token response')
       return NextResponse.redirect(`${baseUrl}/dashboard/settings?error=no_user_id`)
     }
     
@@ -139,7 +135,7 @@ export async function GET(request: NextRequest) {
     
     console.log('Step 6: User authenticated:', user.email)
     
-    // Guardar la cuenta
+    // Guardar la cuenta con open_id como platform_user_id
     const { error: upsertError } = await supabase
       .from('connected_accounts')
       .upsert({
@@ -151,6 +147,7 @@ export async function GET(request: NextRequest) {
         expires_at: new Date(Date.now() + (tokenData.expires_in || 7200) * 1000).toISOString(),
         scope: tokenData.scope || '',
         metadata: {
+          open_id: tokenData.open_id,
           username: tiktokUsername,
           display_name: tiktokDisplayName,
           avatar_url: tiktokAvatarUrl,
