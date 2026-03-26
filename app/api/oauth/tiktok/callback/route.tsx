@@ -42,30 +42,19 @@ export async function GET(request: NextRequest) {
 
     const tokenData = await tokenResponse.json()
     console.log('Token response status:', tokenResponse.status)
+    console.log('Token data keys:', Object.keys(tokenData))
     
     if (!tokenData.access_token) {
-      console.error('Token error:', tokenData)
-      const errorMsg = tokenData.error || tokenData.error_description || 'unknown_error'
-      return NextResponse.redirect(`${baseUrl}/dashboard/settings?error=token_error&details=${encodeURIComponent(errorMsg)}`)
+      console.error('Token error:', JSON.stringify(tokenData, null, 2))
+      return NextResponse.redirect(`${baseUrl}/dashboard/settings?error=token_error`)
     }
     
-    console.log('Step 2: Token obtained successfully')
+    console.log('Step 2: Token obtained, access_token starts with:', tokenData.access_token.substring(0, 10))
     
-    // Obtener información del usuario con los campos específicos
+    // Obtener información del usuario
     console.log('Step 3: Getting user info from TikTok...')
     
-    // Campos que queremos obtener
-    const fields = [
-      'id',
-      'username',
-      'display_name',
-      'avatar_url',
-      'bio_description',
-      'follower_count',
-      'following_count',
-      'video_count',
-      'is_verified'
-    ].join(',')
+    const fields = 'id,username,display_name,avatar_url,bio_description,follower_count,following_count,video_count'
     
     const userInfoResponse = await fetch(
       `https://open.tiktokapis.com/v2/user/info/?fields=${fields}`,
@@ -73,40 +62,42 @@ export async function GET(request: NextRequest) {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${tokenData.access_token}`,
-          'Content-Type': 'application/json',
         },
       }
     )
     
     const userInfo = await userInfoResponse.json()
-    console.log('User info response status:', userInfoResponse.status)
-    console.log('User info:', JSON.stringify(userInfo, null, 2))
     
-    // Extraer datos del usuario
-    const userData = userInfo.data?.user
-    const tiktokUserId = userData?.id
-    const tiktokUsername = userData?.username
-    const tiktokDisplayName = userData?.display_name
-    const tiktokAvatarUrl = userData?.avatar_url
-    const tiktokBio = userData?.bio_description
-    const tiktokFollowers = userData?.follower_count
-    const tiktokFollowing = userData?.following_count
-    const tiktokVideoCount = userData?.video_count
+    // Log COMPLETO de la respuesta
+    console.log('=== FULL TIKTOK RESPONSE ===')
+    console.log('Status:', userInfoResponse.status)
+    console.log('Response:', JSON.stringify(userInfo, null, 2))
+    console.log('=== END FULL RESPONSE ===')
+    
+    // Intentar diferentes formas de extraer el ID
+    let tiktokUserId = null
+    let userData = null
+    
+    if (userInfo.data?.user) {
+      userData = userInfo.data.user
+      tiktokUserId = userData.id
+    } else if (userInfo.user) {
+      userData = userInfo.user
+      tiktokUserId = userData.id
+    } else if (userInfo.data) {
+      userData = userInfo.data
+      tiktokUserId = userData.id
+    }
     
     console.log('Extracted user ID:', tiktokUserId)
-    console.log('Extracted username:', tiktokUsername)
-    console.log('Followers:', tiktokFollowers)
-    console.log('Videos:', tiktokVideoCount)
+    console.log('User data structure:', userData ? Object.keys(userData) : 'null')
     
     if (!tiktokUserId) {
-      console.error('Could not find user ID in response')
+      console.error('Could not find user ID. Full response saved above.')
       return NextResponse.redirect(`${baseUrl}/dashboard/settings?error=no_user_id`)
     }
     
-    console.log('Step 4: User found successfully')
-    
     // Guardar en Supabase
-    console.log('Step 5: Saving to Supabase...')
     const cookieStore = await cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -132,14 +123,10 @@ export async function GET(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {
-      console.error('No authenticated user')
       return NextResponse.redirect(`${baseUrl}/login`)
     }
     
-    console.log('Step 6: User authenticated:', user.email)
-    
-    // Guardar la cuenta
-    const { error: upsertError } = await supabase
+    await supabase
       .from('connected_accounts')
       .upsert({
         user_id: user.id,
@@ -148,34 +135,18 @@ export async function GET(request: NextRequest) {
         access_token: tokenData.access_token,
         refresh_token: tokenData.refresh_token || null,
         expires_at: new Date(Date.now() + (tokenData.expires_in || 7200) * 1000).toISOString(),
-        scope: tokenData.scope || 'user.info.profile,user.info.stats,video.list',
-        metadata: {
-          username: tiktokUsername,
-          display_name: tiktokDisplayName,
-          avatar_url: tiktokAvatarUrl,
-          bio: tiktokBio,
-          followers: tiktokFollowers,
-          following: tiktokFollowing,
-          video_count: tiktokVideoCount
-        }
+        scope: tokenData.scope || '',
+        metadata: userData || {}
       }, {
         onConflict: 'user_id,platform'
       })
     
-    if (upsertError) {
-      console.error('Supabase error:', upsertError)
-      return NextResponse.redirect(`${baseUrl}/dashboard/settings?error=db_error&details=${encodeURIComponent(upsertError.message)}`)
-    }
-    
-    console.log('Step 7: Successfully saved to Supabase')
     console.log('=== TIKTOK CALLBACK SUCCESS ===')
-    
     return NextResponse.redirect(`${baseUrl}/dashboard/settings?success=tiktok_connected`)
     
   } catch (err) {
     console.error('=== TIKTOK CALLBACK ERROR ===')
     console.error(err)
-    const errorMessage = err instanceof Error ? err.message : String(err)
-    return NextResponse.redirect(`${baseUrl}/dashboard/settings?error=exception&details=${encodeURIComponent(errorMessage)}`)
+    return NextResponse.redirect(`${baseUrl}/dashboard/settings?error=exception`)
   }
 }
