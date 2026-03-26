@@ -7,16 +7,23 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get('code')
   const error = searchParams.get('error')
   
+  console.log('TikTok callback received:', { code: !!code, error })
+  
   if (error) {
     console.error('TikTok OAuth error:', error)
-    return NextResponse.redirect('/dashboard/settings?error=tiktok_oauth_failed')
+    return NextResponse.redirect('/dashboard/settings?error=tiktok_oauth_failed&details=' + error)
   }
   
   if (!code) {
+    console.error('No code received')
     return NextResponse.redirect('/dashboard/settings?error=no_code')
   }
 
   try {
+    console.log('Exchanging code for token...')
+    console.log('Client ID:', process.env.TIKTOK_CLIENT_ID?.substring(0, 10) + '...')
+    console.log('Redirect URI:', process.env.TIKTOK_REDIRECT_URI)
+    
     // Intercambiar código por token de acceso
     const tokenResponse = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
       method: 'POST',
@@ -33,11 +40,15 @@ export async function GET(request: NextRequest) {
     })
 
     const tokenData = await tokenResponse.json()
+    console.log('Token response:', JSON.stringify(tokenData, null, 2))
     
     if (!tokenData.access_token) {
       console.error('No access token received:', tokenData)
-      return NextResponse.redirect('/dashboard/settings?error=no_access_token')
+      const errorMsg = tokenData.error || tokenData.error_description || 'unknown_error'
+      return NextResponse.redirect(`/dashboard/settings?error=no_access_token&details=${errorMsg}`)
     }
+    
+    console.log('Access token received, getting user info...')
     
     // Obtener información del usuario
     const userInfoResponse = await fetch(
@@ -51,6 +62,8 @@ export async function GET(request: NextRequest) {
     )
     
     const userInfo = await userInfoResponse.json()
+    console.log('User info response:', JSON.stringify(userInfo, null, 2))
+    
     const tiktokUserId = userInfo.data?.user?.id
     
     if (!tiktokUserId) {
@@ -122,6 +135,7 @@ export async function GET(request: NextRequest) {
         })
     }
     
+    console.log('TikTok account connected successfully!')
     return NextResponse.redirect('/dashboard/settings?success=tiktok_connected')
     
   } catch (error) {
