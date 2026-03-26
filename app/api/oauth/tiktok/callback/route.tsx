@@ -11,9 +11,7 @@ export async function GET(request: NextRequest) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://content-intelligence-engine-eta.vercel.app'
   
   console.log('=== TIKTOK CALLBACK START ===')
-  console.log('Code:', code ? 'Yes (length: ' + code.length + ')' : 'No')
-  console.log('Error:', error)
-  console.log('Error description:', error_description)
+  console.log('Code present:', !!code)
   
   if (error) {
     console.error('TikTok OAuth error:', error, error_description)
@@ -27,7 +25,6 @@ export async function GET(request: NextRequest) {
 
   try {
     console.log('Step 1: Exchanging code for token...')
-    console.log('Redirect URI:', process.env.TIKTOK_REDIRECT_URI)
     
     const tokenResponse = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
       method: 'POST',
@@ -45,68 +42,65 @@ export async function GET(request: NextRequest) {
 
     const tokenData = await tokenResponse.json()
     console.log('Token response status:', tokenResponse.status)
-    console.log('Token response keys:', Object.keys(tokenData))
     
     if (!tokenData.access_token) {
-      console.error('Token error response:', JSON.stringify(tokenData, null, 2))
+      console.error('Token error:', tokenData)
       const errorMsg = tokenData.error || tokenData.error_description || 'unknown_error'
       return NextResponse.redirect(`${baseUrl}/dashboard/settings?error=token_error&details=${encodeURIComponent(errorMsg)}`)
     }
     
-    console.log('Step 2: Token obtained, expires in:', tokenData.expires_in)
+    console.log('Step 2: Token obtained successfully')
     
-    // Obtener información del usuario con el token
+    // Obtener información del usuario con los campos específicos
     console.log('Step 3: Getting user info from TikTok...')
     
-    const userInfoResponse = await fetch('https://open.tiktokapis.com/v2/user/info/', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${tokenData.access_token}`,
-        'Content-Type': 'application/json',
-      },
-    })
+    // Campos que queremos obtener
+    const fields = [
+      'id',
+      'username',
+      'display_name',
+      'avatar_url',
+      'bio_description',
+      'follower_count',
+      'following_count',
+      'video_count',
+      'is_verified'
+    ].join(',')
     
-    const userInfoRaw = await userInfoResponse.text()
-    console.log('User info raw response:', userInfoRaw.substring(0, 500))
+    const userInfoResponse = await fetch(
+      `https://open.tiktokapis.com/v2/user/info/?fields=${fields}`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${tokenData.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    )
     
-    let userInfo
-    try {
-      userInfo = JSON.parse(userInfoRaw)
-    } catch (e) {
-      console.error('Failed to parse user info:', e)
-      return NextResponse.redirect(`${baseUrl}/dashboard/settings?error=parse_error`)
-    }
-    
+    const userInfo = await userInfoResponse.json()
     console.log('User info response status:', userInfoResponse.status)
-    console.log('User info structure:', Object.keys(userInfo))
+    console.log('User info:', JSON.stringify(userInfo, null, 2))
     
-    // TikTok puede devolver los datos en diferentes estructuras
-    let tiktokUserId = null
-    let tiktokUsername = null
-    let tiktokDisplayName = null
-    let tiktokAvatarUrl = null
-    
-    // Probar diferentes estructuras de respuesta
-    if (userInfo.data?.user) {
-      tiktokUserId = userInfo.data.user.id
-      tiktokUsername = userInfo.data.user.username
-      tiktokDisplayName = userInfo.data.user.display_name
-      tiktokAvatarUrl = userInfo.data.user.avatar_url
-    } else if (userInfo.user) {
-      tiktokUserId = userInfo.user.id
-      tiktokUsername = userInfo.user.username
-      tiktokDisplayName = userInfo.user.display_name
-      tiktokAvatarUrl = userInfo.user.avatar_url
-    } else if (userInfo.data?.id) {
-      tiktokUserId = userInfo.data.id
-    }
+    // Extraer datos del usuario
+    const userData = userInfo.data?.user
+    const tiktokUserId = userData?.id
+    const tiktokUsername = userData?.username
+    const tiktokDisplayName = userData?.display_name
+    const tiktokAvatarUrl = userData?.avatar_url
+    const tiktokBio = userData?.bio_description
+    const tiktokFollowers = userData?.follower_count
+    const tiktokFollowing = userData?.following_count
+    const tiktokVideoCount = userData?.video_count
     
     console.log('Extracted user ID:', tiktokUserId)
     console.log('Extracted username:', tiktokUsername)
+    console.log('Followers:', tiktokFollowers)
+    console.log('Videos:', tiktokVideoCount)
     
     if (!tiktokUserId) {
-      console.error('Could not find user ID in response:', JSON.stringify(userInfo, null, 2))
-      return NextResponse.redirect(`${baseUrl}/dashboard/settings?error=no_user_id&details=${encodeURIComponent(JSON.stringify(userInfo))}`)
+      console.error('Could not find user ID in response')
+      return NextResponse.redirect(`${baseUrl}/dashboard/settings?error=no_user_id`)
     }
     
     console.log('Step 4: User found successfully')
@@ -144,7 +138,7 @@ export async function GET(request: NextRequest) {
     
     console.log('Step 6: User authenticated:', user.email)
     
-    // Guardar la cuenta con los datos obtenidos
+    // Guardar la cuenta
     const { error: upsertError } = await supabase
       .from('connected_accounts')
       .upsert({
@@ -159,7 +153,10 @@ export async function GET(request: NextRequest) {
           username: tiktokUsername,
           display_name: tiktokDisplayName,
           avatar_url: tiktokAvatarUrl,
-          raw_data: userInfo.data || userInfo
+          bio: tiktokBio,
+          followers: tiktokFollowers,
+          following: tiktokFollowing,
+          video_count: tiktokVideoCount
         }
       }, {
         onConflict: 'user_id,platform'
