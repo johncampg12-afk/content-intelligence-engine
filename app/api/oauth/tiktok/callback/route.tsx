@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     }
     
     console.log('Step 2: Token obtained')
-    console.log('Open ID:', tokenData.open_id)  // <--- Este es el ID único
+    console.log('Open ID:', tokenData.open_id)
     
     // Obtener información del usuario
     console.log('Step 3: Getting user info from TikTok...')
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
     
     // Extraer datos del usuario
     const userData = userInfo.data?.user
-    const tiktokUserId = tokenData.open_id  // USAR open_id COMO ID
+    const tiktokUserId = tokenData.open_id
     const tiktokUsername = userData?.username
     const tiktokDisplayName = userData?.display_name
     const tiktokAvatarUrl = userData?.avatar_url
@@ -166,6 +166,18 @@ export async function GET(request: NextRequest) {
     }
     
     console.log('Step 7: Successfully saved to Supabase')
+    
+    // ============================================
+    // AQUÍ VA LA SINCRONIZACIÓN AUTOMÁTICA
+    // ============================================
+    console.log('Triggering video sync...')
+    fetch(`${baseUrl}/api/cron/sync-tiktok`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user.id }),
+    }).catch(err => console.error('Background sync error:', err))
+    // ============================================
+    
     console.log('=== TIKTOK CALLBACK SUCCESS ===')
     
     return NextResponse.redirect(`${baseUrl}/dashboard/settings?success=tiktok_connected`)
