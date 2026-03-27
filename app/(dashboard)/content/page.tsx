@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import Image from 'next/image'
+import Link from 'next/link'
 
 export default async function ContentPage() {
   const cookieStore = await cookies()
@@ -27,8 +27,16 @@ export default async function ContentPage() {
   
   const { data: { user } } = await supabase.auth.getUser()
   
-  // Obtener videos con sus últimas métricas
-  const { data: videos } = await supabase
+  // Verificar si hay cuenta de TikTok conectada
+  const { data: tiktokAccount } = await supabase
+    .from('connected_accounts')
+    .select('*')
+    .eq('user_id', user?.id)
+    .eq('platform', 'tiktok')
+    .single()
+  
+  // Obtener videos
+  const { data: videos, error: videosError } = await supabase
     .from('videos')
     .select(`
       *,
@@ -45,6 +53,9 @@ export default async function ContentPage() {
     .order('published_at', { ascending: false })
     .limit(20)
   
+  console.log('Videos found:', videos?.length)
+  console.log('Videos error:', videosError)
+  
   return (
     <div className="space-y-6">
       <div>
@@ -54,12 +65,34 @@ export default async function ContentPage() {
         </p>
       </div>
       
-      {!videos || videos.length === 0 ? (
+      {!tiktokAccount ? (
+        <div className="bg-white rounded-lg shadow p-12 text-center">
+          <p className="text-gray-500 mb-4">No TikTok account connected</p>
+          <Link href="/settings" className="text-blue-600 hover:underline">
+            Connect your TikTok account
+          </Link>
+        </div>
+      ) : !videos || videos.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-12 text-center">
           <p className="text-gray-500 mb-4">No videos synced yet</p>
           <p className="text-sm text-gray-400">
-            Connect your TikTok account and we'll automatically sync your videos
+            We're syncing your videos. This may take a few minutes.
           </p>
+          <button 
+            onClick={async () => {
+              const res = await fetch('/api/cron/sync-tiktok', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: user?.id })
+              })
+              const data = await res.json()
+              console.log('Sync result:', data)
+              window.location.reload()
+            }}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Sync Now
+          </button>
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
