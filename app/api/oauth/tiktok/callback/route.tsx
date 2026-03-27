@@ -15,15 +15,47 @@ export async function GET(request: NextRequest) {
   
   if (error) {
     console.error('TikTok OAuth error:', error, error_description)
-    return NextResponse.redirect(`${baseUrl}/dashboard/settings?error=tiktok_oauth_failed&details=${encodeURIComponent(error_description || error)}`)
+    return NextResponse.redirect(`${baseUrl}/login?error=tiktok_oauth_failed`)
   }
   
   if (!code) {
     console.error('No code received')
-    return NextResponse.redirect(`${baseUrl}/dashboard/settings?error=no_code`)
+    return NextResponse.redirect(`${baseUrl}/login?error=no_code`)
   }
 
   try {
+    // Primero, obtener la sesión actual
+    const cookieStore = await cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              )
+            } catch {
+              // Handle error
+            }
+          },
+        },
+      }
+    )
+    
+    const { data: { session } } = await supabase.auth.getSession()
+    
+    if (!session) {
+      console.error('No session found')
+      return NextResponse.redirect(`${baseUrl}/login?error=no_session`)
+    }
+    
+    console.log('Session found for user:', session.user.email)
+    
     console.log('Step 1: Exchanging code for token...')
     
     const tokenResponse = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
@@ -49,7 +81,6 @@ export async function GET(request: NextRequest) {
     }
     
     console.log('Step 2: Token obtained')
-    console.log('Open ID:', tokenData.open_id)
     
     // Obtener información del usuario
     console.log('Step 3: Getting user info from TikTok...')
@@ -65,8 +96,6 @@ export async function GET(request: NextRequest) {
       'is_verified'
     ].join(',')
     
-    console.log('Requesting fields:', fields)
-    
     const userInfoResponse = await fetch(
       `https://open.tiktokapis.com/v2/user/info/?fields=${fields}`,
       {
@@ -79,7 +108,6 @@ export async function GET(request: NextRequest) {
     
     const userInfo = await userInfoResponse.json()
     
-    // Extraer datos del usuario
     const userData = userInfo.data?.user
     const tiktokUserId = tokenData.open_id
     const tiktokUsername = userData?.username
@@ -90,56 +118,21 @@ export async function GET(request: NextRequest) {
     const tiktokFollowing = userData?.following_count
     const tiktokVideoCount = userData?.video_count
     
-    console.log('Using Open ID as user ID:', tiktokUserId)
-    console.log('Extracted username:', tiktokUsername)
-    console.log('Display name:', tiktokDisplayName)
-    console.log('Followers:', tiktokFollowers)
+    console.log('Using Open ID:', tiktokUserId)
+    console.log('Username:', tiktokUsername)
     
     if (!tiktokUserId) {
       console.error('No open_id in token response')
       return NextResponse.redirect(`${baseUrl}/dashboard/settings?error=no_user_id`)
     }
     
-    console.log('Step 4: User found successfully')
+    // Guardar la cuenta usando la sesión existente
+    console.log('Step 4: Saving to Supabase...')
     
-    // Guardar en Supabase
-    console.log('Step 5: Saving to Supabase...')
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              )
-            } catch {
-              // Handle error
-            }
-          },
-        },
-      }
-    )
-    
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (!user) {
-      console.error('No authenticated user')
-      return NextResponse.redirect(`${baseUrl}/login`)
-    }
-    
-    console.log('Step 6: User authenticated:', user.email)
-    
-    // Guardar la cuenta con open_id como platform_user_id
     const { error: upsertError } = await supabase
       .from('connected_accounts')
       .upsert({
-        user_id: user.id,
+        user_id: session.user.id,
         platform: 'tiktok',
         platform_user_id: String(tiktokUserId),
         access_token: tokenData.access_token,
@@ -162,30 +155,30 @@ export async function GET(request: NextRequest) {
     
     if (upsertError) {
       console.error('Supabase error:', upsertError)
-      return NextResponse.redirect(`${baseUrl}/dashboard/settings?error=db_error&details=${encodeURIComponent(upsertError.message)}`)
+      return NextResponse.redirect(`${baseUrl}/dashboard/settings?error=db_error`)
     }
     
-    console.log('Step 7: Successfully saved to Supabase')
+    console.log('Step 5: Successfully saved to Supabase')
     
-    // ============================================
-    // AQUÍ VA LA SINCRONIZACIÓN AUTOMÁTICA
-    // ============================================
+    // Disparar sincronización en segundo plano
     console.log('Triggering video sync...')
     fetch(`${baseUrl}/api/cron/sync-tiktok`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: user.id }),
+      body: JSON.stringify({ userId: session.user.id }),
     }).catch(err => console.error('Background sync error:', err))
-    // ============================================
     
     console.log('=== TIKTOK CALLBACK SUCCESS ===')
     
-    return NextResponse.redirect(`${baseUrl}/dashboard/settings?success=tiktok_connected`)
+    // Redirigir a settings con la sesión intacta
+    const response = NextResponse.redirect(`${baseUrl}/dashboard/settings?success=tiktok_connected`)
+    
+    // Mantener las cookies de sesión
+    return response
     
   } catch (err) {
     console.error('=== TIKTOK CALLBACK ERROR ===')
     console.error(err)
-    const errorMessage = err instanceof Error ? err.message : String(err)
-    return NextResponse.redirect(`${baseUrl}/dashboard/settings?error=exception&details=${encodeURIComponent(errorMessage)}`)
+    return NextResponse.redirect(`${baseUrl}/login?error=callback_failed`)
   }
 }
