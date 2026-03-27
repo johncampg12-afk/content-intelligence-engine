@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Primero, obtener la sesión actual
+    // Obtener la sesión actual
     const cookieStore = await cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -47,14 +47,15 @@ export async function GET(request: NextRequest) {
       }
     )
     
-    const { data: { session } } = await supabase.auth.getSession()
+    // Usar getUser() en lugar de getSession() por seguridad
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
     
-    if (!session) {
-      console.error('No session found')
-      return NextResponse.redirect(`${baseUrl}/login?error=no_session`)
+    if (userError || !user) {
+      console.error('No user found:', userError)
+      return NextResponse.redirect(`${baseUrl}/login?error=no_user`)
     }
     
-    console.log('Session found for user:', session.user.email)
+    console.log('User found:', user.email)
     
     console.log('Step 1: Exchanging code for token...')
     
@@ -82,7 +83,7 @@ export async function GET(request: NextRequest) {
     
     console.log('Step 2: Token obtained')
     
-    // Obtener información del usuario
+    // Obtener información del usuario de TikTok
     console.log('Step 3: Getting user info from TikTok...')
     
     const fields = [
@@ -126,13 +127,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${baseUrl}/dashboard/settings?error=no_user_id`)
     }
     
-    // Guardar la cuenta usando la sesión existente
+    // Guardar la cuenta
     console.log('Step 4: Saving to Supabase...')
     
     const { error: upsertError } = await supabase
       .from('connected_accounts')
       .upsert({
-        user_id: session.user.id,
+        user_id: user.id,
         platform: 'tiktok',
         platform_user_id: String(tiktokUserId),
         access_token: tokenData.access_token,
@@ -165,15 +166,27 @@ export async function GET(request: NextRequest) {
     fetch(`${baseUrl}/api/cron/sync-tiktok`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: session.user.id }),
+      body: JSON.stringify({ userId: user.id }),
     }).catch(err => console.error('Background sync error:', err))
     
     console.log('=== TIKTOK CALLBACK SUCCESS ===')
     
-    // Redirigir a settings con la sesión intacta
+    // Crear respuesta con redirección y mantener cookies
     const response = NextResponse.redirect(`${baseUrl}/dashboard/settings?success=tiktok_connected`)
     
-    // Mantener las cookies de sesión
+    // Copiar todas las cookies existentes a la respuesta
+    const allCookies = cookieStore.getAll()
+    for (const cookie of allCookies) {
+      response.cookies.set(cookie.name, cookie.value, {
+        path: cookie.path,
+        maxAge: cookie.maxAge,
+        expires: cookie.expires,
+        httpOnly: cookie.httpOnly,
+        secure: cookie.secure,
+        sameSite: cookie.sameSite as any,
+      })
+    }
+    
     return response
     
   } catch (err) {
