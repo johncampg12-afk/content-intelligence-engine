@@ -164,7 +164,7 @@ export async function GET(request: NextRequest) {
     console.log('=== TIKTOK CALLBACK SUCCESS ===')
     
     // Redirigir a settings
-    response = NextResponse.redirect(`${baseUrl}/dashboard/settings?success=tiktok_connected`)
+    response = NextResponse.redirect(`${baseUrl}/auth/tiktok-success`)
     
     return response
     
