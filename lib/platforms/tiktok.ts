@@ -23,12 +23,12 @@ export class TikTokAPI {
   async getUserVideos(maxCount: number = 20) {
     const url = 'https://open.tiktokapis.com/v2/video/list/'
     
-    // fields debe ser un string separado por comas, NO un array
-    const fields = 'id,title,description,create_time,cover_image_url,share_url,video_url,duration,view_count,like_count,comment_count,share_count,download_count,music_info'
+    // Usar solo el campo 'id' para probar
+    const fields = 'id'
     
     const body = {
       max_count: maxCount,
-      fields: fields  // Esto es un string, no un array
+      fields: fields
     }
     
     console.log('Request body:', JSON.stringify(body, null, 2))
