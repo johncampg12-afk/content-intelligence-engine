@@ -21,25 +21,17 @@ export class TikTokAPI {
   }
   
   async getUserVideos(maxCount: number = 20) {
-    const url = 'https://open.tiktokapis.com/v2/video/list/'
+    // Usar GET con query parameters (sin body)
+    const fields = 'id,title,create_time'
+    const url = `https://open.tiktokapis.com/v2/video/list/?fields=${fields}&max_count=${maxCount}`
     
-    // Usar solo el campo 'id' para probar
-    const fields = 'id'
-    
-    const body = {
-      max_count: maxCount,
-      fields: fields
-    }
-    
-    console.log('Request body:', JSON.stringify(body, null, 2))
+    console.log('Request URL:', url)
     
     const response = await fetch(url, {
-      method: 'POST',
+      method: 'GET',
       headers: {
         'Authorization': `Bearer ${this.accessToken}`,
-        'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
     })
     
     const responseText = await response.text()
