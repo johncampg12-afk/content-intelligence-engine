@@ -21,51 +21,47 @@ export class TikTokAPI {
   }
   
   async getUserVideos(maxCount: number = 20) {
-    // TikTok API usa POST para video/list
-    const url = 'https://open.tiktokapis.com/v2/video/list/'
+    // Según la documentación oficial, fields debe ser un string con campos separados por coma
+    const fields = [
+      'id',
+      'title',
+      'description',
+      'create_time',
+      'cover_image_url',
+      'share_url',
+      'video_url',
+      'duration',
+      'view_count',
+      'like_count',
+      'comment_count',
+      'share_count',
+      'download_count',
+      'music_info'
+    ].join(',')
     
-    const body = {
-      max_count: maxCount,
-      fields: [
-        'id',
-        'title',
-        'description',
-        'create_time',
-        'cover_image_url',
-        'share_url',
-        'video_url',
-        'duration',
-        'view_count',
-        'like_count',
-        'comment_count',
-        'share_count',
-        'download_count',
-        'music_info'
-      ]
-    }
+    const url = `https://open.tiktokapis.com/v2/video/list/?fields=${fields}&max_count=${maxCount}`
     
     console.log('Fetching videos from TikTok API...')
+    console.log('URL:', url)
     
     const response = await fetch(url, {
-      method: 'POST',
+      method: 'GET',
       headers: {
         'Authorization': `Bearer ${this.accessToken}`,
-        'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
     })
     
+    const responseText = await response.text()
+    console.log('Response status:', response.status)
+    console.log('Response:', responseText.substring(0, 500))
+    
     if (!response.ok) {
-      const text = await response.text()
-      console.error('TikTok API error:', response.status, text)
-      throw new Error(`TikTok API error: ${response.status}`)
+      throw new Error(`TikTok API error: ${response.status} - ${responseText}`)
     }
     
-    const data = await response.json()
-    console.log('Videos response status:', response.status)
+    const data = JSON.parse(responseText)
     
     if (data.error) {
-      console.error('TikTok API error response:', data.error)
       throw new Error(`TikTok API error: ${data.error.code} - ${data.error.message}`)
     }
     
