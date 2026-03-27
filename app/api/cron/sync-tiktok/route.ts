@@ -1,116 +1,94 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { TikTokAPI } from '@/lib/platforms/tiktok'
-
-export async function POST(request: NextRequest) {
-  try {
-    const { userId } = await request.json()
-    
-    console.log('=== SYNC TIKTOK START ===')
-    console.log('User ID:', userId)
-    
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+export class TikTokAPI {
+  private accessToken: string
+  
+  constructor(accessToken: string) {
+    this.accessToken = accessToken
+  }
+  
+  async getUserInfo() {
+    const response = await fetch(
+      'https://open.tiktokapis.com/v2/user/info/?fields=id,username,display_name,avatar_url,bio_description,follower_count,following_count,video_count',
       {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              )
-            } catch {
-              // Handle error
-            }
-          },
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
         },
       }
     )
     
-    // Obtener la cuenta de TikTok
-    const { data: account, error: accountError } = await supabase
-      .from('connected_accounts')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('platform', 'tiktok')
-      .single()
+    const data = await response.json()
+    return data
+  }
+  
+  async getUserVideos(maxCount: number = 20) {
+    const url = 'https://open.tiktokapis.com/v2/video/list/'
     
-    if (accountError || !account) {
-      console.error('Account error:', accountError)
-      return NextResponse.json({ error: 'TikTok account not found' }, { status: 404 })
+    // Los fields deben ser un array en el body
+    const body = {
+      max_count: maxCount,
+      fields: [
+        'id',
+        'title',
+        'description',
+        'create_time',
+        'cover_image_url',
+        'share_url',
+        'video_url',
+        'duration',
+        'view_count',
+        'like_count',
+        'comment_count',
+        'share_count',
+        'download_count',
+        'music_info'
+      ]
     }
     
-    console.log('TikTok account found')
-    console.log('Access token exists:', !!account.access_token)
+    console.log('Fetching videos from TikTok API...')
+    console.log('Request body:', JSON.stringify(body, null, 2))
     
-    // Obtener videos usando TikTokAPI
-    const tiktok = new TikTokAPI(account.access_token)
-    const videos = await tiktok.getUserVideos(20)
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    })
     
-    console.log(`Found ${videos.length} videos`)
+    const responseText = await response.text()
+    console.log('Response status:', response.status)
+    console.log('Response text:', responseText.substring(0, 500))
     
-    let videosSaved = 0
-    
-    for (const video of videos) {
-      console.log(`Saving video: ${video.id}`)
-      
-      // Guardar video
-      const { error: videoError } = await supabase
-        .from('videos')
-        .upsert({
-          user_id: userId,
-          platform: 'tiktok',
-          platform_video_id: video.id,
-          title: video.title || video.description?.substring(0, 200) || '',
-          description: video.description || '',
-          thumbnail_url: video.cover_image_url,
-          duration: video.duration,
-          published_at: new Date(video.create_time * 1000).toISOString(),
-          metadata: {
-            share_url: video.share_url,
-            video_url: video.video_url,
-            music_info: video.music_info
-          }
-        }, {
-          onConflict: 'user_id,platform,platform_video_id'
-        })
-      
-      if (videoError) {
-        console.error(`Error saving video ${video.id}:`, videoError)
-        continue
-      }
-      
-      videosSaved++
-      
-      // Guardar métricas
-      await supabase
-        .from('video_metrics')
-        .insert({
-          video_id: video.id,
-          recorded_at: new Date().toISOString(),
-          views: video.view_count || 0,
-          likes: video.like_count || 0,
-          comments: video.comment_count || 0,
-          shares: video.share_count || 0,
-          saves: video.download_count || 0,
-        })
+    if (!response.ok) {
+      throw new Error(`TikTok API error: ${response.status} - ${responseText}`)
     }
     
-    console.log(`Saved ${videosSaved} videos`)
-    console.log('=== SYNC TIKTOK END ===')
+    const data = JSON.parse(responseText)
     
-    return NextResponse.json({ success: true, videosSaved })
+    if (data.error) {
+      console.error('TikTok API error response:', data.error)
+      throw new Error(`TikTok API error: ${data.error.code} - ${data.error.message}`)
+    }
     
-  } catch (error) {
-    console.error('Sync TikTok error:', error)
-    return NextResponse.json({ 
-      error: 'Sync failed', 
-      details: error instanceof Error ? error.message : String(error) 
-    }, { status: 500 })
+    return data.data?.videos || []
+  }
+  
+  async refreshToken(refreshToken: string) {
+    const response = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_key: process.env.TIKTOK_CLIENT_ID!,
+        client_secret: process.env.TIKTOK_CLIENT_SECRET!,
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+      })
+    })
+    
+    const data = await response.json()
+    return data
   }
 }
