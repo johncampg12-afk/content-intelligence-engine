@@ -21,42 +21,53 @@ export class TikTokAPI {
   }
   
   async getUserVideos(maxCount: number = 20) {
-    // La URL correcta es /video/list/ (con slash al final)
-    const fields = [
-      'id',
-      'title',
-      'description',
-      'create_time',
-      'cover_image_url',
-      'share_url',
-      'video_url',
-      'duration',
-      'view_count',
-      'like_count',
-      'comment_count',
-      'share_count',
-      'download_count',
-      'music_info'
-    ].join(',')
+    // TikTok API usa POST para video/list
+    const url = 'https://open.tiktokapis.com/v2/video/list/'
     
-    const url = `https://open.tiktokapis.com/v2/video/list/?fields=${fields}&max_count=${maxCount}`
-    console.log('Fetching videos from:', url)
+    const body = {
+      max_count: maxCount,
+      fields: [
+        'id',
+        'title',
+        'description',
+        'create_time',
+        'cover_image_url',
+        'share_url',
+        'video_url',
+        'duration',
+        'view_count',
+        'like_count',
+        'comment_count',
+        'share_count',
+        'download_count',
+        'music_info'
+      ]
+    }
+    
+    console.log('Fetching videos from TikTok API...')
     
     const response = await fetch(url, {
-      method: 'GET',
+      method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify(body),
     })
     
     if (!response.ok) {
       const text = await response.text()
       console.error('TikTok API error:', response.status, text)
-      throw new Error(`TikTok API error: ${response.status} - ${text}`)
+      throw new Error(`TikTok API error: ${response.status}`)
     }
     
     const data = await response.json()
-    console.log('Videos response:', data)
+    console.log('Videos response status:', response.status)
+    
+    if (data.error) {
+      console.error('TikTok API error response:', data.error)
+      throw new Error(`TikTok API error: ${data.error.code} - ${data.error.message}`)
+    }
     
     return data.data?.videos || []
   }
