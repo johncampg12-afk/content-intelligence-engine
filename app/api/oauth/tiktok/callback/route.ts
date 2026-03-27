@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
     
     if (!tokenData.access_token) {
       console.error('Token error:', tokenData)
-      return NextResponse.redirect(`${baseUrl}/dashboard/settings?error=token_error`)
+      return NextResponse.redirect(`${baseUrl}/login?error=token_error`)
     }
     
     console.log('Step 2: Token obtained')
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
     
     if (!tiktokUserId) {
       console.error('No open_id in token response')
-      return NextResponse.redirect(`${baseUrl}/dashboard/settings?error=no_user_id`)
+      return NextResponse.redirect(`${baseUrl}/login?error=no_user_id`)
     }
     
     // Guardar la cuenta
@@ -148,7 +148,7 @@ export async function GET(request: NextRequest) {
     
     if (upsertError) {
       console.error('Supabase error:', upsertError)
-      return NextResponse.redirect(`${baseUrl}/dashboard/settings?error=db_error`)
+      return NextResponse.redirect(`${baseUrl}/login?error=db_error`)
     }
     
     console.log('Step 5: Successfully saved to Supabase')
@@ -163,17 +163,10 @@ export async function GET(request: NextRequest) {
     
     console.log('=== TIKTOK CALLBACK SUCCESS ===')
     
-    // VERIFICAR SESIÓN ANTES DE REDIRIGIR
-    const { data: { session: finalSession } } = await supabase.auth.getSession()
-    console.log('Final session before redirect:', !!finalSession)
-    if (finalSession) {
-      console.log('Session user:', finalSession.user.email)
-    }
-    
-    // Redirigir a la página de éxito
-    response = NextResponse.redirect(`${baseUrl}/auth/tiktok-success`)
-    
-    return response
+    // =====================================================
+    // CAMBIO AQUÍ: Redirigir directamente al login
+    // =====================================================
+    return NextResponse.redirect(`${baseUrl}/login?tiktok_connected=true`)
     
   } catch (err) {
     console.error('=== TIKTOK CALLBACK ERROR ===')
