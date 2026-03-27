@@ -21,28 +21,17 @@ export class TikTokAPI {
   }
   
   async getUserVideos(maxCount: number = 20) {
-    // Probar con la URL base correcta
-    const fields = [
-      'id',
-      'title',
-      'description',
-      'create_time',
-      'cover_image_url',
-      'share_url',
-      'video_url',
-      'duration',
-      'view_count',
-      'like_count',
-      'comment_count',
-      'share_count',
-      'download_count',
-      'music_info'
-    ].join(',')
-    
-    // Opción 1: Usar POST como dice la documentación
     const url = 'https://open.tiktokapis.com/v2/video/list/'
     
-    console.log('Fetching videos with POST method...')
+    // fields debe ser un string separado por comas, NO un array
+    const fields = 'id,title,description,create_time,cover_image_url,share_url,video_url,duration,view_count,like_count,comment_count,share_count,download_count,music_info'
+    
+    const body = {
+      max_count: maxCount,
+      fields: fields  // Esto es un string, no un array
+    }
+    
+    console.log('Request body:', JSON.stringify(body, null, 2))
     
     const response = await fetch(url, {
       method: 'POST',
@@ -50,10 +39,7 @@ export class TikTokAPI {
         'Authorization': `Bearer ${this.accessToken}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        max_count: maxCount,
-        fields: fields
-      }),
+      body: JSON.stringify(body),
     })
     
     const responseText = await response.text()
