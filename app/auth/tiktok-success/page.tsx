@@ -1,44 +1,81 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 export default function TikTokSuccessPage() {
   const router = useRouter()
   const supabase = createClient()
+  const [error, setError] = useState<string | null>(null)
+  const [attempts, setAttempts] = useState(0)
 
   useEffect(() => {
     const checkSession = async () => {
-      // Esperar un momento para que las cookies se establezcan
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      console.log('Checking session, attempt:', attempts + 1)
       
-      // Verificar si hay sesión
-      const { data: { session } } = await supabase.auth.getSession()
+      // Verificar sesión actual
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      
+      console.log('Session exists:', !!session)
+      console.log('Session error:', sessionError)
       
       if (session) {
-        // Si hay sesión, redirigir a settings
+        console.log('Session found, redirecting to settings')
         router.push('/dashboard/settings?success=tiktok_connected')
-      } else {
-        // Si no hay sesión, intentar refrescar
-        const { data: { session: refreshed } } = await supabase.auth.refreshSession()
+        return
+      }
+      
+      // Si no hay sesión, intentar refrescar
+      if (attempts < 3) {
+        console.log('No session, attempting refresh...')
+        const { data: { session: refreshed }, error: refreshError } = await supabase.auth.refreshSession()
+        
+        console.log('Refresh result:', !!refreshed)
+        console.log('Refresh error:', refreshError)
+        
         if (refreshed) {
+          console.log('Session refreshed, redirecting')
           router.push('/dashboard/settings?success=tiktok_connected')
-        } else {
-          // Si todo falla, ir a login
-          router.push('/login?error=session_lost')
+          return
         }
       }
+      
+      // Después de 3 intentos, ir a login
+      if (attempts >= 2) {
+        console.log('Max attempts reached, redirecting to login')
+        setError('Session lost. Please login again.')
+        setTimeout(() => {
+          router.push('/login?error=session_lost')
+        }, 2000)
+        return
+      }
+      
+      // Esperar y reintentar
+      setAttempts(prev => prev + 1)
+      setTimeout(checkSession, 2000)
     }
     
     checkSession()
-  }, [router, supabase])
+  }, [router, supabase, attempts])
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-600 text-xl mb-4">⚠️</div>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <p className="text-sm text-gray-500">Redirecting to login...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">Completing connection...</p>
+        <p className="text-gray-600">Completing connection... (attempt {attempts + 1}/3)</p>
       </div>
     </div>
   )

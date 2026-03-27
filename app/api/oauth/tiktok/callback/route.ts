@@ -163,7 +163,14 @@ export async function GET(request: NextRequest) {
     
     console.log('=== TIKTOK CALLBACK SUCCESS ===')
     
-    // Redirigir a settings
+    // VERIFICAR SESIÓN ANTES DE REDIRIGIR
+    const { data: { session: finalSession } } = await supabase.auth.getSession()
+    console.log('Final session before redirect:', !!finalSession)
+    if (finalSession) {
+      console.log('Session user:', finalSession.user.email)
+    }
+    
+    // Redirigir a la página de éxito
     response = NextResponse.redirect(`${baseUrl}/auth/tiktok-success`)
     
     return response
