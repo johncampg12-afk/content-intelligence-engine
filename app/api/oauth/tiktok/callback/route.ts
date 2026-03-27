@@ -24,30 +24,28 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Obtener la sesión actual usando cookies
-    const cookieStore = await cookies()
+    // Crear un response que vamos a modificar
+    let response = NextResponse.next()
+    
+    // Crear el cliente de Supabase que puede modificar las cookies
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
           getAll() {
-            return cookieStore.getAll()
+            return request.cookies.getAll()
           },
           setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              )
-            } catch {
-              // Handle error
-            }
+            cookiesToSet.forEach(({ name, value, options }) => {
+              response.cookies.set(name, value, options)
+            })
           },
         },
       }
     )
     
-    // Usar getUser() en lugar de getSession()
+    // Obtener el usuario autenticado
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     
     if (userError || !user) {
@@ -112,12 +110,6 @@ export async function GET(request: NextRequest) {
     const userData = userInfo.data?.user
     const tiktokUserId = tokenData.open_id
     const tiktokUsername = userData?.username
-    const tiktokDisplayName = userData?.display_name
-    const tiktokAvatarUrl = userData?.avatar_url
-    const tiktokBio = userData?.bio_description
-    const tiktokFollowers = userData?.follower_count
-    const tiktokFollowing = userData?.following_count
-    const tiktokVideoCount = userData?.video_count
     
     console.log('Using Open ID:', tiktokUserId)
     console.log('Username:', tiktokUsername)
@@ -142,13 +134,13 @@ export async function GET(request: NextRequest) {
         scope: tokenData.scope || '',
         metadata: {
           open_id: tokenData.open_id,
-          username: tiktokUsername,
-          display_name: tiktokDisplayName,
-          avatar_url: tiktokAvatarUrl,
-          bio: tiktokBio,
-          followers: tiktokFollowers,
-          following: tiktokFollowing,
-          video_count: tiktokVideoCount
+          username: userData?.username,
+          display_name: userData?.display_name,
+          avatar_url: userData?.avatar_url,
+          bio: userData?.bio_description,
+          followers: userData?.follower_count,
+          following: userData?.following_count,
+          video_count: userData?.video_count
         }
       }, {
         onConflict: 'user_id,platform'
@@ -161,7 +153,7 @@ export async function GET(request: NextRequest) {
     
     console.log('Step 5: Successfully saved to Supabase')
     
-    // Disparar sincronización en segundo plano
+    // Disparar sincronización
     console.log('Triggering video sync...')
     fetch(`${baseUrl}/api/cron/sync-tiktok`, {
       method: 'POST',
@@ -171,8 +163,10 @@ export async function GET(request: NextRequest) {
     
     console.log('=== TIKTOK CALLBACK SUCCESS ===')
     
-    // Redirección simple - las cookies ya se mantienen por el createServerClient
-    return NextResponse.redirect(`${baseUrl}/dashboard/settings?success=tiktok_connected`)
+    // Redirigir a settings
+    response = NextResponse.redirect(`${baseUrl}/dashboard/settings?success=tiktok_connected`)
+    
+    return response
     
   } catch (err) {
     console.error('=== TIKTOK CALLBACK ERROR ===')
