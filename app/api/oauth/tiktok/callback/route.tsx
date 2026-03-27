@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Obtener la sesión actual
+    // Obtener la sesión actual usando cookies
     const cookieStore = await cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
       }
     )
     
-    // Usar getUser() en lugar de getSession() por seguridad
+    // Usar getUser() en lugar de getSession()
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     
     if (userError || !user) {
@@ -171,23 +171,8 @@ export async function GET(request: NextRequest) {
     
     console.log('=== TIKTOK CALLBACK SUCCESS ===')
     
-    // Crear respuesta con redirección y mantener cookies
-    const response = NextResponse.redirect(`${baseUrl}/dashboard/settings?success=tiktok_connected`)
-    
-    // Copiar todas las cookies existentes a la respuesta
-    const allCookies = cookieStore.getAll()
-    for (const cookie of allCookies) {
-      response.cookies.set(cookie.name, cookie.value, {
-        path: cookie.path,
-        maxAge: cookie.maxAge,
-        expires: cookie.expires,
-        httpOnly: cookie.httpOnly,
-        secure: cookie.secure,
-        sameSite: cookie.sameSite as any,
-      })
-    }
-    
-    return response
+    // Redirección simple - las cookies ya se mantienen por el createServerClient
+    return NextResponse.redirect(`${baseUrl}/dashboard/settings?success=tiktok_connected`)
     
   } catch (err) {
     console.error('=== TIKTOK CALLBACK ERROR ===')
