@@ -21,34 +21,42 @@ export class TikTokAPI {
   }
   
   async getUserVideos(maxCount: number = 20) {
-    // Usar GET con query parameters (sin body)
-    const fields = 'id,title,create_time'
-    const url = `https://open.tiktokapis.com/v2/video/list/?fields=${fields}&max_count=${maxCount}`
+  // Probar diferentes URLs
+  const urls = [
+    'https://open.tiktokapis.com/v2/video/list/',
+    'https://open.tiktokapis.com/video/list/',
+    'https://open-api.tiktok.com/video/list/'
+  ]
+  
+  for (const url of urls) {
+    console.log('Trying URL:', url)
     
-    console.log('Request URL:', url)
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${this.accessToken}`,
-      },
-    })
-    
-    const responseText = await response.text()
-    console.log('Response status:', response.status)
-    console.log('Response:', responseText.substring(0, 500))
-    
-    if (!response.ok) {
-      throw new Error(`TikTok API error: ${response.status} - ${responseText}`)
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          max_count: maxCount,
+          fields: ['id', 'title']
+        }),
+      })
+      
+      const text = await response.text()
+      console.log(`Response from ${url}:`, response.status, text.substring(0, 200))
+      
+      if (response.ok && !text.includes('Unsupported')) {
+        const data = JSON.parse(text)
+        return data.data?.videos || []
+      }
+    } catch (e) {
+      console.error(`Error with ${url}:`, e)
     }
-    
-    const data = JSON.parse(responseText)
-    
-    if (data.error) {
-      throw new Error(`TikTok API error: ${data.error.code} - ${data.error.message}`)
-    }
-    
-    return data.data?.videos || []
+  }
+  
+    throw new Error('Could not fetch videos from TikTok')
   }
   
   async refreshToken(refreshToken: string) {
