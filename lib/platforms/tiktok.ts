@@ -21,42 +21,32 @@ export class TikTokAPI {
   }
   
   async getUserVideos(maxCount: number = 20) {
-  // Probar diferentes URLs
-  const urls = [
-    'https://open.tiktokapis.com/v2/video/list/',
-    'https://open.tiktokapis.com/video/list/',
-    'https://open-api.tiktok.com/video/list/'
-  ]
+  const url = 'https://open.tiktokapis.com/v2/video/list/'
   
-  for (const url of urls) {
-    console.log('Trying URL:', url)
-    
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          max_count: maxCount,
-          fields: ['id', 'title']
-        }),
-      })
-      
-      const text = await response.text()
-      console.log(`Response from ${url}:`, response.status, text.substring(0, 200))
-      
-      if (response.ok && !text.includes('Unsupported')) {
-        const data = JSON.parse(text)
-        return data.data?.videos || []
-      }
-    } catch (e) {
-      console.error(`Error with ${url}:`, e)
-    }
+  const body = {
+    max_count: maxCount,
+    fields: 'id,title,create_time,cover_image_url,view_count,like_count,comment_count,share_count'
   }
   
-    throw new Error('Could not fetch videos from TikTok')
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${this.accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
+  
+  const responseText = await response.text()
+  console.log('Response status:', response.status)
+  console.log('Response:', responseText)
+  
+  if (!response.ok) {
+    throw new Error(`TikTok API error: ${response.status} - ${responseText}`)
+  }
+  
+  const data = JSON.parse(responseText)
+    return data.data?.videos || []
   }
   
   async refreshToken(refreshToken: string) {
