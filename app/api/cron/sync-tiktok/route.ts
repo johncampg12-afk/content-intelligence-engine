@@ -14,11 +14,6 @@ interface TikTokVideo {
   share_count: number
 }
 
-interface SupabaseVideo {
-  id: string
-  platform_video_id: string
-}
-
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await request.json()
@@ -64,16 +59,21 @@ export async function POST(request: NextRequest) {
     
     const tiktok = new TikTokAPI(account.access_token)
     
-    // Obtener videos de TikTok (los más recientes)
-    const videosFromTikTok: TikTokVideo[] = await tiktok.getUserVideos(20)
-    console.log(`Found ${videosFromTikTok.length} videos from TikTok API`)
+    // Obtener todos los videos de TikTok con paginación
+    const videosFromTikTok: TikTokVideo[] = await tiktok.getUserVideos(50)
+    console.log(`Found ${videosFromTikTok.length} unique videos from TikTok API`)
     
     let metricsInserted = 0
     let videosUpdated = 0
+    let videosInserted = 0
     
-    // Solo procesar videos que TikTok devuelve (los recientes)
+    // Obtener la fecha de hoy para comparar
+    const today = new Date().toISOString().split('T')[0]
+    
     for (const video of videosFromTikTok) {
       console.log(`\n--- Processing TikTok video: ${video.id} ---`)
+      console.log(`  - Title: ${video.title?.substring(0, 50)}...`)
+      console.log(`  - Views: ${video.view_count}, Likes: ${video.like_count}`)
       
       // Buscar si el video ya existe
       const { data: existingVideo } = await supabase
@@ -124,8 +124,22 @@ export async function POST(request: NextRequest) {
         }
         
         videoId = newVideo.id
-        videosUpdated++
+        videosInserted++
         console.log(`  - New video inserted (ID: ${videoId})`)
+      }
+      
+      // Verificar si ya hay una métrica para este video hoy
+      const { data: existingMetric, error: metricCheckError } = await supabase
+        .from('video_metrics')
+        .select('id')
+        .eq('video_id', videoId)
+        .gte('recorded_at', `${today}T00:00:00`)
+        .lte('recorded_at', `${today}T23:59:59`)
+        .limit(1)
+      
+      if (existingMetric && existingMetric.length > 0) {
+        console.log(`  - Metrics already recorded today, skipping duplicate`)
+        continue
       }
       
       // Insertar métricas actuales
@@ -144,23 +158,26 @@ export async function POST(request: NextRequest) {
           avg_watch_percentage: 0,
         })
       
-      if (!metricsError) {
+      if (metricsError) {
+        console.error(`  - Error inserting metrics:`, metricsError)
+      } else {
         metricsInserted++
         console.log(`  - Metrics inserted (views: ${video.view_count || 0})`)
       }
     }
     
     console.log(`\n=== SYNC TIKTOK COMPLETE ===`)
-    console.log(`Videos processed: ${videosUpdated}`)
-    console.log(`New metric records: ${metricsInserted}`)
-    console.log(`Note: ${16 - videosFromTikTok.length} older videos preserved with their existing metrics`)
+    console.log(`New videos inserted: ${videosInserted}`)
+    console.log(`Videos updated: ${videosUpdated}`)
+    console.log(`New metric records inserted: ${metricsInserted}`)
+    console.log(`Total videos in database: ${videosInserted + videosUpdated}`)
     
     return NextResponse.json({ 
       success: true, 
+      videosInserted,
       videosUpdated,
       metricsInserted,
-      totalVideosInSupabase: 16,
-      videosFromAPI: videosFromTikTok.length
+      totalVideosFromAPI: videosFromTikTok.length
     })
     
   } catch (error) {
