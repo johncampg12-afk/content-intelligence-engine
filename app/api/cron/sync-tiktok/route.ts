@@ -64,39 +64,43 @@ export async function POST(request: NextRequest) {
     
     const tiktok = new TikTokAPI(account.access_token)
     
-    // 1. Obtener videos de TikTok (los más recientes)
+    // Obtener videos de TikTok (los más recientes)
     const videosFromTikTok: TikTokVideo[] = await tiktok.getUserVideos(20)
     console.log(`Found ${videosFromTikTok.length} videos from TikTok API`)
     
-    // 2. Obtener TODOS los videos existentes en Supabase
-    const { data: existingVideos, error: existingError } = await supabase
-      .from('videos')
-      .select('id, platform_video_id')
-      .eq('user_id', userId)
-      .eq('platform', 'tiktok')
-    
-    if (existingError) {
-      console.error('Error fetching existing videos:', existingError)
-    }
-    
-    const existingVideosList: SupabaseVideo[] = existingVideos || []
-    console.log(`Found ${existingVideosList.length} existing videos in Supabase`)
-    
-    // Crear un Set con los IDs de TikTok que ya tenemos
-    const existingVideoIds = new Set(existingVideosList.map(v => v.platform_video_id))
-    
     let metricsInserted = 0
-    let newVideosAdded = 0
-    let updatedVideos = 0
+    let videosUpdated = 0
     
-    // 3. Procesar videos nuevos de TikTok
+    // Solo procesar videos que TikTok devuelve (los recientes)
     for (const video of videosFromTikTok) {
       console.log(`\n--- Processing TikTok video: ${video.id} ---`)
       
-      let videoId: string
-      const isNew = !existingVideoIds.has(video.id)
+      // Buscar si el video ya existe
+      const { data: existingVideo } = await supabase
+        .from('videos')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('platform', 'tiktok')
+        .eq('platform_video_id', video.id)
+        .single()
       
-      if (isNew) {
+      let videoId: string
+      
+      if (existingVideo) {
+        // Actualizar video existente
+        videoId = existingVideo.id
+        await supabase
+          .from('videos')
+          .update({
+            title: video.title || '',
+            thumbnail_url: video.cover_image_url,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', videoId)
+        
+        videosUpdated++
+        console.log(`  - Video updated (ID: ${videoId})`)
+      } else {
         // Insertar video nuevo
         const { data: newVideo, error: insertError } = await supabase
           .from('videos')
@@ -120,28 +124,12 @@ export async function POST(request: NextRequest) {
         }
         
         videoId = newVideo.id
-        newVideosAdded++
+        videosUpdated++
         console.log(`  - New video inserted (ID: ${videoId})`)
-      } else {
-        // Video ya existe, actualizar título y thumbnail
-        const existing = existingVideosList.find(v => v.platform_video_id === video.id)
-        videoId = existing!.id
-        
-        await supabase
-          .from('videos')
-          .update({
-            title: video.title || '',
-            thumbnail_url: video.cover_image_url,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', videoId)
-        
-        updatedVideos++
-        console.log(`  - Video updated (ID: ${videoId})`)
       }
       
       // Insertar métricas actuales
-      await supabase
+      const { error: metricsError } = await supabase
         .from('video_metrics')
         .insert({
           video_id: videoId,
@@ -156,63 +144,22 @@ export async function POST(request: NextRequest) {
           avg_watch_percentage: 0,
         })
       
-      metricsInserted++
-      console.log(`  - Metrics inserted (views: ${video.view_count || 0})`)
-    }
-    
-    // 4. Para videos antiguos que ya no están en la API de TikTok,
-    // intentar obtener métricas individuales
-    const videosOnlyInSupabase = existingVideosList.filter(
-      (v: SupabaseVideo) => !videosFromTikTok.some((tv: TikTokVideo) => tv.id === v.platform_video_id)
-    )
-    
-    console.log(`\n--- Found ${videosOnlyInSupabase.length} videos only in Supabase (older videos) ---`)
-    
-    for (const oldVideo of videosOnlyInSupabase) {
-      console.log(`\n--- Processing older video: ${oldVideo.platform_video_id} ---`)
-      
-      try {
-        const insights = await tiktok.getVideoInsights(oldVideo.platform_video_id)
-        
-        if (insights && insights.view_count) {
-          console.log(`  - Found insights: views=${insights.view_count}, likes=${insights.like_count}`)
-          
-          await supabase
-            .from('video_metrics')
-            .insert({
-              video_id: oldVideo.id,
-              recorded_at: new Date().toISOString(),
-              views: insights.view_count || 0,
-              likes: insights.like_count || 0,
-              comments: insights.comment_count || 0,
-              shares: insights.share_count || 0,
-              saves: insights.download_count || 0,
-              reach: insights.reach || 0,
-              avg_watch_time: insights.avg_watch_time || 0,
-              avg_watch_percentage: 0,
-            })
-          
-          metricsInserted++
-          console.log(`  - Metrics inserted for older video!`)
-        } else {
-          console.log(`  - No insights available for this video`)
-        }
-      } catch (err) {
-        console.log(`  - Error getting insights:`, err)
+      if (!metricsError) {
+        metricsInserted++
+        console.log(`  - Metrics inserted (views: ${video.view_count || 0})`)
       }
     }
     
     console.log(`\n=== SYNC TIKTOK COMPLETE ===`)
-    console.log(`New videos added: ${newVideosAdded}`)
-    console.log(`Videos updated: ${updatedVideos}`)
-    console.log(`Metric records inserted: ${metricsInserted}`)
+    console.log(`Videos processed: ${videosUpdated}`)
+    console.log(`New metric records: ${metricsInserted}`)
+    console.log(`Note: ${16 - videosFromTikTok.length} older videos preserved with their existing metrics`)
     
     return NextResponse.json({ 
       success: true, 
-      newVideosAdded,
-      updatedVideos,
+      videosUpdated,
       metricsInserted,
-      totalVideosInSupabase: existingVideosList.length,
+      totalVideosInSupabase: 16,
       videosFromAPI: videosFromTikTok.length
     })
     
