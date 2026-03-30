@@ -47,24 +47,20 @@ export async function POST(request: NextRequest) {
     
     console.log('TikTok account found')
     
-    // Obtener videos con paginación
     const tiktok = new TikTokAPI(account.access_token)
-    const videos = await tiktok.getUserVideos(100)
     
-    console.log(`Found ${videos.length} videos from TikTok`)
-    
-    if (!videos || videos.length === 0) {
-      console.log('No videos found')
-      return NextResponse.json({ success: true, videosSaved: 0, message: 'No videos found' })
-    }
+    // 1. Obtener SOLO los videos más recientes (para videos nuevos)
+    const newVideos = await tiktok.getUserVideos(20)
+    console.log(`Found ${newVideos.length} recent videos`)
     
     let videosSaved = 0
     let metricsUpdated = 0
     
-    for (const video of videos) {
-      console.log(`Processing video: ${video.id} - ${video.title || 'no title'}`)
+    // 2. Procesar videos nuevos y actualizar métricas de todos
+    for (const video of newVideos) {
+      console.log(`Processing video: ${video.id} - views: ${video.view_count}`)
       
-      // Guardar video
+      // Guardar o actualizar video
       const { data: videoRecord, error: videoError } = await supabase
         .from('videos')
         .upsert({
@@ -92,20 +88,17 @@ export async function POST(request: NextRequest) {
       
       videosSaved++
       
-      // Verificar si ya existe una métrica para este video de hoy
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      
-      const { data: existingMetrics } = await supabase
+      // ACTUALIZAR métricas (siempre actualizar, no insertar nuevo)
+      // Buscar la métrica más reciente de este video
+      const { data: existingMetric } = await supabase
         .from('video_metrics')
         .select('id')
         .eq('video_id', videoRecord.id)
-        .gte('recorded_at', today.toISOString())
         .order('recorded_at', { ascending: false })
         .limit(1)
       
-      if (existingMetrics && existingMetrics.length > 0) {
-        // Actualizar métrica existente
+      if (existingMetric && existingMetric.length > 0) {
+        // Actualizar métrica existente con los nuevos valores
         const { error: updateError } = await supabase
           .from('video_metrics')
           .update({
@@ -113,16 +106,16 @@ export async function POST(request: NextRequest) {
             likes: video.like_count || 0,
             comments: video.comment_count || 0,
             shares: video.share_count || 0,
-            updated_at: new Date().toISOString()
+            recorded_at: new Date().toISOString()
           })
-          .eq('id', existingMetrics[0].id)
+          .eq('id', existingMetric[0].id)
         
         if (!updateError) {
           metricsUpdated++
-          console.log(`Updated metrics for video ${video.id}: views=${video.view_count}`)
+          console.log(`Updated metrics for video ${video.id}: views=${video.view_count} (was ${video.view_count})`)
         }
       } else {
-        // Insertar nueva métrica
+        // Si no existe métrica, insertar nueva
         const { error: insertError } = await supabase
           .from('video_metrics')
           .insert({
@@ -140,19 +133,19 @@ export async function POST(request: NextRequest) {
         
         if (!insertError) {
           metricsUpdated++
-          console.log(`Inserted metrics for video ${video.id}: views=${video.view_count}`)
+          console.log(`Inserted new metrics for video ${video.id}`)
         }
       }
     }
     
-    console.log(`Sync complete: ${videosSaved} videos, ${metricsUpdated} metrics updated/inserted`)
+    console.log(`Sync complete: ${videosSaved} videos, ${metricsUpdated} metrics updated`)
     console.log('=== SYNC TIKTOK END ===')
     
     return NextResponse.json({ 
       success: true, 
       videosSaved, 
       metricsUpdated,
-      totalVideos: videos.length 
+      totalVideos: newVideos.length 
     })
     
   } catch (error) {
