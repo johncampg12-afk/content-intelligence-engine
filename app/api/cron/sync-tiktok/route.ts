@@ -47,33 +47,40 @@ export async function POST(request: NextRequest) {
     console.log('TikTok account found')
     
     const tiktok = new TikTokAPI(account.access_token)
-    const videos = await tiktok.getUserVideos(20)
     
-    console.log(`Found ${videos.length} videos from TikTok`)
+    // 1. Obtener videos de TikTok (los más recientes)
+    const videosFromTikTok = await tiktok.getUserVideos(20)
+    console.log(`Found ${videosFromTikTok.length} videos from TikTok API`)
     
-    let videosProcessed = 0
+    // 2. Obtener TODOS los videos existentes en Supabase
+    const { data: existingVideos, error: existingError } = await supabase
+      .from('videos')
+      .select('id, platform_video_id')
+      .eq('user_id', userId)
+      .eq('platform', 'tiktok')
+    
+    if (existingError) {
+      console.error('Error fetching existing videos:', existingError)
+    }
+    
+    console.log(`Found ${existingVideos?.length || 0} existing videos in Supabase`)
+    
+    // Crear un Set con los IDs de TikTok que ya tenemos
+    const existingVideoIds = new Set(existingVideos?.map(v => v.platform_video_id) || [])
+    
     let metricsInserted = 0
+    let newVideosAdded = 0
+    let updatedVideos = 0
     
-    for (const video of videos) {
-      console.log(`\n--- Processing video: ${video.id} ---`)
-      console.log(`  - Title: ${video.title?.substring(0, 50)}...`)
-      console.log(`  - Views from list: ${video.view_count}, Likes: ${video.like_count}`)
-      
-      // Buscar o insertar video
-      const { data: existingVideo } = await supabase
-        .from('videos')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('platform', 'tiktok')
-        .eq('platform_video_id', video.id)
-        .single()
+    // 3. Procesar videos nuevos de TikTok
+    for (const video of videosFromTikTok) {
+      console.log(`\n--- Processing TikTok video: ${video.id} ---`)
       
       let videoId
+      const isNew = !existingVideoIds.has(video.id)
       
-      if (existingVideo) {
-        videoId = existingVideo.id
-        console.log(`  - Video exists (ID: ${videoId})`)
-      } else {
+      if (isNew) {
+        // Insertar video nuevo
         const { data: newVideo, error: insertError } = await supabase
           .from('videos')
           .insert({
@@ -96,12 +103,27 @@ export async function POST(request: NextRequest) {
         }
         
         videoId = newVideo.id
-        console.log(`  - Video inserted (ID: ${videoId})`)
+        newVideosAdded++
+        console.log(`  - New video inserted (ID: ${videoId})`)
+      } else {
+        // Video ya existe, actualizar título y thumbnail
+        const existing = existingVideos?.find(v => v.platform_video_id === video.id)
+        videoId = existing?.id
+        
+        await supabase
+          .from('videos')
+          .update({
+            title: video.title || '',
+            thumbnail_url: video.cover_image_url,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', videoId)
+        
+        updatedVideos++
+        console.log(`  - Video updated (ID: ${videoId})`)
       }
       
-      videosProcessed++
-      
-      // Insertar métricas usando los datos de la lista
+      // Insertar métricas actuales
       await supabase
         .from('video_metrics')
         .insert({
@@ -118,47 +140,63 @@ export async function POST(request: NextRequest) {
         })
       
       metricsInserted++
-      console.log(`  - Metrics inserted from list (views: ${video.view_count || 0})`)
+      console.log(`  - Metrics inserted (views: ${video.view_count || 0})`)
+    }
+    
+    // 4. Para videos antiguos que ya no están en la API de TikTok,
+    // intentar obtener métricas individuales
+    const videosOnlyInSupabase = existingVideos?.filter(
+      v => !videosFromTikTok.some(tv => tv.id === v.platform_video_id)
+    ) || []
+    
+    console.log(`\n--- Found ${videosOnlyInSupabase.length} videos only in Supabase (older videos) ---`)
+    
+    for (const oldVideo of videosOnlyInSupabase) {
+      console.log(`\n--- Processing older video: ${oldVideo.platform_video_id} ---`)
       
-      // Intentar obtener métricas detalladas adicionales
       try {
-        const insights = await tiktok.getVideoInsights(video.id)
+        const insights = await tiktok.getVideoInsights(oldVideo.platform_video_id)
         
         if (insights && insights.view_count) {
-          console.log(`  - Found additional insights: reach=${insights.reach}, watch_time=${insights.avg_watch_time}`)
+          console.log(`  - Found insights: views=${insights.view_count}, likes=${insights.like_count}`)
           
-          // Insertar métricas más detalladas como un segundo registro (o actualizar)
           await supabase
             .from('video_metrics')
             .insert({
-              video_id: videoId,
+              video_id: oldVideo.id,
               recorded_at: new Date().toISOString(),
-              views: insights.view_count || video.view_count || 0,
-              likes: insights.like_count || video.like_count || 0,
-              comments: insights.comment_count || video.comment_count || 0,
-              shares: insights.share_count || video.share_count || 0,
+              views: insights.view_count || 0,
+              likes: insights.like_count || 0,
+              comments: insights.comment_count || 0,
+              shares: insights.share_count || 0,
               saves: insights.download_count || 0,
               reach: insights.reach || 0,
               avg_watch_time: insights.avg_watch_time || 0,
-              avg_watch_percentage: (insights.avg_watch_time / (video.duration || 1)) * 100 || 0,
+              avg_watch_percentage: 0,
             })
           
           metricsInserted++
-          console.log(`  - Detailed metrics inserted!`)
+          console.log(`  - Metrics inserted for older video!`)
+        } else {
+          console.log(`  - No insights available for this video`)
         }
       } catch (err) {
-        console.log(`  - No detailed insights available for this video`)
+        console.log(`  - Error getting insights:`, err)
       }
     }
     
     console.log(`\n=== SYNC TIKTOK COMPLETE ===`)
-    console.log(`Videos processed: ${videosProcessed}`)
+    console.log(`New videos added: ${newVideosAdded}`)
+    console.log(`Videos updated: ${updatedVideos}`)
     console.log(`Metric records inserted: ${metricsInserted}`)
     
     return NextResponse.json({ 
       success: true, 
-      videosProcessed, 
-      metricsInserted
+      newVideosAdded,
+      updatedVideos,
+      metricsInserted,
+      totalVideosInSupabase: existingVideos?.length || 0,
+      videosFromAPI: videosFromTikTok.length
     })
     
   } catch (error) {
