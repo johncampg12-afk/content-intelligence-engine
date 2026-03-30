@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     
     console.log('TikTok account found')
     
-    // Obtener videos
+    // Obtener videos con paginación
     const tiktok = new TikTokAPI(account.access_token)
     const videos = await tiktok.getUserVideos(100)
     
@@ -59,12 +59,12 @@ export async function POST(request: NextRequest) {
     }
     
     let videosSaved = 0
-    let metricsSaved = 0
+    let metricsUpdated = 0
     
     for (const video of videos) {
       console.log(`Processing video: ${video.id} - ${video.title || 'no title'}`)
       
-      // Guardar video con los datos disponibles
+      // Guardar video
       const { data: videoRecord, error: videoError } = await supabase
         .from('videos')
         .upsert({
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
           platform: 'tiktok',
           platform_video_id: video.id,
           title: video.title || '',
-          description: '', // TikTok no devuelve description
+          description: '',
           thumbnail_url: video.cover_image_url,
           duration: video.duration || 0,
           published_at: video.create_time ? new Date(video.create_time * 1000).toISOString() : new Date().toISOString(),
@@ -91,39 +91,67 @@ export async function POST(request: NextRequest) {
       }
       
       videosSaved++
-      console.log(`Video saved: ${videoRecord.id}`)
       
-      // Guardar métricas
-      const { error: metricsError } = await supabase
+      // Verificar si ya existe una métrica para este video de hoy
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      
+      const { data: existingMetrics } = await supabase
         .from('video_metrics')
-        .insert({
-          video_id: videoRecord.id,
-          recorded_at: new Date().toISOString(),
-          views: video.view_count || 0,
-          likes: video.like_count || 0,
-          comments: video.comment_count || 0,
-          shares: video.share_count || 0,
-          saves: 0, // TikTok no devuelve download_count
-          reach: 0, // No disponible en video/list
-          avg_watch_time: 0, // No disponible en video/list
-          avg_watch_percentage: 0, // No disponible en video/list
-        })
+        .select('id')
+        .eq('video_id', videoRecord.id)
+        .gte('recorded_at', today.toISOString())
+        .order('recorded_at', { ascending: false })
+        .limit(1)
       
-      if (metricsError) {
-        console.error(`Error saving metrics for ${video.id}:`, metricsError)
+      if (existingMetrics && existingMetrics.length > 0) {
+        // Actualizar métrica existente
+        const { error: updateError } = await supabase
+          .from('video_metrics')
+          .update({
+            views: video.view_count || 0,
+            likes: video.like_count || 0,
+            comments: video.comment_count || 0,
+            shares: video.share_count || 0,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingMetrics[0].id)
+        
+        if (!updateError) {
+          metricsUpdated++
+          console.log(`Updated metrics for video ${video.id}: views=${video.view_count}`)
+        }
       } else {
-        metricsSaved++
-        console.log(`Metrics saved: views=${video.view_count}, likes=${video.like_count}`)
+        // Insertar nueva métrica
+        const { error: insertError } = await supabase
+          .from('video_metrics')
+          .insert({
+            video_id: videoRecord.id,
+            recorded_at: new Date().toISOString(),
+            views: video.view_count || 0,
+            likes: video.like_count || 0,
+            comments: video.comment_count || 0,
+            shares: video.share_count || 0,
+            saves: 0,
+            reach: 0,
+            avg_watch_time: 0,
+            avg_watch_percentage: 0,
+          })
+        
+        if (!insertError) {
+          metricsUpdated++
+          console.log(`Inserted metrics for video ${video.id}: views=${video.view_count}`)
+        }
       }
     }
     
-    console.log(`Sync complete: ${videosSaved} videos, ${metricsSaved} metrics`)
+    console.log(`Sync complete: ${videosSaved} videos, ${metricsUpdated} metrics updated/inserted`)
     console.log('=== SYNC TIKTOK END ===')
     
     return NextResponse.json({ 
       success: true, 
       videosSaved, 
-      metricsSaved,
+      metricsUpdated,
       totalVideos: videos.length 
     })
     
