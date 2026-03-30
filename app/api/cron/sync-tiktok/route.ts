@@ -47,112 +47,78 @@ export async function POST(request: NextRequest) {
     
     console.log('TikTok account found')
     
-    // Verificar si el token ha expirado
-    if (account.expires_at && new Date(account.expires_at) < new Date()) {
-      console.log('Token expired, refreshing...')
-      const tiktok = new TikTokAPI(account.access_token)
-      const refreshData = await tiktok.refreshToken(account.refresh_token)
-      
-      if (refreshData.access_token) {
-        await supabase
-          .from('connected_accounts')
-          .update({
-            access_token: refreshData.access_token,
-            refresh_token: refreshData.refresh_token,
-            expires_at: new Date(Date.now() + refreshData.expires_in * 1000).toISOString(),
-          })
-          .eq('id', account.id)
-        
-        account.access_token = refreshData.access_token
-      }
-    }
-    
-    // Obtener TODOS los videos usando paginación
+    // Obtener videos usando TikTokAPI
     const tiktok = new TikTokAPI(account.access_token)
-    const videos = await tiktok.getAllUserVideos()
+    const videos = await tiktok.getUserVideos(20)
     
-    console.log(`Found ${videos.length} videos total`)
+    console.log(`Found ${videos.length} videos from TikTok`)
     
     let videosSaved = 0
     let metricsSaved = 0
-    let errors = 0
     
     for (const video of videos) {
-      try {
-        console.log(`Processing video: ${video.id} - ${video.title || 'no title'}`)
-        
-        // Guardar video y obtener el ID generado
-        const { data: videoRecord, error: videoError } = await supabase
-          .from('videos')
-          .upsert({
-            user_id: userId,
-            platform: 'tiktok',
-            platform_video_id: video.id,
-            title: video.title || video.description?.substring(0, 200) || '',
-            description: video.description || '',
-            thumbnail_url: video.cover_image_url,
-            duration: video.duration,
-            published_at: new Date(video.create_time * 1000).toISOString(),
-            metadata: {
-              share_url: video.share_url,
-              video_url: video.video_url,
-              music_info: video.music_info
-            }
-          }, {
-            onConflict: 'user_id,platform,platform_video_id'
-          })
-          .select()
-          .single()
-        
-        if (videoError) {
-          console.error(`Error saving video ${video.id}:`, videoError)
-          errors++
-          continue
-        }
-        
-        videosSaved++
-        
-        // Guardar métricas - USAR videoRecord.id (el UUID de Supabase)
-        const { error: metricsError } = await supabase
-          .from('video_metrics')
-          .insert({
-            video_id: videoRecord.id,  // ← USAR EL ID DE SUPABASE, NO EL DE TIKTOK
-            recorded_at: new Date().toISOString(),
-            views: video.view_count || 0,
-            likes: video.like_count || 0,
-            comments: video.comment_count || 0,
-            shares: video.share_count || 0,
-            saves: video.download_count || 0,
-            reach: video.reach || 0,
-            avg_watch_time: video.avg_watch_time || 0,
-            avg_watch_percentage: video.avg_watch_percentage || 0,
-          })
-        
-        if (metricsError) {
-          console.error(`Error saving metrics for ${video.id}:`, metricsError)
-          errors++
-        } else {
-          metricsSaved++
-          console.log(`✓ Metrics saved for ${video.id}: views=${video.view_count}, likes=${video.like_count}`)
-        }
-        
-      } catch (err) {
-        console.error(`Error processing video ${video.id}:`, err)
-        errors++
+      console.log(`Processing video: ${video.id}`)
+      console.log(`  - Views: ${video.view_count}, Likes: ${video.like_count}, Comments: ${video.comment_count}, Shares: ${video.share_count}`)
+      
+      // 1. Guardar o actualizar el video
+      const { data: videoRecord, error: videoError } = await supabase
+        .from('videos')
+        .upsert({
+          user_id: userId,
+          platform: 'tiktok',
+          platform_video_id: video.id,
+          title: video.title || '',
+          description: '',
+          thumbnail_url: video.cover_image_url,
+          duration: 0,
+          published_at: new Date(video.create_time * 1000).toISOString(),
+          metadata: {}
+        }, {
+          onConflict: 'user_id,platform,platform_video_id'
+        })
+        .select()
+        .single()
+      
+      if (videoError) {
+        console.error(`Error saving video ${video.id}:`, videoError)
+        continue
+      }
+      
+      videosSaved++
+      console.log(`  - Video saved with ID: ${videoRecord.id}`)
+      
+      // 2. Guardar las métricas del video
+      const { error: metricsError } = await supabase
+        .from('video_metrics')
+        .insert({
+          video_id: videoRecord.id,
+          recorded_at: new Date().toISOString(),
+          views: video.view_count || 0,
+          likes: video.like_count || 0,
+          comments: video.comment_count || 0,
+          shares: video.share_count || 0,
+          saves: 0,
+          reach: 0,
+          avg_watch_time: 0,
+          avg_watch_percentage: 0,
+        })
+      
+      if (metricsError) {
+        console.error(`Error saving metrics for ${video.id}:`, metricsError)
+      } else {
+        metricsSaved++
+        console.log(`  - Metrics saved!`)
       }
     }
     
-    console.log(`=== SYNC TIKTOK COMPLETE ===`)
-    console.log(`Videos saved: ${videosSaved}/${videos.length}`)
-    console.log(`Metrics saved: ${metricsSaved}`)
-    console.log(`Errors: ${errors}`)
+    console.log(`Sync complete: ${videosSaved} videos, ${metricsSaved} metrics`)
+    console.log('=== SYNC TIKTOK END ===')
     
     return NextResponse.json({ 
       success: true, 
       videosSaved, 
       metricsSaved,
-      totalVideos: videos.length,
-      errors
+      totalVideos: videos.length 
     })
     
   } catch (error) {
