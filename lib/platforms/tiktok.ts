@@ -20,7 +20,7 @@ export class TikTokAPI {
     return data
   }
   
-  async getUserVideos(maxCount: number = 20, cursor: number = 0) {
+  async getUserVideos(maxCount: number = 50) {
     const fields = [
       'id',
       'title',
@@ -38,7 +38,10 @@ export class TikTokAPI {
       'music_info'
     ].join(',')
     
-    const url = `https://open.tiktokapis.com/v2/video/list/?fields=${fields}&max_count=${maxCount}&cursor=${cursor}`
+    const url = `https://open.tiktokapis.com/v2/video/list/?fields=${fields}&max_count=${maxCount}`
+    
+    console.log('Fetching videos from TikTok...')
+    console.log('URL:', url)
     
     const response = await fetch(url, {
       method: 'POST',
@@ -48,32 +51,37 @@ export class TikTokAPI {
       },
     })
     
-    const data = await response.json()
-    return data
-  }
-  
-  async getAllUserVideos() {
-    let allVideos: any[] = []
-    let cursor = 0
-    let hasMore = true
+    const responseText = await response.text()
+    console.log('Response status:', response.status)
+    console.log('Response:', responseText.substring(0, 1000))
     
-    while (hasMore) {
-      console.log(`Fetching videos with cursor: ${cursor}`)
-      const response = await this.getUserVideos(20, cursor)
-      
-      const videos = response.data?.videos || []
-      allVideos = [...allVideos, ...videos]
-      
-      hasMore = response.data?.has_more || false
-      cursor = response.data?.cursor || 0
-      
-      console.log(`Fetched ${videos.length} videos, total: ${allVideos.length}, hasMore: ${hasMore}`)
-      
-      // Evitar loop infinito por si acaso
-      if (videos.length === 0) break
+    if (!response.ok) {
+      throw new Error(`TikTok API error: ${response.status} - ${responseText}`)
     }
     
-    return allVideos
+    const data = JSON.parse(responseText)
+    
+    // Verificar diferentes estructuras de respuesta
+    let videos = []
+    if (data.data?.videos && Array.isArray(data.data.videos)) {
+      videos = data.data.videos
+    } else if (data.videos && Array.isArray(data.videos)) {
+      videos = data.videos
+    } else if (data.data && Array.isArray(data.data)) {
+      videos = data.data
+    } else {
+      console.error('Unexpected response structure:', JSON.stringify(data, null, 2))
+      throw new Error('Unexpected response structure from TikTok')
+    }
+    
+    console.log(`Found ${videos.length} videos`)
+    
+    // Log del primer video para debug
+    if (videos.length > 0) {
+      console.log('Sample video:', JSON.stringify(videos[0], null, 2))
+    }
+    
+    return videos
   }
   
   async refreshToken(refreshToken: string) {

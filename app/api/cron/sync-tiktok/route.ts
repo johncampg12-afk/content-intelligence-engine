@@ -47,32 +47,40 @@ export async function POST(request: NextRequest) {
     
     console.log('TikTok account found')
     
-    // Obtener videos usando TikTokAPI
+    // Obtener videos - max 100 por página
     const tiktok = new TikTokAPI(account.access_token)
-    const videos = await tiktok.getUserVideos(20)
+    const videos = await tiktok.getUserVideos(100)
     
     console.log(`Found ${videos.length} videos from TikTok`)
+    
+    if (!videos || videos.length === 0) {
+      console.log('No videos found')
+      return NextResponse.json({ success: true, videosSaved: 0, message: 'No videos found' })
+    }
     
     let videosSaved = 0
     let metricsSaved = 0
     
     for (const video of videos) {
-      console.log(`Processing video: ${video.id}`)
-      console.log(`  - Views: ${video.view_count}, Likes: ${video.like_count}, Comments: ${video.comment_count}, Shares: ${video.share_count}`)
+      console.log(`Processing video: ${video.id} - ${video.title || 'no title'}`)
       
-      // 1. Guardar o actualizar el video
+      // Guardar video y obtener el ID generado
       const { data: videoRecord, error: videoError } = await supabase
         .from('videos')
         .upsert({
           user_id: userId,
           platform: 'tiktok',
           platform_video_id: video.id,
-          title: video.title || '',
-          description: '',
+          title: video.title || video.description?.substring(0, 200) || '',
+          description: video.description || '',
           thumbnail_url: video.cover_image_url,
-          duration: 0,
-          published_at: new Date(video.create_time * 1000).toISOString(),
-          metadata: {}
+          duration: video.duration,
+          published_at: video.create_time ? new Date(video.create_time * 1000).toISOString() : new Date().toISOString(),
+          metadata: {
+            share_url: video.share_url,
+            video_url: video.video_url,
+            music_info: video.music_info
+          }
         }, {
           onConflict: 'user_id,platform,platform_video_id'
         })
@@ -85,9 +93,9 @@ export async function POST(request: NextRequest) {
       }
       
       videosSaved++
-      console.log(`  - Video saved with ID: ${videoRecord.id}`)
+      console.log(`Video saved: ${videoRecord.id}`)
       
-      // 2. Guardar las métricas del video
+      // Guardar métricas
       const { error: metricsError } = await supabase
         .from('video_metrics')
         .insert({
@@ -97,17 +105,17 @@ export async function POST(request: NextRequest) {
           likes: video.like_count || 0,
           comments: video.comment_count || 0,
           shares: video.share_count || 0,
-          saves: 0,
-          reach: 0,
-          avg_watch_time: 0,
-          avg_watch_percentage: 0,
+          saves: video.download_count || 0,
+          reach: video.reach || 0,
+          avg_watch_time: video.avg_watch_time || 0,
+          avg_watch_percentage: video.avg_watch_percentage || 0,
         })
       
       if (metricsError) {
         console.error(`Error saving metrics for ${video.id}:`, metricsError)
       } else {
         metricsSaved++
-        console.log(`  - Metrics saved!`)
+        console.log(`Metrics saved: views=${video.view_count}, likes=${video.like_count}`)
       }
     }
     
