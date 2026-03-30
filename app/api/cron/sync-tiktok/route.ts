@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     
     console.log('TikTok account found')
     
-    // Obtener videos - max 100 por página
+    // Obtener videos
     const tiktok = new TikTokAPI(account.access_token)
     const videos = await tiktok.getUserVideos(100)
     
@@ -64,22 +64,20 @@ export async function POST(request: NextRequest) {
     for (const video of videos) {
       console.log(`Processing video: ${video.id} - ${video.title || 'no title'}`)
       
-      // Guardar video y obtener el ID generado
+      // Guardar video con los datos disponibles
       const { data: videoRecord, error: videoError } = await supabase
         .from('videos')
         .upsert({
           user_id: userId,
           platform: 'tiktok',
           platform_video_id: video.id,
-          title: video.title || video.description?.substring(0, 200) || '',
-          description: video.description || '',
+          title: video.title || '',
+          description: '', // TikTok no devuelve description
           thumbnail_url: video.cover_image_url,
-          duration: video.duration,
+          duration: video.duration || 0,
           published_at: video.create_time ? new Date(video.create_time * 1000).toISOString() : new Date().toISOString(),
           metadata: {
-            share_url: video.share_url,
-            video_url: video.video_url,
-            music_info: video.music_info
+            share_url: video.share_url
           }
         }, {
           onConflict: 'user_id,platform,platform_video_id'
@@ -105,10 +103,10 @@ export async function POST(request: NextRequest) {
           likes: video.like_count || 0,
           comments: video.comment_count || 0,
           shares: video.share_count || 0,
-          saves: video.download_count || 0,
-          reach: video.reach || 0,
-          avg_watch_time: video.avg_watch_time || 0,
-          avg_watch_percentage: video.avg_watch_percentage || 0,
+          saves: 0, // TikTok no devuelve download_count
+          reach: 0, // No disponible en video/list
+          avg_watch_time: 0, // No disponible en video/list
+          avg_watch_percentage: 0, // No disponible en video/list
         })
       
       if (metricsError) {

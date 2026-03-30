@@ -20,22 +20,19 @@ export class TikTokAPI {
     return data
   }
   
-  async getUserVideos(maxCount: number = 50) {
+  async getUserVideos(maxCount: number = 100) {
+    // Campos válidos según TikTok
     const fields = [
       'id',
       'title',
-      'description',
       'create_time',
       'cover_image_url',
       'share_url',
-      'video_url',
       'duration',
       'view_count',
       'like_count',
       'comment_count',
-      'share_count',
-      'download_count',
-      'music_info'
+      'share_count'
     ].join(',')
     
     const url = `https://open.tiktokapis.com/v2/video/list/?fields=${fields}&max_count=${maxCount}`
@@ -61,14 +58,11 @@ export class TikTokAPI {
     
     const data = JSON.parse(responseText)
     
-    // Verificar diferentes estructuras de respuesta
     let videos = []
     if (data.data?.videos && Array.isArray(data.data.videos)) {
       videos = data.data.videos
     } else if (data.videos && Array.isArray(data.videos)) {
       videos = data.videos
-    } else if (data.data && Array.isArray(data.data)) {
-      videos = data.data
     } else {
       console.error('Unexpected response structure:', JSON.stringify(data, null, 2))
       throw new Error('Unexpected response structure from TikTok')
@@ -76,7 +70,6 @@ export class TikTokAPI {
     
     console.log(`Found ${videos.length} videos`)
     
-    // Log del primer video para debug
     if (videos.length > 0) {
       console.log('Sample video:', JSON.stringify(videos[0], null, 2))
     }
