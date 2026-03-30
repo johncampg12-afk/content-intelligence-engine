@@ -45,11 +45,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'TikTok account not found' }, { status: 404 })
     }
     
-    console.log('TikTok account found')
-    
     const tiktok = new TikTokAPI(account.access_token)
     
-    // 1. Obtener videos (solo metadata básica)
+    // Obtener videos recientes (con métricas incluidas)
     const videos = await tiktok.getUserVideos(20)
     console.log(`Found ${videos.length} recent videos`)
     
@@ -57,9 +55,7 @@ export async function POST(request: NextRequest) {
     let metricsUpdated = 0
     
     for (const video of videos) {
-      console.log(`Processing video: ${video.id}`)
-      
-      // Guardar video
+      // Guardar video (upsert)
       const { data: videoRecord, error: videoError } = await supabase
         .from('videos')
         .upsert({
@@ -87,61 +83,57 @@ export async function POST(request: NextRequest) {
       
       videosSaved++
       
-      // 2. Obtener insights actualizados para este video
-      const insights = await tiktok.getVideoInsights(video.id)
+      // Obtener la métrica más reciente de este video
+      const { data: existingMetric } = await supabase
+        .from('video_metrics')
+        .select('id')
+        .eq('video_id', videoRecord.id)
+        .order('recorded_at', { ascending: false })
+        .limit(1)
       
-      if (insights) {
-        // Buscar la métrica más reciente
-        const { data: existingMetric } = await supabase
+      const newViews = video.view_count || 0
+      const newLikes = video.like_count || 0
+      const newComments = video.comment_count || 0
+      const newShares = video.share_count || 0
+      
+      if (existingMetric && existingMetric.length > 0) {
+        // Actualizar la métrica existente con los nuevos valores
+        const { error: updateError } = await supabase
           .from('video_metrics')
-          .select('id')
-          .eq('video_id', videoRecord.id)
-          .order('recorded_at', { ascending: false })
-          .limit(1)
+          .update({
+            views: newViews,
+            likes: newLikes,
+            comments: newComments,
+            shares: newShares,
+            recorded_at: new Date().toISOString()
+          })
+          .eq('id', existingMetric[0].id)
         
-        if (existingMetric && existingMetric.length > 0) {
-          // Actualizar métrica existente
-          const { error: updateError } = await supabase
-            .from('video_metrics')
-            .update({
-              views: insights.view_count || 0,
-              likes: insights.like_count || 0,
-              comments: insights.comment_count || 0,
-              shares: insights.share_count || 0,
-              reach: insights.reach_count || 0,
-              avg_watch_time: insights.avg_watch_time_seconds || 0,
-              recorded_at: new Date().toISOString()
-            })
-            .eq('id', existingMetric[0].id)
-          
-          if (!updateError) {
-            metricsUpdated++
-            console.log(`Updated metrics for video ${video.id}: views=${insights.view_count}`)
-          }
-        } else {
-          // Insertar nueva métrica
-          const { error: insertError } = await supabase
-            .from('video_metrics')
-            .insert({
-              video_id: videoRecord.id,
-              recorded_at: new Date().toISOString(),
-              views: insights.view_count || 0,
-              likes: insights.like_count || 0,
-              comments: insights.comment_count || 0,
-              shares: insights.share_count || 0,
-              saves: 0,
-              reach: insights.reach_count || 0,
-              avg_watch_time: insights.avg_watch_time_seconds || 0,
-              avg_watch_percentage: 0,
-            })
-          
-          if (!insertError) {
-            metricsUpdated++
-            console.log(`Inserted metrics for video ${video.id}`)
-          }
+        if (!updateError) {
+          metricsUpdated++
+          console.log(`Updated metrics for video ${video.id}: views=${newViews}`)
         }
       } else {
-        console.log(`No insights available for video ${video.id}`)
+        // Insertar primera métrica
+        const { error: insertError } = await supabase
+          .from('video_metrics')
+          .insert({
+            video_id: videoRecord.id,
+            recorded_at: new Date().toISOString(),
+            views: newViews,
+            likes: newLikes,
+            comments: newComments,
+            shares: newShares,
+            saves: 0,
+            reach: 0,
+            avg_watch_time: 0,
+            avg_watch_percentage: 0,
+          })
+        
+        if (!insertError) {
+          metricsUpdated++
+          console.log(`Inserted initial metrics for video ${video.id}`)
+        }
       }
     }
     

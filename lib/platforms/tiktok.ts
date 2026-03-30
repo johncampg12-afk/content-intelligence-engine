@@ -21,51 +21,54 @@ export class TikTokAPI {
   }
   
   async getUserVideos(maxCount: number = 20) {
-    const allVideos: any[] = []
-    let cursor = 0
-    let hasMore = true
-    
-    const fields = [
-      'id',
-      'title',
-      'create_time',
-      'cover_image_url',
-      'share_url',
-      'duration'
-    ].join(',')
-    
-    while (hasMore && allVideos.length < maxCount) {
-      const remaining = maxCount - allVideos.length
-      const fetchCount = Math.min(20, remaining)
-      
-      const url = `https://open.tiktokapis.com/v2/video/list/?fields=${fields}&max_count=${fetchCount}&cursor=${cursor}`
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      })
-      
-      const responseText = await response.text()
-      
-      if (!response.ok) {
-        throw new Error(`TikTok API error: ${response.status} - ${responseText}`)
-      }
-      
-      const data = JSON.parse(responseText)
-      
-      if (data.data?.videos && Array.isArray(data.data.videos)) {
-        allVideos.push(...data.data.videos)
-        cursor = data.data.cursor || 0
-        hasMore = data.data.has_more || false
-      } else {
-        hasMore = false
-      }
+  const allVideos: any[] = []
+  let cursor = 0
+  let hasMore = true
+
+  // Campos válidos que incluyen métricas
+  const fields = [
+    'id',
+    'title',
+    'create_time',
+    'cover_image_url',
+    'share_url',
+    'duration',
+    'view_count',
+    'like_count',
+    'comment_count',
+    'share_count'
+  ].join(',')
+
+  while (hasMore && allVideos.length < maxCount) {
+    const remaining = maxCount - allVideos.length
+    const fetchCount = Math.min(20, remaining)
+
+    const url = `https://open.tiktokapis.com/v2/video/list/?fields=${fields}&max_count=${fetchCount}&cursor=${cursor}`
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    })
+
+    const responseText = await response.text()
+    if (!response.ok) {
+      throw new Error(`TikTok API error: ${response.status} - ${responseText}`)
     }
-    
-    return allVideos
+
+    const data = JSON.parse(responseText)
+    if (data.data?.videos && Array.isArray(data.data.videos)) {
+      allVideos.push(...data.data.videos)
+      cursor = data.data.cursor || 0
+      hasMore = data.data.has_more || false
+    } else {
+      hasMore = false
+    }
+  }
+
+  return allVideos
   }
   
   // Nuevo método para obtener insights detallados de un video
