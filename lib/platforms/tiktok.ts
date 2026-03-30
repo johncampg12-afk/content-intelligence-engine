@@ -20,75 +20,60 @@ export class TikTokAPI {
     return data
   }
   
-  async getUserVideos(maxCount: number = 50) {
-    const fields = 'id,title,create_time,cover_image_url,view_count,like_count,comment_count,share_count'
-    let allVideos: any[] = []
-    let cursor = 0
-    let hasMore = true
-    const seenIds = new Set<string>()
+  async getUserVideos(maxCount: number = 20, cursor: number = 0) {
+    const fields = [
+      'id',
+      'title',
+      'description',
+      'create_time',
+      'cover_image_url',
+      'share_url',
+      'video_url',
+      'duration',
+      'view_count',
+      'like_count',
+      'comment_count',
+      'share_count',
+      'download_count',
+      'music_info'
+    ].join(',')
     
-    while (hasMore && allVideos.length < maxCount) {
-      const url = `https://open.tiktokapis.com/v2/video/list/?fields=${fields}&max_count=20&cursor=${cursor}`
-      
-      console.log(`Fetching videos with cursor: ${cursor}`)
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      })
-      
-      const responseText = await response.text()
-      
-      if (!response.ok) {
-        throw new Error(`TikTok API error: ${response.status} - ${responseText}`)
-      }
-      
-      const data = JSON.parse(responseText)
-      const videos = data.data?.videos || []
-      
-      // Filtrar duplicados por ID
-      for (const video of videos) {
-        if (!seenIds.has(video.id)) {
-          seenIds.add(video.id)
-          allVideos.push(video)
-        }
-      }
-      
-      hasMore = data.data?.has_more || false
-      cursor = data.data?.cursor || 0
-      
-      console.log(`Fetched ${videos.length} videos, new unique: ${allVideos.length}, hasMore: ${hasMore}`)
-    }
-    
-    console.log(`Total unique videos found: ${allVideos.length}`)
-    return allVideos.slice(0, maxCount)
-  }
-  
-  async getVideoInsights(videoId: string) {
-    const fields = 'view_count,like_count,comment_count,share_count,download_count,reach,avg_watch_time'
-    const url = `https://open.tiktokapis.com/v2/video/insights/?video_id=${videoId}&fields=${fields}`
-    
-    console.log(`Fetching insights for video ${videoId}...`)
+    const url = `https://open.tiktokapis.com/v2/video/list/?fields=${fields}&max_count=${maxCount}&cursor=${cursor}`
     
     const response = await fetch(url, {
-      method: 'GET',
+      method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json',
       },
     })
     
-    const responseText = await response.text()
+    const data = await response.json()
+    return data
+  }
+  
+  async getAllUserVideos() {
+    let allVideos: any[] = []
+    let cursor = 0
+    let hasMore = true
     
-    if (!response.ok) {
-      console.log(`No insights for video ${videoId}: ${response.status}`)
-      return null
+    while (hasMore) {
+      console.log(`Fetching videos with cursor: ${cursor}`)
+      const response = await this.getUserVideos(20, cursor)
+      
+      const videos = response.data?.videos || []
+      allVideos = [...allVideos, ...videos]
+      
+      hasMore = response.data?.has_more || false
+      cursor = response.data?.cursor || 0
+      
+      console.log(`Fetched ${videos.length} videos, total: ${allVideos.length}, hasMore: ${hasMore}`)
+      
+      // Evitar loop infinito por si acaso
+      if (videos.length === 0) break
     }
     
-    const data = JSON.parse(responseText)
-    return data.data
+    return allVideos
   }
   
   async refreshToken(refreshToken: string) {

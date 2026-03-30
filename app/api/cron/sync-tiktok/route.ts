@@ -3,17 +3,6 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { TikTokAPI } from '@/lib/platforms/tiktok'
 
-interface TikTokVideo {
-  id: string
-  title: string
-  create_time: number
-  cover_image_url: string
-  view_count: number
-  like_count: number
-  comment_count: number
-  share_count: number
-}
-
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await request.json()
@@ -43,6 +32,7 @@ export async function POST(request: NextRequest) {
       }
     )
     
+    // Obtener la cuenta de TikTok
     const { data: account, error: accountError } = await supabase
       .from('connected_accounts')
       .select('*')
@@ -57,127 +47,112 @@ export async function POST(request: NextRequest) {
     
     console.log('TikTok account found')
     
-    const tiktok = new TikTokAPI(account.access_token)
-    
-    // Obtener todos los videos de TikTok con paginación
-    const videosFromTikTok: TikTokVideo[] = await tiktok.getUserVideos(50)
-    console.log(`Found ${videosFromTikTok.length} unique videos from TikTok API`)
-    
-    let metricsInserted = 0
-    let videosUpdated = 0
-    let videosInserted = 0
-    
-    // Obtener la fecha de hoy para comparar
-    const today = new Date().toISOString().split('T')[0]
-    
-    for (const video of videosFromTikTok) {
-      console.log(`\n--- Processing TikTok video: ${video.id} ---`)
-      console.log(`  - Title: ${video.title?.substring(0, 50)}...`)
-      console.log(`  - Views: ${video.view_count}, Likes: ${video.like_count}`)
+    // Verificar si el token ha expirado
+    if (account.expires_at && new Date(account.expires_at) < new Date()) {
+      console.log('Token expired, refreshing...')
+      const tiktok = new TikTokAPI(account.access_token)
+      const refreshData = await tiktok.refreshToken(account.refresh_token)
       
-      // Buscar si el video ya existe
-      const { data: existingVideo } = await supabase
-        .from('videos')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('platform', 'tiktok')
-        .eq('platform_video_id', video.id)
-        .single()
-      
-      let videoId: string
-      
-      if (existingVideo) {
-        // Actualizar video existente
-        videoId = existingVideo.id
+      if (refreshData.access_token) {
         await supabase
-          .from('videos')
+          .from('connected_accounts')
           .update({
-            title: video.title || '',
-            thumbnail_url: video.cover_image_url,
-            updated_at: new Date().toISOString(),
+            access_token: refreshData.access_token,
+            refresh_token: refreshData.refresh_token,
+            expires_at: new Date(Date.now() + refreshData.expires_in * 1000).toISOString(),
           })
-          .eq('id', videoId)
+          .eq('id', account.id)
         
-        videosUpdated++
-        console.log(`  - Video updated (ID: ${videoId})`)
-      } else {
-        // Insertar video nuevo
-        const { data: newVideo, error: insertError } = await supabase
+        account.access_token = refreshData.access_token
+      }
+    }
+    
+    // Obtener TODOS los videos usando paginación
+    const tiktok = new TikTokAPI(account.access_token)
+    const videos = await tiktok.getAllUserVideos()
+    
+    console.log(`Found ${videos.length} videos total`)
+    
+    let videosSaved = 0
+    let metricsSaved = 0
+    let errors = 0
+    
+    for (const video of videos) {
+      try {
+        console.log(`Processing video: ${video.id} - ${video.title || 'no title'}`)
+        
+        // Guardar video y obtener el ID generado
+        const { data: videoRecord, error: videoError } = await supabase
           .from('videos')
-          .insert({
+          .upsert({
             user_id: userId,
             platform: 'tiktok',
             platform_video_id: video.id,
-            title: video.title || '',
-            description: '',
+            title: video.title || video.description?.substring(0, 200) || '',
+            description: video.description || '',
             thumbnail_url: video.cover_image_url,
-            duration: 0,
+            duration: video.duration,
             published_at: new Date(video.create_time * 1000).toISOString(),
-            metadata: {}
+            metadata: {
+              share_url: video.share_url,
+              video_url: video.video_url,
+              music_info: video.music_info
+            }
+          }, {
+            onConflict: 'user_id,platform,platform_video_id'
           })
           .select()
           .single()
         
-        if (insertError) {
-          console.error(`  - Error inserting video:`, insertError)
+        if (videoError) {
+          console.error(`Error saving video ${video.id}:`, videoError)
+          errors++
           continue
         }
         
-        videoId = newVideo.id
-        videosInserted++
-        console.log(`  - New video inserted (ID: ${videoId})`)
-      }
-      
-      // Verificar si ya hay una métrica para este video hoy
-      const { data: existingMetric, error: metricCheckError } = await supabase
-        .from('video_metrics')
-        .select('id')
-        .eq('video_id', videoId)
-        .gte('recorded_at', `${today}T00:00:00`)
-        .lte('recorded_at', `${today}T23:59:59`)
-        .limit(1)
-      
-      if (existingMetric && existingMetric.length > 0) {
-        console.log(`  - Metrics already recorded today, skipping duplicate`)
-        continue
-      }
-      
-      // Insertar métricas actuales
-      const { error: metricsError } = await supabase
-        .from('video_metrics')
-        .insert({
-          video_id: videoId,
-          recorded_at: new Date().toISOString(),
-          views: video.view_count || 0,
-          likes: video.like_count || 0,
-          comments: video.comment_count || 0,
-          shares: video.share_count || 0,
-          saves: 0,
-          reach: 0,
-          avg_watch_time: 0,
-          avg_watch_percentage: 0,
-        })
-      
-      if (metricsError) {
-        console.error(`  - Error inserting metrics:`, metricsError)
-      } else {
-        metricsInserted++
-        console.log(`  - Metrics inserted (views: ${video.view_count || 0})`)
+        videosSaved++
+        
+        // Guardar métricas - USAR videoRecord.id (el UUID de Supabase)
+        const { error: metricsError } = await supabase
+          .from('video_metrics')
+          .insert({
+            video_id: videoRecord.id,  // ← USAR EL ID DE SUPABASE, NO EL DE TIKTOK
+            recorded_at: new Date().toISOString(),
+            views: video.view_count || 0,
+            likes: video.like_count || 0,
+            comments: video.comment_count || 0,
+            shares: video.share_count || 0,
+            saves: video.download_count || 0,
+            reach: video.reach || 0,
+            avg_watch_time: video.avg_watch_time || 0,
+            avg_watch_percentage: video.avg_watch_percentage || 0,
+          })
+        
+        if (metricsError) {
+          console.error(`Error saving metrics for ${video.id}:`, metricsError)
+          errors++
+        } else {
+          metricsSaved++
+          console.log(`✓ Metrics saved for ${video.id}: views=${video.view_count}, likes=${video.like_count}`)
+        }
+        
+      } catch (err) {
+        console.error(`Error processing video ${video.id}:`, err)
+        errors++
       }
     }
     
-    console.log(`\n=== SYNC TIKTOK COMPLETE ===`)
-    console.log(`New videos inserted: ${videosInserted}`)
-    console.log(`Videos updated: ${videosUpdated}`)
-    console.log(`New metric records inserted: ${metricsInserted}`)
-    console.log(`Total videos in database: ${videosInserted + videosUpdated}`)
+    console.log(`=== SYNC TIKTOK COMPLETE ===`)
+    console.log(`Videos saved: ${videosSaved}/${videos.length}`)
+    console.log(`Metrics saved: ${metricsSaved}`)
+    console.log(`Errors: ${errors}`)
     
     return NextResponse.json({ 
       success: true, 
-      videosInserted,
-      videosUpdated,
-      metricsInserted,
-      totalVideosFromAPI: videosFromTikTok.length
+      videosSaved, 
+      metricsSaved,
+      totalVideos: videos.length,
+      errors
     })
     
   } catch (error) {
