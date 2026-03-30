@@ -95,16 +95,23 @@ export async function POST(request: NextRequest) {
       const newComments = video.comment_count || 0
       const newShares = video.share_count || 0
       
+      console.log(`Processing video record ID: ${videoRecord.id} (TikTok ID: ${video.id})`)
+      
       // Buscar la métrica más reciente de este video
       const { data: existingMetric, error: metricFetchError } = await supabase
         .from('video_metrics')
-        .select('id')
+        .select('id, recorded_at, views, likes, comments, shares')
         .eq('video_id', videoRecord.id)
         .order('recorded_at', { ascending: false })
         .limit(1)
       
       if (metricFetchError) {
         console.error(`Error fetching existing metric for video ${video.id}:`, metricFetchError)
+      }
+      
+      console.log(`Existing metric found: ${existingMetric ? existingMetric.length : 0}`)
+      if (existingMetric && existingMetric.length > 0) {
+        console.log(`Current metric values: views=${existingMetric[0].views}, likes=${existingMetric[0].likes}, recorded_at=${existingMetric[0].recorded_at}`)
       }
       
       if (existingMetric && existingMetric.length > 0) {
@@ -122,12 +129,14 @@ export async function POST(request: NextRequest) {
           .select()
         
         if (updateError) {
-          console.error(`Update error for video ${video.id}:`, updateError)
+          console.error(`❌ Update error for video ${video.id}:`, updateError)
         } else {
           metricsUpdated++
           console.log(`✅ Updated metrics for video ${video.id}: views=${newViews}, likes=${newLikes}, comments=${newComments}, shares=${newShares}`)
           if (updatedMetric && updatedMetric.length > 0) {
-            console.log(`   DB row ID: ${updatedMetric[0].id}, recorded_at: ${updatedMetric[0].recorded_at}`)
+            console.log(`   DB row ID: ${updatedMetric[0].id}, new recorded_at: ${updatedMetric[0].recorded_at}`)
+          } else {
+            console.log(`   No data returned from update (possible no change?)`)
           }
         }
       } else {
@@ -149,7 +158,7 @@ export async function POST(request: NextRequest) {
           .select()
         
         if (insertError) {
-          console.error(`Insert error for video ${video.id}:`, insertError)
+          console.error(`❌ Insert error for video ${video.id}:`, insertError)
         } else {
           metricsUpdated++
           console.log(`➕ Inserted initial metrics for video ${video.id}: views=${newViews}`)
