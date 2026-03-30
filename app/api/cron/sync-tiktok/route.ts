@@ -3,6 +3,22 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { TikTokAPI } from '@/lib/platforms/tiktok'
 
+interface TikTokVideo {
+  id: string
+  title: string
+  create_time: number
+  cover_image_url: string
+  view_count: number
+  like_count: number
+  comment_count: number
+  share_count: number
+}
+
+interface SupabaseVideo {
+  id: string
+  platform_video_id: string
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await request.json()
@@ -49,7 +65,7 @@ export async function POST(request: NextRequest) {
     const tiktok = new TikTokAPI(account.access_token)
     
     // 1. Obtener videos de TikTok (los más recientes)
-    const videosFromTikTok = await tiktok.getUserVideos(20)
+    const videosFromTikTok: TikTokVideo[] = await tiktok.getUserVideos(20)
     console.log(`Found ${videosFromTikTok.length} videos from TikTok API`)
     
     // 2. Obtener TODOS los videos existentes en Supabase
@@ -63,10 +79,11 @@ export async function POST(request: NextRequest) {
       console.error('Error fetching existing videos:', existingError)
     }
     
-    console.log(`Found ${existingVideos?.length || 0} existing videos in Supabase`)
+    const existingVideosList: SupabaseVideo[] = existingVideos || []
+    console.log(`Found ${existingVideosList.length} existing videos in Supabase`)
     
     // Crear un Set con los IDs de TikTok que ya tenemos
-    const existingVideoIds = new Set(existingVideos?.map(v => v.platform_video_id) || [])
+    const existingVideoIds = new Set(existingVideosList.map(v => v.platform_video_id))
     
     let metricsInserted = 0
     let newVideosAdded = 0
@@ -76,7 +93,7 @@ export async function POST(request: NextRequest) {
     for (const video of videosFromTikTok) {
       console.log(`\n--- Processing TikTok video: ${video.id} ---`)
       
-      let videoId
+      let videoId: string
       const isNew = !existingVideoIds.has(video.id)
       
       if (isNew) {
@@ -107,8 +124,8 @@ export async function POST(request: NextRequest) {
         console.log(`  - New video inserted (ID: ${videoId})`)
       } else {
         // Video ya existe, actualizar título y thumbnail
-        const existing = existingVideos?.find(v => v.platform_video_id === video.id)
-        videoId = existing?.id
+        const existing = existingVideosList.find(v => v.platform_video_id === video.id)
+        videoId = existing!.id
         
         await supabase
           .from('videos')
@@ -145,9 +162,9 @@ export async function POST(request: NextRequest) {
     
     // 4. Para videos antiguos que ya no están en la API de TikTok,
     // intentar obtener métricas individuales
-    const videosOnlyInSupabase = existingVideos?.filter(
-      v => !videosFromTikTok.some(tv => tv.id === v.platform_video_id)
-    ) || []
+    const videosOnlyInSupabase = existingVideosList.filter(
+      (v: SupabaseVideo) => !videosFromTikTok.some((tv: TikTokVideo) => tv.id === v.platform_video_id)
+    )
     
     console.log(`\n--- Found ${videosOnlyInSupabase.length} videos only in Supabase (older videos) ---`)
     
@@ -195,7 +212,7 @@ export async function POST(request: NextRequest) {
       newVideosAdded,
       updatedVideos,
       metricsInserted,
-      totalVideosInSupabase: existingVideos?.length || 0,
+      totalVideosInSupabase: existingVideosList.length,
       videosFromAPI: videosFromTikTok.length
     })
     
