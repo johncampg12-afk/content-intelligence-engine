@@ -53,45 +53,70 @@ export async function POST(request: NextRequest) {
     
     console.log(`Found ${videos.length} videos from TikTok`)
     
-    let videosSaved = 0
-    let metricsSaved = 0
+    let videosUpdated = 0
+    let metricsInserted = 0
     
     for (const video of videos) {
       console.log(`Processing video: ${video.id}`)
       console.log(`  - Views: ${video.view_count}, Likes: ${video.like_count}, Comments: ${video.comment_count}, Shares: ${video.share_count}`)
       
-      // 1. Guardar o actualizar el video
-      const { data: videoRecord, error: videoError } = await supabase
+      // 1. Buscar si el video ya existe
+      const { data: existingVideo, error: findError } = await supabase
         .from('videos')
-        .upsert({
-          user_id: userId,
-          platform: 'tiktok',
-          platform_video_id: video.id,
-          title: video.title || '',
-          description: '',
-          thumbnail_url: video.cover_image_url,
-          duration: 0,
-          published_at: new Date(video.create_time * 1000).toISOString(),
-          metadata: {}
-        }, {
-          onConflict: 'user_id,platform,platform_video_id'
-        })
-        .select()
+        .select('id')
+        .eq('user_id', userId)
+        .eq('platform', 'tiktok')
+        .eq('platform_video_id', video.id)
         .single()
       
-      if (videoError) {
-        console.error(`Error saving video ${video.id}:`, videoError)
-        continue
+      let videoId
+      
+      if (existingVideo) {
+        // Video existe, solo actualizar título y thumbnail si cambiaron
+        videoId = existingVideo.id
+        await supabase
+          .from('videos')
+          .update({
+            title: video.title || '',
+            thumbnail_url: video.cover_image_url,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', videoId)
+        videosUpdated++
+        console.log(`  - Video updated (ID: ${videoId})`)
+      } else {
+        // Video nuevo, insertar
+        const { data: newVideo, error: insertError } = await supabase
+          .from('videos')
+          .insert({
+            user_id: userId,
+            platform: 'tiktok',
+            platform_video_id: video.id,
+            title: video.title || '',
+            description: '',
+            thumbnail_url: video.cover_image_url,
+            duration: 0,
+            published_at: new Date(video.create_time * 1000).toISOString(),
+            metadata: {}
+          })
+          .select()
+          .single()
+        
+        if (insertError) {
+          console.error(`Error inserting video ${video.id}:`, insertError)
+          continue
+        }
+        
+        videoId = newVideo.id
+        videosUpdated++
+        console.log(`  - Video inserted (ID: ${videoId})`)
       }
       
-      videosSaved++
-      console.log(`  - Video saved with ID: ${videoRecord.id}`)
-      
-      // 2. Guardar las métricas del video
+      // 2. Insertar métricas SIEMPRE (incluso si ya existen métricas anteriores)
       const { error: metricsError } = await supabase
         .from('video_metrics')
         .insert({
-          video_id: videoRecord.id,
+          video_id: videoId,
           recorded_at: new Date().toISOString(),
           views: video.view_count || 0,
           likes: video.like_count || 0,
@@ -106,18 +131,18 @@ export async function POST(request: NextRequest) {
       if (metricsError) {
         console.error(`Error saving metrics for ${video.id}:`, metricsError)
       } else {
-        metricsSaved++
-        console.log(`  - Metrics saved!`)
+        metricsInserted++
+        console.log(`  - New metrics inserted! (Total: ${metricsInserted})`)
       }
     }
     
-    console.log(`Sync complete: ${videosSaved} videos, ${metricsSaved} metrics`)
+    console.log(`Sync complete: ${videosUpdated} videos updated, ${metricsInserted} new metric records`)
     console.log('=== SYNC TIKTOK END ===')
     
     return NextResponse.json({ 
       success: true, 
-      videosSaved, 
-      metricsSaved,
+      videosUpdated, 
+      metricsInserted,
       totalVideos: videos.length 
     })
     
