@@ -46,57 +46,33 @@ export async function POST(request: NextRequest) {
     }
     
     console.log('TikTok account found')
-    console.log('Access token exists:', !!account.access_token)
-    console.log('Token scopes:', account.scope)
-    
-    // Verificar que el token tiene el scope video.list
-    if (!account.scope?.includes('video.list')) {
-      console.error('Token does NOT have video.list scope. Scopes:', account.scope)
-      return NextResponse.json({ 
-        error: 'Missing video.list scope. Please reconnect TikTok and authorize video permissions.' 
-      }, { status: 400 })
-    }
-    
-    // Verificar si el token ha expirado
-    if (account.expires_at && new Date(account.expires_at) < new Date()) {
-      console.log('Token expired! Need refresh')
-      return NextResponse.json({ error: 'Token expired, please reconnect' }, { status: 401 })
-    }
     
     // Obtener videos usando TikTokAPI
     const tiktok = new TikTokAPI(account.access_token)
     const videos = await tiktok.getUserVideos(20)
     
-    console.log(`Found ${videos.length} videos from TikTok API`)
-    
-    if (videos.length === 0) {
-      console.log('No videos found')
-      return NextResponse.json({ success: true, videosSaved: 0, message: 'No videos found' })
-    }
+    console.log(`Found ${videos.length} videos from TikTok`)
     
     let videosSaved = 0
     let metricsSaved = 0
     
     for (const video of videos) {
-      console.log(`Processing video: ${video.id} - ${video.title || 'no title'}`)
+      console.log(`Processing video: ${video.id}`)
+      console.log(`  - Views: ${video.view_count}, Likes: ${video.like_count}, Comments: ${video.comment_count}, Shares: ${video.share_count}`)
       
-      // Guardar video
+      // 1. Guardar o actualizar el video
       const { data: videoRecord, error: videoError } = await supabase
         .from('videos')
         .upsert({
           user_id: userId,
           platform: 'tiktok',
           platform_video_id: video.id,
-          title: video.title || video.description?.substring(0, 200) || '',
-          description: video.description || '',
+          title: video.title || '',
+          description: '',
           thumbnail_url: video.cover_image_url,
-          duration: video.duration,
+          duration: 0,
           published_at: new Date(video.create_time * 1000).toISOString(),
-          metadata: {
-            share_url: video.share_url,
-            video_url: video.video_url,
-            music_info: video.music_info
-          }
+          metadata: {}
         }, {
           onConflict: 'user_id,platform,platform_video_id'
         })
@@ -109,9 +85,9 @@ export async function POST(request: NextRequest) {
       }
       
       videosSaved++
-      console.log(`Video saved: ${videoRecord.id}`)
+      console.log(`  - Video saved with ID: ${videoRecord.id}`)
       
-      // Guardar métricas
+      // 2. Guardar las métricas del video
       const { error: metricsError } = await supabase
         .from('video_metrics')
         .insert({
@@ -121,13 +97,17 @@ export async function POST(request: NextRequest) {
           likes: video.like_count || 0,
           comments: video.comment_count || 0,
           shares: video.share_count || 0,
-          saves: video.download_count || 0,
+          saves: 0,
+          reach: 0,
+          avg_watch_time: 0,
+          avg_watch_percentage: 0,
         })
       
       if (metricsError) {
         console.error(`Error saving metrics for ${video.id}:`, metricsError)
       } else {
         metricsSaved++
+        console.log(`  - Metrics saved!`)
       }
     }
     
