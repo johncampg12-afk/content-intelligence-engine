@@ -10,7 +10,7 @@ export class DeepSeekAI {
     })
   }
   
-  async analyzePatterns(metricsData: any) {
+  async analyzePatterns(metricsData: any): Promise<string> {
     try {
       const completion = await this.client.chat.completions.create({
         model: 'deepseek-chat',
@@ -37,14 +37,19 @@ export class DeepSeekAI {
         max_tokens: 1000,
       })
       
-      return completion.choices[0].message.content
+      const content = completion.choices[0]?.message?.content
+      if (!content) {
+        throw new Error('No content returned from DeepSeek')
+      }
+      
+      return content
     } catch (error) {
       console.error('DeepSeek API error:', error)
       throw error
     }
   }
   
-  async generateRecommendations(videos: any[], patterns: any) {
+  async generateRecommendations(videos: any[], patterns: any): Promise<string> {
     try {
       const completion = await this.client.chat.completions.create({
         model: 'deepseek-chat',
@@ -75,7 +80,12 @@ export class DeepSeekAI {
         max_tokens: 1500,
       })
       
-      return completion.choices[0].message.content
+      const content = completion.choices[0]?.message?.content
+      if (!content) {
+        throw new Error('No content returned from DeepSeek')
+      }
+      
+      return content
     } catch (error) {
       console.error('DeepSeek API error:', error)
       throw error

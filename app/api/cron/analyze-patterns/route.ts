@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       .order('published_at', { ascending: false })
       .limit(50)
     
-    if (videosError || !videos) {
+    if (videosError || !videos || videos.length === 0) {
       console.error('Error fetching videos:', videosError)
       return NextResponse.json({ error: 'No videos found' }, { status: 404 })
     }
@@ -62,6 +62,10 @@ export async function POST(request: NextRequest) {
       published_at: v.published_at,
       metrics: v.video_metrics?.[0] || null
     })).filter(v => v.metrics)
+    
+    if (metricsData.length === 0) {
+      return NextResponse.json({ error: 'No metrics data available' }, { status: 404 })
+    }
     
     // Llamar a DeepSeek para análisis
     const deepseek = new DeepSeekAI()
@@ -81,6 +85,7 @@ export async function POST(request: NextRequest) {
     
     if (insertError) {
       console.error('Error saving analysis:', insertError)
+      return NextResponse.json({ error: 'Failed to save analysis' }, { status: 500 })
     }
     
     console.log('Analysis complete')
@@ -93,6 +98,7 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     console.error('Analyze patterns error:', error)
-    return NextResponse.json({ error: 'Analysis failed' }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json({ error: 'Analysis failed', details: errorMessage }, { status: 500 })
   }
 }
