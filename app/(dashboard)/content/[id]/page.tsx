@@ -50,8 +50,6 @@ export default function VideoDetailPage() {
       setLoading(true)
       setError(null)
       
-      console.log('Fetching video with ID:', videoId)
-      
       const { data: videoData, error: videoError } = await supabase
         .from('videos')
         .select(`
@@ -73,16 +71,13 @@ export default function VideoDetailPage() {
         .eq('id', videoId)
         .single()
       
-      console.log('Video data:', videoData)
-      console.log('Video error:', videoError)
-      
       if (videoError) {
         console.error('Error fetching video:', videoError)
         setError(videoError.message)
       } else {
-        // Ordenar métricas por fecha (más reciente primero para la tabla)
+        // Ordenar métricas por fecha
         const sortedMetrics = videoData.video_metrics?.sort((a: any, b: any) => 
-          new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime()
+          new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()
         ) || []
         
         setVideo({ ...videoData, video_metrics: sortedMetrics })
@@ -147,17 +142,13 @@ export default function VideoDetailPage() {
   }
 
   const PlatformIcon = getPlatformIcon(video.platform)
-  const latestMetrics = video.video_metrics && video.video_metrics.length > 0 ? video.video_metrics[0] : null
-  const firstMetrics = video.video_metrics && video.video_metrics.length > 0 ? video.video_metrics[video.video_metrics.length - 1] : null
+  const latestMetrics = video.video_metrics[video.video_metrics.length - 1]
+  const firstMetrics = video.video_metrics[0]
   
   // Calcular cambios
-  let viewsChange = null
-  if (latestMetrics && firstMetrics && firstMetrics.views > 0) {
-    viewsChange = ((latestMetrics.views - firstMetrics.views) / firstMetrics.views * 100).toFixed(1)
-  }
-
-  console.log('Latest metrics:', latestMetrics)
-  console.log('All metrics count:', video.video_metrics?.length)
+  const viewsChange = latestMetrics && firstMetrics 
+    ? ((latestMetrics.views - firstMetrics.views) / firstMetrics.views * 100).toFixed(1)
+    : null
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
@@ -208,7 +199,7 @@ export default function VideoDetailPage() {
           </h1>
           
           {video.description && (
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 mb-6 line-clamp-3">
               {video.description}
             </p>
           )}
@@ -228,7 +219,7 @@ export default function VideoDetailPage() {
       </div>
 
       {/* Key Metrics Cards */}
-      {latestMetrics ? (
+      {latestMetrics && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-xl shadow p-4 text-center">
             <p className="text-2xl font-bold text-gray-900">
@@ -258,106 +249,63 @@ export default function VideoDetailPage() {
           
           <div className="bg-white rounded-xl shadow p-4 text-center">
             <p className="text-2xl font-bold text-gray-900">
-              {latestMetrics.shares ? formatNumber(latestMetrics.shares) : '0'}
+              {formatNumber(latestMetrics.shares)}
             </p>
             <p className="text-sm text-gray-500">Shares</p>
           </div>
-          
-          <div className="bg-white rounded-xl shadow p-4 text-center">
-            <p className="text-2xl font-bold text-gray-900">
-              {latestMetrics.saves ? formatNumber(latestMetrics.saves) : '0'}
-            </p>
-            <p className="text-sm text-gray-500">Saves</p>
-          </div>
-          
-          <div className="bg-white rounded-xl shadow p-4 text-center">
-            <p className="text-2xl font-bold text-gray-900">
-              {latestMetrics.reach ? formatNumber(latestMetrics.reach) : formatNumber(latestMetrics.views)}
-            </p>
-            <p className="text-sm text-gray-500">Reach</p>
-          </div>
-          
-          <div className="bg-white rounded-xl shadow p-4 text-center">
-            <p className="text-2xl font-bold text-gray-900">
-              {latestMetrics.avg_watch_time ? latestMetrics.avg_watch_time.toFixed(1) : '—'}
-            </p>
-            <p className="text-sm text-gray-500">Avg Watch Time (s)</p>
-          </div>
-          
-          <div className="bg-white rounded-xl shadow p-4 text-center">
-            <p className="text-2xl font-bold text-gray-900">
-              {(latestMetrics.engagement_rate * 100).toFixed(1)}%
-            </p>
-            <p className="text-sm text-gray-500">Engagement Rate</p>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-700 mb-8">
-          <p>No metrics available yet. The system is collecting data for this video.</p>
         </div>
       )}
 
       {/* All Metrics Table */}
-      {video.video_metrics && video.video_metrics.length > 0 ? (
-        <div className="bg-white rounded-xl shadow overflow-hidden">
-          <div className="px-6 py-4 border-b">
-            <h2 className="text-lg font-semibold text-gray-900">Historical Metrics</h2>
-            <p className="text-sm text-gray-500">All recorded metrics over time</p>
-          </div>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Views</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Likes</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Comments</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Shares</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Saves</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Reach</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Engagement</th>
+      <div className="bg-white rounded-xl shadow overflow-hidden">
+        <div className="px-6 py-4 border-b">
+          <h2 className="text-lg font-semibold text-gray-900">Historical Metrics</h2>
+          <p className="text-sm text-gray-500">All recorded metrics over time</p>
+        </div>
+        
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Views</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Likes</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Comments</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Shares</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Reach</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Engagement</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {video.video_metrics.map((metric) => (
+                <tr key={metric.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    {new Date(metric.recorded_at).toLocaleString()}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900 text-right">
+                    {formatNumber(metric.views)}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900 text-right">
+                    {formatNumber(metric.likes)}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900 text-right">
+                    {formatNumber(metric.comments)}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900 text-right">
+                    {formatNumber(metric.shares)}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900 text-right">
+                    {formatNumber(metric.reach)}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900 text-right">
+                    {(metric.engagement_rate * 100).toFixed(1)}%
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {video.video_metrics.map((metric) => (
-                  <tr key={metric.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {new Date(metric.recorded_at).toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 text-right">
-                      {formatNumber(metric.views)}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 text-right">
-                      {formatNumber(metric.likes)}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 text-right">
-                      {formatNumber(metric.comments)}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 text-right">
-                      {formatNumber(metric.shares)}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 text-right">
-                      {formatNumber(metric.saves)}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 text-right">
-                      {formatNumber(metric.reach)}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 text-right">
-                      {(metric.engagement_rate * 100).toFixed(1)}%
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
-      ) : (
-        <div className="bg-gray-50 rounded-xl p-8 text-center">
-          <p className="text-gray-500">No historical metrics available yet.</p>
-          <p className="text-sm text-gray-400 mt-1">Check back later as data is collected.</p>
-        </div>
-      )}
+      </div>
     </div>
   )
 }
