@@ -17,67 +17,30 @@ export class DeepSeekAI {
         messages: [
           {
             role: 'system',
-            content: `Eres un experto en análisis de contenido para redes sociales. 
-            Analizas métricas de videos de TikTok y generas insights accionables.
-            Debes responder en español con un formato estructurado.`
+            content: `Eres un analista de datos senior especializado en social media para empresas. 
+            Debes proporcionar un análisis completo, detallado y profesional.
+            NO uses hashtags, ni emojis, ni formato markdown excesivo.
+            Usa un lenguaje corporativo y estructurado.
+            La respuesta debe ser completa y no cortarse.`
           },
           {
             role: 'user',
-            content: `Analiza estos datos de videos y dime:
-            1. Mejor hora para publicar
-            2. Mejor día de la semana
-            3. Duración óptima de video
+            content: `Analiza en profundidad estos datos de videos de TikTok y genera un informe ejecutivo con:
+
+            1. KPIs principales (vistas totales, engagement promedio, etc.)
+            2. Análisis de tendencias temporales (mejores días y horas)
+            3. Análisis de formato (duración óptima)
             4. Patrones de contenido exitoso
-            5. Recomendaciones para mejorar engagement
+            5. Recomendaciones estratégicas para aumentar engagement
+            6. Proyecciones y oportunidades de mejora
+
+            Datos: ${JSON.stringify(metricsData, null, 2)}
             
-            Datos: ${JSON.stringify(metricsData, null, 2)}`
+            IMPORTANTE: El análisis debe ser COMPLETO y EXTENSO. No cortes la respuesta.`
           }
         ],
         temperature: 0.7,
-        max_tokens: 1000,
-      })
-      
-      const content = completion.choices[0]?.message?.content
-      if (!content) {
-        throw new Error('No content returned from DeepSeek')
-      }
-      
-      return content
-    } catch (error) {
-      console.error('DeepSeek API error:', error)
-      throw error
-    }
-  }
-  
-  async generateRecommendations(videos: any[], patterns: any): Promise<string> {
-    try {
-      const completion = await this.client.chat.completions.create({
-        model: 'deepseek-chat',
-        messages: [
-          {
-            role: 'system',
-            content: `Eres un estratega de contenido para TikTok. 
-            Generas recomendaciones semanales personalizadas basadas en datos reales.
-            Debes incluir: tipo de contenido, horario, duración, sonido sugerido, hook, 
-            y predicción de rendimiento.`
-          },
-          {
-            role: 'user',
-            content: `Basado en estos videos y patrones, genera un plan de contenido para la próxima semana:
-            
-            Videos recientes: ${JSON.stringify(videos.slice(0, 10), null, 2)}
-            Patrones identificados: ${JSON.stringify(patterns, null, 2)}
-            
-            Formato de respuesta:
-            ### Recomendaciones para esta semana
-            - [Día] a las [hora]: [tipo de contenido] con [duración] segundos
-            - Hook sugerido: "..."
-            - Sonido: "..."
-            - Predicción: [estimación de views y engagement]`
-          }
-        ],
-        temperature: 0.8,
-        max_tokens: 1500,
+        max_tokens: 4000, // Aumentado a 4000 tokens
       })
       
       const content = completion.choices[0]?.message?.content

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Sparkles, TrendingUp, Clock, Calendar, BarChart3, Share2, MessageCircle, Heart, Eye } from 'lucide-react'
 
 interface AnalysisData {
   analysis: string
@@ -14,6 +13,7 @@ export default function RecommendationsPage() {
   const [loading, setLoading] = useState(true)
   const [analyzing, setAnalyzing] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState(true)
   
   const supabase = createClient()
 
@@ -78,56 +78,29 @@ export default function RecommendationsPage() {
     }
   }
 
-  // Función para parsear el análisis y convertirlo en secciones
-  const parseAnalysis = (text: string) => {
-    const sections: { title: string; content: string; icon?: any }[] = []
+  // Formatear el texto profesionalmente
+  const formatAnalysisText = (text: string) => {
+    // Reemplazar markdown básico
+    let formatted = text
+      .replace(/### /g, '<h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">')
+      .replace(/## /g, '<h2 class="text-xl font-bold text-gray-900 mt-8 mb-4 border-b pb-2">')
+      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em class="italic text-gray-600">$1</em>')
+      .replace(/\n/g, '<br/>')
     
-    // Detectar secciones por markdown
-    const lines = text.split('\n')
-    let currentSection: { title: string; content: string } | null = null
+    // Mejorar bullet points
+    formatted = formatted.replace(/• /g, '<span class="inline-block w-2 h-2 bg-blue-500 rounded-full mr-2"></span>')
+    formatted = formatted.replace(/^- /gm, '<span class="inline-block w-2 h-2 bg-blue-500 rounded-full mr-2"></span>')
+    formatted = formatted.replace(/^\d+\. /gm, (match) => `<span class="font-bold text-blue-600 mr-2">${match}</span>`)
     
-    for (const line of lines) {
-      if (line.startsWith('### ')) {
-        if (currentSection) {
-          sections.push({
-            title: currentSection.title,
-            content: currentSection.content.trim()
-          })
-        }
-        currentSection = {
-          title: line.replace('### ', '').trim(),
-          content: ''
-        }
-      } else if (currentSection && line.trim()) {
-        currentSection.content += line + '\n'
-      }
-    }
-    
-    if (currentSection) {
-      sections.push({
-        title: currentSection.title,
-        content: currentSection.content.trim()
-      })
-    }
-    
-    // Asignar íconos según el título
-    return sections.map(section => {
-      let icon = null
-      if (section.title.includes('Mejor Hora')) icon = Clock
-      if (section.title.includes('Mejor Día')) icon = Calendar
-      if (section.title.includes('Duración')) icon = BarChart3
-      if (section.title.includes('Patrones')) icon = TrendingUp
-      if (section.title.includes('Recomendaciones')) icon = Sparkles
-      if (section.title.includes('Resumen')) icon = Share2
-      return { ...section, icon }
-    })
+    return formatted
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-500">Cargando análisis...</p>
         </div>
       </div>
@@ -135,118 +108,78 @@ export default function RecommendationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-5xl mx-auto px-6 py-8">
         
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-purple-100 rounded-xl">
-                <Sparkles className="w-6 h-6 text-purple-600" />
-              </div>
-              <h1 className="text-3xl font-bold text-gray-900">AI Intelligence</h1>
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Content Intelligence Report</h1>
+              <p className="text-sm text-gray-500 mt-1">
+                Análisis estratégico basado en inteligencia artificial
+              </p>
             </div>
-            <p className="text-gray-500 ml-12">
-              Análisis inteligente de tu contenido basado en IA
-            </p>
+            <button
+              onClick={runAnalysis}
+              disabled={analyzing}
+              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              {analyzing ? 'Procesando...' : 'Generar nuevo análisis'}
+            </button>
           </div>
-          
-          <button
-            onClick={runAnalysis}
-            disabled={analyzing}
-            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-200 disabled:opacity-50 shadow-lg hover:shadow-xl"
-          >
-            {analyzing ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                <span>Analizando...</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                <span>Analizar ahora</span>
-              </>
-            )}
-          </button>
+          <div className="h-px bg-gray-200" />
         </div>
 
-        {/* Análisis */}
+        {/* Content */}
         {analysis ? (
           <div className="space-y-6">
-            {/* Fecha del análisis */}
-            <div className="flex justify-end">
-              <div className="text-sm text-gray-400 bg-white px-4 py-2 rounded-full shadow-sm">
-                Último análisis: {new Date(analysis.analyzed_at).toLocaleString('es-ES')}
-              </div>
+            {/* Metadata */}
+            <div className="text-right">
+              <span className="text-xs text-gray-400">
+                Última actualización: {new Date(analysis.analyzed_at).toLocaleString('es-ES')}
+              </span>
             </div>
             
-            {/* Secciones */}
-            {parseAnalysis(analysis.analysis).map((section, idx) => {
-              const Icon = section.icon
-              return (
-                <div key={idx} className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
-                  <div className="border-l-4 border-purple-500 p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      {Icon && (
-                        <div className="p-2 bg-purple-50 rounded-lg">
-                          <Icon className="w-5 h-5 text-purple-600" />
-                        </div>
-                      )}
-                      <h2 className="text-xl font-semibold text-gray-800">
-                        {section.title}
-                      </h2>
-                    </div>
-                    <div className="prose prose-gray max-w-none">
-                      {section.content.split('\n').map((paragraph, pIdx) => {
-                        // Detectar bullet points
-                        if (paragraph.trim().startsWith('*') || paragraph.trim().startsWith('-')) {
-                          return (
-                            <div key={pIdx} className="flex items-start gap-2 my-2 text-gray-600">
-                              <span className="text-purple-500 mt-1">•</span>
-                              <span>{paragraph.trim().substring(1)}</span>
-                            </div>
-                          )
-                        }
-                        // Detectar números
-                        const numMatch = paragraph.match(/^\d+\./)
-                        if (numMatch) {
-                          return (
-                            <div key={pIdx} className="flex items-start gap-3 my-3">
-                              <span className="font-bold text-purple-600 min-w-[24px]">{numMatch[0]}</span>
-                              <span className="text-gray-700">{paragraph.replace(/^\d+\./, '').trim()}</span>
-                            </div>
-                          )
-                        }
-                        if (paragraph.trim()) {
-                          return (
-                            <p key={pIdx} className="text-gray-600 leading-relaxed mb-3">
-                              {paragraph}
-                            </p>
-                          )
-                        }
-                        return null
-                      })}
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
+            {/* Analysis Card */}
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+              <div className="p-6">
+                <div 
+                  className={`prose prose-sm max-w-none ${expanded ? '' : 'max-h-96 overflow-hidden relative'}`}
+                  dangerouslySetInnerHTML={{ __html: formatAnalysisText(analysis.analysis) }}
+                />
+                
+                {!expanded && (
+                  <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white to-transparent" />
+                )}
+              </div>
+              
+              <div className="border-t border-gray-100 px-6 py-3 bg-gray-50">
+                <button
+                  onClick={() => setExpanded(!expanded)}
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  {expanded ? 'Ver menos' : 'Ver análisis completo'}
+                </button>
+              </div>
+            </div>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
-            <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="w-10 h-10 text-purple-600" />
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-12 text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
             </div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">No hay análisis disponible</h3>
-            <p className="text-gray-500 mb-6 max-w-md mx-auto">
-              Haz clic en "Analizar ahora" para que la IA analice tus videos y genere recomendaciones personalizadas
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No hay datos disponibles</h3>
+            <p className="text-gray-500 text-sm mb-6">
+              Genera un nuevo análisis para obtener insights estratégicos
             </p>
             <button
               onClick={runAnalysis}
-              className="px-6 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
             >
-              Comenzar análisis
+              Iniciar análisis
             </button>
           </div>
         )}
