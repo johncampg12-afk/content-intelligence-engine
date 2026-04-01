@@ -32,6 +32,55 @@ export async function POST(request: NextRequest) {
       }
     )
     
+    // Obtener perfil del usuario (tipo de cuenta, objetivo, audiencia)
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('account_type_id, content_goal, target_audience')
+      .eq('id', userId)
+      .single()
+    
+    // Obtener el nombre del tipo de cuenta
+    let accountTypeName = 'No especificado'
+    let nichePatterns = ''
+    
+    if (profile?.account_type_id) {
+      const { data: accountType } = await supabase
+        .from('account_types')
+        .select('name, icon')
+        .eq('id', profile.account_type_id)
+        .single()
+      
+      if (accountType) {
+        accountTypeName = `${accountType.icon} ${accountType.name}`
+      }
+      
+      // Obtener patrones de éxito para este tipo de cuenta
+      const { data: patterns } = await supabase
+        .from('success_patterns')
+        .select('*')
+        .eq('account_type_id', profile.account_type_id)
+      
+      if (patterns && patterns.length > 0) {
+        nichePatterns = `\n\n## PATRONES DE ÉXITO PARA TU NICHO (${accountTypeName})\n`
+        nichePatterns += `Estos patrones han sido extraídos de cuentas exitosas en tu mismo nicho:\n\n`
+        
+        for (const p of patterns) {
+          const patternTitle = p.pattern_type.replace(/_/g, ' ').toUpperCase()
+          nichePatterns += `### ${patternTitle}\n`
+          nichePatterns += `- Valor: ${JSON.stringify(p.pattern_value, null, 2)}\n`
+          nichePatterns += `- Confianza: ${(p.confidence_score * 100).toFixed(0)}%\n`
+          
+          if (p.sample_videos && p.sample_videos.length > 0) {
+            nichePatterns += `- Ejemplos reales:\n`
+            p.sample_videos.slice(0, 2).forEach((video: any) => {
+              nichePatterns += `  * "${video.title}" - ${video.views.toLocaleString()} vistas, ${video.shares} shares\n`
+            })
+          }
+          nichePatterns += `\n`
+        }
+      }
+    }
+    
     // Obtener videos con métricas
     const { data: videos, error: videosError } = await supabase
       .from('videos')
@@ -67,18 +116,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No metrics data available' }, { status: 404 })
     }
     
-    // Llamar a DeepSeek para análisis
+    // Llamar a DeepSeek para análisis con contexto de nicho
     const deepseek = new DeepSeekAI()
-    const analysis = await deepseek.analyzePatterns(metricsData)
+    const analysis = await deepseek.analyzePatternsWithNiche(metricsData, {
+      accountType: accountTypeName,
+      contentGoal: profile?.content_goal || 'No especificado',
+      targetAudience: profile?.target_audience || 'No especificada',
+      nichePatterns
+    })
     
-    // Guardar análisis en Supabase (como texto plano)
+    // Guardar análisis en Supabase
     const { error: insertError } = await supabase
       .from('content_patterns')
       .insert({
         user_id: userId,
         platform: 'tiktok',
         pattern_type: 'weekly_analysis',
-        pattern_value: { analysis }, // Guardamos el texto completo
+        pattern_value: { analysis },
         confidence_score: 0.85,
         analyzed_at: new Date().toISOString()
       })
