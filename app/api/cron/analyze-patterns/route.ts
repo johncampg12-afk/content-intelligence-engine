@@ -71,14 +71,14 @@ export async function POST(request: NextRequest) {
     const deepseek = new DeepSeekAI()
     const analysis = await deepseek.analyzePatterns(metricsData)
     
-    // Guardar análisis en Supabase
+    // Guardar análisis en Supabase (como texto plano)
     const { error: insertError } = await supabase
       .from('content_patterns')
       .insert({
         user_id: userId,
         platform: 'tiktok',
         pattern_type: 'weekly_analysis',
-        pattern_value: { analysis },
+        pattern_value: { analysis }, // Guardamos el texto completo
         confidence_score: 0.85,
         analyzed_at: new Date().toISOString()
       })
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({ 
       success: true, 
-      analysis: analysis.substring(0, 500) 
+      analysis 
     })
     
   } catch (error) {
