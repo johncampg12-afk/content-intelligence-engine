@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
 
   const cookieStore = await cookies()
   
-  // Crear un response que vamos a modificar
+  // Crear una respuesta que vamos a modificar
   let response = NextResponse.next()
   
   const supabase = createServerClient(
@@ -34,7 +34,8 @@ export async function POST(request: NextRequest) {
   
   if (userError || !user) {
     console.error('User error:', userError)
-    return NextResponse.redirect(new URL('/login', request.url))
+    // Redirigir al login si no hay sesión
+    return NextResponse.redirect(new URL('/login?error=session_expired', request.url))
   }
 
   const updateData: any = {}
@@ -48,18 +49,18 @@ export async function POST(request: NextRequest) {
     updateData.target_audience = targetAudience as string
   }
 
-  const { error } = await supabase
+  const { error: updateError } = await supabase
     .from('profiles')
     .update(updateData)
     .eq('id', user.id)
 
-  if (error) {
-    console.error('Error updating profile:', error)
-    response = NextResponse.redirect(new URL('/dashboard/settings?error=profile_update_failed', request.url))
-    return response
+  if (updateError) {
+    console.error('Error updating profile:', updateError)
+    return NextResponse.redirect(new URL('/dashboard/settings?error=profile_update_failed', request.url))
   }
 
-  // Redirigir con éxito
+  // Redirigir correctamente manteniendo las cookies
   response = NextResponse.redirect(new URL('/dashboard/settings?success=profile_updated', request.url))
+  
   return response
 }
