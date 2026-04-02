@@ -107,7 +107,7 @@ export default async function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form action="/api/profile/update" method="post" className="space-y-4">
+          <div className="space-y-4">
             {/* Tipo de cuenta */}
             <div>
               <label htmlFor="account_type" className="block text-sm font-medium text-gray-700 mb-1">
@@ -127,12 +127,9 @@ export default async function SettingsPage() {
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-gray-500 mt-1">
-                This helps us analyze patterns from successful accounts in your niche
-              </p>
             </div>
             
-            {/* Objetivo principal - Desplegable */}
+            {/* Objetivo principal */}
             <div>
               <label htmlFor="content_goal" className="block text-sm font-medium text-gray-700 mb-1">
                 Main Goal *
@@ -151,12 +148,9 @@ export default async function SettingsPage() {
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-gray-500 mt-1">
-                Your AI recommendations will be aligned with this objective
-              </p>
             </div>
             
-            {/* Audiencia objetivo - Desplegable */}
+            {/* Audiencia objetivo */}
             <div>
               <label htmlFor="target_audience" className="block text-sm font-medium text-gray-700 mb-1">
                 Target Audience *
@@ -175,15 +169,32 @@ export default async function SettingsPage() {
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-gray-500 mt-1">
-                Content tone and format will be optimized for this demographic
-              </p>
             </div>
             
-            <Button type="submit" className="w-full md:w-auto">
+            <Button 
+              type="button"
+              onClick={async () => {
+                const account_type_id = (document.getElementById('account_type') as HTMLSelectElement).value;
+                const content_goal = (document.getElementById('content_goal') as HTMLSelectElement).value;
+                const target_audience = (document.getElementById('target_audience') as HTMLSelectElement).value;
+                
+                const res = await fetch('/api/profile/update', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ account_type_id, content_goal, target_audience })
+                });
+                
+                if (res.ok) {
+                  window.location.href = '/dashboard/settings?success=profile_updated';
+                } else {
+                  alert('Error saving profile');
+                }
+              }}
+              className="w-full md:w-auto"
+            >
               Save Configuration
             </Button>
-          </form>
+          </div>
         </CardContent>
       </Card>
       
