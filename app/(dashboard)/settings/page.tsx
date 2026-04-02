@@ -51,6 +51,39 @@ export default async function SettingsPage() {
     .eq('id', user?.id)
     .single()
   
+  // Opciones predefinidas para objetivos
+  const contentGoals = [
+    { value: 'monetization', label: '💰 Monetization - Generate direct revenue from content' },
+    { value: 'brand_awareness', label: '📈 Brand Awareness - Increase brand visibility and recognition' },
+    { value: 'community_building', label: '👥 Community Building - Create an engaged follower community' },
+    { value: 'viral_growth', label: '🚀 Viral Growth - Rapid follower and view growth' },
+    { value: 'lead_generation', label: '🎯 Lead Generation - Drive traffic to external business' },
+    { value: 'education', label: '📚 Education - Teach and inform your audience' },
+    { value: 'entertainment', label: '🎬 Entertainment - Pure entertainment and humor' },
+    { value: 'influence', label: '⭐ Influence - Become a thought leader in your niche' }
+  ]
+  
+  // Opciones predefinidas para audiencia objetivo
+  const targetAudiences = [
+    { value: 'teenagers_13_17', label: '🧑 Teenagers (13-17 years old)' },
+    { value: 'young_adults_18_24', label: '👩‍🎓 Young Adults (18-24 years old)' },
+    { value: 'adults_25_34', label: '👨‍💼 Adults (25-34 years old)' },
+    { value: 'adults_35_44', label: '👔 Adults (35-44 years old)' },
+    { value: 'adults_45_plus', label: '👴 Adults (45+ years old)' },
+    { value: 'entrepreneurs', label: '💼 Entrepreneurs & Business Owners' },
+    { value: 'marketers', label: '📊 Marketers & Social Media Managers' },
+    { value: 'creators', label: '🎨 Content Creators & Influencers' },
+    { value: 'gamers', label: '🎮 Gamers & Gaming Community' },
+    { value: 'fitness', label: '💪 Fitness & Wellness Enthusiasts' },
+    { value: 'fashion', label: '👗 Fashion & Beauty Lovers' },
+    { value: 'tech', label: '💻 Tech & Gadget Enthusiasts' },
+    { value: 'foodies', label: '🍳 Foodies & Cooking Enthusiasts' },
+    { value: 'travelers', label: '✈️ Travel & Adventure Lovers' },
+    { value: 'parents', label: '👪 Parents & Families' },
+    { value: 'students', label: '📖 Students & Academia' },
+    { value: 'artists', label: '🎨 Artists & Creative Professionals' }
+  ]
+  
   return (
     <div className="space-y-6">
       <div>
@@ -70,7 +103,7 @@ export default async function SettingsPage() {
             Content Strategy Configuration
           </CardTitle>
           <CardDescription>
-            Define your content niche and goals to receive personalized AI recommendations
+            Define your content niche, goals, and target audience to receive personalized AI recommendations
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -78,12 +111,13 @@ export default async function SettingsPage() {
             {/* Tipo de cuenta */}
             <div>
               <label htmlFor="account_type" className="block text-sm font-medium text-gray-700 mb-1">
-                Content Niche
+                Content Niche *
               </label>
               <select
                 id="account_type"
                 name="account_type_id"
                 defaultValue={profile?.account_type_id || ''}
+                required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">Select your content niche</option>
@@ -98,34 +132,52 @@ export default async function SettingsPage() {
               </p>
             </div>
             
-            {/* Objetivo principal */}
+            {/* Objetivo principal - Desplegable */}
             <div>
               <label htmlFor="content_goal" className="block text-sm font-medium text-gray-700 mb-1">
-                Main Goal
+                Main Goal *
               </label>
-              <input
-                type="text"
+              <select
                 id="content_goal"
                 name="content_goal"
                 defaultValue={profile?.content_goal || ''}
-                placeholder="e.g., Monetization, Brand awareness, Community building, Viral growth"
+                required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+              >
+                <option value="">Select your main goal</option>
+                {contentGoals.map((goal) => (
+                  <option key={goal.value} value={goal.value}>
+                    {goal.label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Your AI recommendations will be aligned with this objective
+              </p>
             </div>
             
-            {/* Audiencia objetivo */}
+            {/* Audiencia objetivo - Desplegable */}
             <div>
               <label htmlFor="target_audience" className="block text-sm font-medium text-gray-700 mb-1">
-                Target Audience
+                Target Audience *
               </label>
-              <input
-                type="text"
+              <select
                 id="target_audience"
                 name="target_audience"
                 defaultValue={profile?.target_audience || ''}
-                placeholder="e.g., 18-25 tech enthusiasts, Small business owners, Fitness beginners"
+                required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+              >
+                <option value="">Select your target audience</option>
+                {targetAudiences.map((audience) => (
+                  <option key={audience.value} value={audience.value}>
+                    {audience.label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Content tone and format will be optimized for this demographic
+              </p>
             </div>
             
             <Button type="submit" className="w-full md:w-auto">
