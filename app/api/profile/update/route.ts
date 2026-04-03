@@ -8,6 +8,9 @@ export async function POST(request: NextRequest) {
   const contentGoal = formData.get('content_goal')
   const targetAudience = formData.get('target_audience')
 
+  // Crear una respuesta que vamos a modificar
+  let response = NextResponse.next()
+  
   const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -54,24 +57,11 @@ export async function POST(request: NextRequest) {
 
   if (error) {
     console.error('Error updating profile:', error)
-    return NextResponse.redirect(new URL('/dashboard/settings?error=profile_update_failed', request.url))
+    response = NextResponse.redirect(new URL('/dashboard/settings?error=profile_update_failed', request.url))
+    return response
   }
 
-  // Crear la respuesta con redirección
-  const response = NextResponse.redirect(new URL('/dashboard/settings?success=profile_updated', request.url))
-  
-  // Copiar todas las cookies de la solicitud original a la respuesta
-  const allCookies = request.cookies.getAll()
-  for (const cookie of allCookies) {
-    response.cookies.set(cookie.name, cookie.value, {
-      path: cookie.path,
-      maxAge: cookie.maxAge,
-      expires: cookie.expires,
-      httpOnly: cookie.httpOnly,
-      secure: cookie.secure,
-      sameSite: cookie.sameSite as any,
-    })
-  }
-  
+  // Redirigir con éxito - las cookies se mantienen automáticamente
+  response = NextResponse.redirect(new URL('/dashboard/settings?success=profile_updated', request.url))
   return response
 }
