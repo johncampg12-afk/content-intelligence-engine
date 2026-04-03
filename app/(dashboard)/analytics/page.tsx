@@ -500,7 +500,10 @@ export default function AnalyticsPage() {
                   outerRadius={100}
                   paddingAngle={2}
                   dataKey="value"
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) => {
+                    if (percent === undefined) return name
+                    return `${name}: ${(percent * 100).toFixed(0)}%`
+                  }}
                 >
                   {engagementDistribution.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
