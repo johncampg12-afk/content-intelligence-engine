@@ -1,57 +1,27 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+'use client'
+
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import Link from 'next/link'
 
-export default async function SettingsPage() {
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          } catch {
-            // Handle error
-          }
-        },
-      },
-    }
-  )
+export default function SettingsPage() {
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [accountTypes, setAccountTypes] = useState<any[]>([])
+  const [profile, setProfile] = useState<any>(null)
+  const [connectedAccounts, setConnectedAccounts] = useState<any[]>([])
+  const [formData, setFormData] = useState({
+    account_type_id: '',
+    content_goal: '',
+    target_audience: ''
+  })
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  // Obtener cuentas conectadas
-  const { data: connectedAccounts } = await supabase
-    .from('connected_accounts')
-    .select('*')
-    .eq('user_id', user?.id)
-  
-  const hasTikTok = connectedAccounts?.some(a => a.platform === 'tiktok')
-  const hasInstagram = connectedAccounts?.some(a => a.platform === 'instagram')
-  const hasYouTube = connectedAccounts?.some(a => a.platform === 'youtube')
-  
-  // Obtener tipos de cuenta y perfil del usuario
-  const { data: accountTypes } = await supabase
-    .from('account_types')
-    .select('*')
-    .order('name')
-  
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('account_type_id, content_goal, target_audience')
-    .eq('id', user?.id)
-    .single()
-  
-  // Opciones predefinidas para objetivos
+  const supabase = createClient()
+
+  // Opciones predefinidas
   const contentGoals = [
     { value: 'monetization', label: '💰 Monetization - Generate direct revenue from content' },
     { value: 'brand_awareness', label: '📈 Brand Awareness - Increase brand visibility and recognition' },
@@ -62,8 +32,7 @@ export default async function SettingsPage() {
     { value: 'entertainment', label: '🎬 Entertainment - Pure entertainment and humor' },
     { value: 'influence', label: '⭐ Influence - Become a thought leader in your niche' }
   ]
-  
-  // Opciones predefinidas para audiencia objetivo
+
   const targetAudiences = [
     { value: 'teenagers_13_17', label: '🧑 Teenagers (13-17 years old)' },
     { value: 'young_adults_18_24', label: '👩‍🎓 Young Adults (18-24 years old)' },
@@ -83,7 +52,97 @@ export default async function SettingsPage() {
     { value: 'students', label: '📖 Students & Academia' },
     { value: 'artists', label: '🎨 Artists & Creative Professionals' }
   ]
-  
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const loadData = async () => {
+    try {
+      setLoading(true)
+      
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      
+      setUserId(user.id)
+      
+      // Obtener tipos de cuenta
+      const { data: types } = await supabase
+        .from('account_types')
+        .select('*')
+        .order('name')
+      
+      setAccountTypes(types || [])
+      
+      // Obtener perfil
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('account_type_id, content_goal, target_audience')
+        .eq('id', user.id)
+        .single()
+      
+      setProfile(profileData)
+      setFormData({
+        account_type_id: profileData?.account_type_id?.toString() || '',
+        content_goal: profileData?.content_goal || '',
+        target_audience: profileData?.target_audience || ''
+      })
+      
+      // Obtener cuentas conectadas
+      const { data: accounts } = await supabase
+        .from('connected_accounts')
+        .select('*')
+        .eq('user_id', user.id)
+      
+      setConnectedAccounts(accounts || [])
+      
+    } catch (error) {
+      console.error('Error loading data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaving(true)
+    setMessage(null)
+    
+    try {
+      const response = await fetch('/api/profile/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setMessage({ type: 'success', text: 'Profile updated successfully!' })
+        // Recargar datos
+        await loadData()
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Failed to update profile' })
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Network error. Please try again.' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const hasTikTok = connectedAccounts?.some(a => a.platform === 'tiktok')
+  const hasInstagram = connectedAccounts?.some(a => a.platform === 'instagram')
+  const hasYouTube = connectedAccounts?.some(a => a.platform === 'youtube')
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -92,6 +151,13 @@ export default async function SettingsPage() {
           Configure your account and connect social media platforms
         </p>
       </div>
+      
+      {/* Mensaje de éxito/error */}
+      {message && (
+        <div className={`p-4 rounded-md ${message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
+          {message.text}
+        </div>
+      )}
       
       {/* Sección de Nicho y Configuración */}
       <Card>
@@ -107,7 +173,7 @@ export default async function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form action="/api/profile/update" method="post" className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {/* Tipo de cuenta */}
             <div>
               <label htmlFor="account_type" className="block text-sm font-medium text-gray-700 mb-1">
@@ -115,8 +181,8 @@ export default async function SettingsPage() {
               </label>
               <select
                 id="account_type"
-                name="account_type_id"
-                defaultValue={profile?.account_type_id || ''}
+                value={formData.account_type_id}
+                onChange={(e) => setFormData({ ...formData, account_type_id: e.target.value })}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
@@ -127,20 +193,17 @@ export default async function SettingsPage() {
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-gray-500 mt-1">
-                This helps us analyze patterns from successful accounts in your niche
-              </p>
             </div>
             
-            {/* Objetivo principal - Desplegable */}
+            {/* Objetivo principal */}
             <div>
               <label htmlFor="content_goal" className="block text-sm font-medium text-gray-700 mb-1">
                 Main Goal *
               </label>
               <select
                 id="content_goal"
-                name="content_goal"
-                defaultValue={profile?.content_goal || ''}
+                value={formData.content_goal}
+                onChange={(e) => setFormData({ ...formData, content_goal: e.target.value })}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
@@ -151,20 +214,17 @@ export default async function SettingsPage() {
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-gray-500 mt-1">
-                Your AI recommendations will be aligned with this objective
-              </p>
             </div>
             
-            {/* Audiencia objetivo - Desplegable */}
+            {/* Audiencia objetivo */}
             <div>
               <label htmlFor="target_audience" className="block text-sm font-medium text-gray-700 mb-1">
                 Target Audience *
               </label>
               <select
                 id="target_audience"
-                name="target_audience"
-                defaultValue={profile?.target_audience || ''}
+                value={formData.target_audience}
+                onChange={(e) => setFormData({ ...formData, target_audience: e.target.value })}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
@@ -175,13 +235,10 @@ export default async function SettingsPage() {
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-gray-500 mt-1">
-                Content tone and format will be optimized for this demographic
-              </p>
             </div>
             
-            <Button type="submit" className="w-full md:w-auto">
-              Save Configuration
+            <Button type="submit" disabled={saving} className="w-full md:w-auto">
+              {saving ? 'Saving...' : 'Save Configuration'}
             </Button>
           </form>
         </CardContent>
@@ -224,18 +281,13 @@ export default async function SettingsPage() {
                 </div>
               ) : (
                 <a href="/api/oauth/tiktok">
-                  <Button className="w-full">
-                    <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
-                    </svg>
-                    Connect TikTok
-                  </Button>
+                  <Button className="w-full">Connect TikTok</Button>
                 </a>
               )}
             </CardContent>
           </Card>
           
-          {/* Instagram Card (placeholder) */}
+          {/* Instagram Card */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -245,18 +297,14 @@ export default async function SettingsPage() {
                 </svg>
                 Instagram
               </CardTitle>
-              <CardDescription>
-                Coming soon - Connect Instagram to analyze Reels and posts
-              </CardDescription>
+              <CardDescription>Coming soon - Connect Instagram to analyze Reels and posts</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button disabled className="w-full opacity-50">
-                Coming Soon
-              </Button>
+              <Button disabled className="w-full opacity-50">Coming Soon</Button>
             </CardContent>
           </Card>
           
-          {/* YouTube Card (placeholder) */}
+          {/* YouTube Card */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -265,14 +313,10 @@ export default async function SettingsPage() {
                 </svg>
                 YouTube
               </CardTitle>
-              <CardDescription>
-                Coming soon - Connect YouTube to analyze video performance
-              </CardDescription>
+              <CardDescription>Coming soon - Connect YouTube to analyze video performance</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button disabled className="w-full opacity-50">
-                Coming Soon
-              </Button>
+              <Button disabled className="w-full opacity-50">Coming Soon</Button>
             </CardContent>
           </Card>
         </div>
