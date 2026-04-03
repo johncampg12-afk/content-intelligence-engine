@@ -8,9 +8,6 @@ export async function POST(request: NextRequest) {
   const contentGoal = formData.get('content_goal')
   const targetAudience = formData.get('target_audience')
 
-  // Crear una respuesta que vamos a modificar
-  let response = NextResponse.next()
-  
   const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -57,11 +54,10 @@ export async function POST(request: NextRequest) {
 
   if (error) {
     console.error('Error updating profile:', error)
-    response = NextResponse.redirect(new URL('/dashboard/settings?error=profile_update_failed', request.url))
-    return response
+    return NextResponse.redirect(new URL('/dashboard/settings?error=profile_update_failed', request.url))
   }
 
-  // Redirigir con éxito - las cookies se mantienen automáticamente
-  response = NextResponse.redirect(new URL('/dashboard/settings?success=profile_updated', request.url))
-  return response
+  // Redirigir a la página de éxito que restaurará la sesión
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://content-intelligence-engine-eta.vercel.app'
+  return NextResponse.redirect(new URL('/auth/profile-success?success=profile_updated', baseUrl))
 }
