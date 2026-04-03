@@ -9,10 +9,6 @@ export async function POST(request: NextRequest) {
   const targetAudience = formData.get('target_audience')
 
   const cookieStore = await cookies()
-  
-  // Crear una respuesta que vamos a modificar
-  let response = NextResponse.next()
-  
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -22,20 +18,22 @@ export async function POST(request: NextRequest) {
           return cookieStore.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options)
-          })
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // Handle error
+          }
         },
       },
     }
   )
 
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
   
-  if (userError || !user) {
-    console.error('User error:', userError)
-    // Redirigir al login si no hay sesión
-    return NextResponse.redirect(new URL('/login?error=session_expired', request.url))
+  if (!user) {
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
   const updateData: any = {}
@@ -49,18 +47,31 @@ export async function POST(request: NextRequest) {
     updateData.target_audience = targetAudience as string
   }
 
-  const { error: updateError } = await supabase
+  const { error } = await supabase
     .from('profiles')
     .update(updateData)
     .eq('id', user.id)
 
-  if (updateError) {
-    console.error('Error updating profile:', updateError)
+  if (error) {
+    console.error('Error updating profile:', error)
     return NextResponse.redirect(new URL('/dashboard/settings?error=profile_update_failed', request.url))
   }
 
-  // Redirigir correctamente manteniendo las cookies
-  response = NextResponse.redirect(new URL('/dashboard/settings?success=profile_updated', request.url))
+  // Crear la respuesta con redirección
+  const response = NextResponse.redirect(new URL('/dashboard/settings?success=profile_updated', request.url))
+  
+  // Copiar todas las cookies de la solicitud original a la respuesta
+  const allCookies = request.cookies.getAll()
+  for (const cookie of allCookies) {
+    response.cookies.set(cookie.name, cookie.value, {
+      path: cookie.path,
+      maxAge: cookie.maxAge,
+      expires: cookie.expires,
+      httpOnly: cookie.httpOnly,
+      secure: cookie.secure,
+      sameSite: cookie.sameSite as any,
+    })
+  }
   
   return response
 }
