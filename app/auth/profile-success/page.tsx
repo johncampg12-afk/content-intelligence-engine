@@ -1,23 +1,21 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-export default function ProfileSuccessPage() {
+function ProfileSuccessContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
-  const [error, setError] = useState<string | null>(null)
-  const [attempts, setAttempts] = useState(0)
+  const [attempts, setAttempts] = React.useState(0)
+  const [error, setError] = React.useState<string | null>(null)
 
-  useEffect(() => {
+  React.useEffect(() => {
     const checkSession = async () => {
       console.log('Checking session, attempt:', attempts + 1)
       
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-      
-      console.log('Session exists:', !!session)
+      const { data: { session } } = await supabase.auth.getSession()
       
       if (session) {
         console.log('Session found, redirecting to settings')
@@ -28,7 +26,7 @@ export default function ProfileSuccessPage() {
       
       if (attempts < 3) {
         console.log('No session, attempting refresh...')
-        const { data: { session: refreshed }, error: refreshError } = await supabase.auth.refreshSession()
+        const { data: { session: refreshed } } = await supabase.auth.refreshSession()
         
         if (refreshed) {
           console.log('Session refreshed, redirecting')
@@ -75,3 +73,20 @@ export default function ProfileSuccessPage() {
     </div>
   )
 }
+
+export default function ProfileSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <ProfileSuccessContent />
+    </Suspense>
+  )
+}
+
+export const dynamic = 'force-dynamic'
