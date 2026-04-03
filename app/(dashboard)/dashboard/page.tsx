@@ -16,20 +16,15 @@ import {
   Sparkles
 } from 'lucide-react'
 import {
-  LineChart,
-  Line,
   AreaChart,
   Area,
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
+  ResponsiveContainer
 } from 'recharts'
 
 interface Video {
@@ -134,7 +129,7 @@ export default function DashboardPage() {
         total_shares: totalShares,
         total_videos: processedVideos.length,
         avg_engagement: avgEngagement,
-        engagement_change: 12.5, // Placeholder - calcular después
+        engagement_change: 12.5,
         views_change: 8.3
       })
       
@@ -158,7 +153,7 @@ export default function DashboardPage() {
         date: item.date,
         views: item.views,
         engagement: item.engagement / item.count
-      })).slice(-7) // Últimos 7 días
+      })).slice(-7)
       
       setTrendData(trendDataArray)
       
@@ -173,10 +168,18 @@ export default function DashboardPage() {
       
       if (patterns && patterns.length > 0 && patterns[0].pattern_value?.analysis) {
         const analysis = patterns[0].pattern_value.analysis
-        // Extraer primera recomendación
-        const recommendationMatch = analysis.match(/\d+\.\s+(.+?)(?=\n\d+\.|\n\n|$)/s)
-        if (recommendationMatch) {
-          setLatestRecommendation(recommendationMatch[1].trim())
+        // Extraer primera recomendación - sin usar flag /s
+        const lines = analysis.split('\n')
+        let firstRecommendation = ''
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i]
+          if (line.match(/^\d+\./)) {
+            firstRecommendation = line.replace(/^\d+\.\s+/, '').trim()
+            break
+          }
+        }
+        if (firstRecommendation) {
+          setLatestRecommendation(firstRecommendation)
         }
       }
       
