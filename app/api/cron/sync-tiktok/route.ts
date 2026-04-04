@@ -6,9 +6,12 @@ import { TikTokAPI } from '@/lib/platforms/tiktok'
 // Función para extraer hashtags del texto
 function extractHashtags(text: string): string[] {
   if (!text) return []
-  const hashtagRegex = /#[\w\u00f1\u00d1]+/g
+  // Expresión regular más robusta para hashtags (permite letras, números, guión bajo, acentos)
+  const hashtagRegex = /#[\w\u00f1\u00d1\u00e1\u00e9\u00ed\u00f3\u00fa\u00fc]+/gi
   const matches = text.match(hashtagRegex)
-  return matches ? [...new Set(matches.map(tag => tag.substring(1)))] : []
+  if (!matches) return []
+  // Limpiar: eliminar el '#' y convertir a minúsculas (opcional)
+  return [...new Set(matches.map(tag => tag.substring(1).toLowerCase()))]
 }
 
 export async function POST(request: NextRequest) {
