@@ -74,8 +74,11 @@ export async function POST(request: NextRequest) {
           thumbnail_url: video.cover_image_url,
           duration: video.duration || 0,
           published_at: video.create_time ? new Date(video.create_time * 1000).toISOString() : new Date().toISOString(),
+          hashtags: video.hashtags || [], // Guardar array de hashtags
+          sound: video.music_info?.title || 'Original',   // Guardar título del sonido
           metadata: {
-            share_url: video.share_url
+            share_url: video.share_url,
+            music_info: video.music_info
           }
         }, {
           onConflict: 'user_id,platform,platform_video_id'
