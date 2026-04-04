@@ -36,9 +36,7 @@ export class TikTokAPI {
     'view_count',
     'like_count',
     'comment_count',
-    'share_count',
-    'music_info',   // Para el sonido
-    'hashtags'
+    'share_count'
   ].join(',')
 
   while (hasMore && allVideos.length < maxCount) {

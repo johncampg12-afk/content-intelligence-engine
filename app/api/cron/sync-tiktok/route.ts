@@ -3,6 +3,14 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { TikTokAPI } from '@/lib/platforms/tiktok'
 
+// Función para extraer hashtags del texto
+function extractHashtags(text: string): string[] {
+  if (!text) return []
+  const hashtagRegex = /#[\w\u00f1\u00d1]+/g
+  const matches = text.match(hashtagRegex)
+  return matches ? [...new Set(matches.map(tag => tag.substring(1)))] : []
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await request.json()
@@ -47,38 +55,41 @@ export async function POST(request: NextRequest) {
     
     const tiktok = new TikTokAPI(account.access_token)
     
-    // Obtener videos recientes (con métricas incluidas)
-    const videos = await tiktok.getUserVideos(20)
-    console.log(`Found ${videos.length} recent videos`)
+    // Obtener videos recientes
+    const videos = await tiktok.getUserVideos(50)
+    console.log(`Found ${videos.length} videos from TikTok`)
     
     let videosSaved = 0
     let metricsUpdated = 0
     
-    // Para evitar duplicados, usamos un Set para procesar cada video una sola vez
     const processedVideoIds = new Set()
     
     for (const video of videos) {
-      // Saltar duplicados
       if (processedVideoIds.has(video.id)) continue
       processedVideoIds.add(video.id)
       
-      // Guardar video (upsert)
+      // Extraer hashtags del título
+      const title = video.title || ''
+      const extractedHashtags = extractHashtags(title)
+      
+      console.log(`Processing video: ${video.id} - Hashtags: ${extractedHashtags.join(', ') || 'none'}`)
+      
+      // Guardar video
       const { data: videoRecord, error: videoError } = await supabase
         .from('videos')
         .upsert({
           user_id: userId,
           platform: 'tiktok',
           platform_video_id: video.id,
-          title: video.title || '',
+          title: title,
           description: '',
           thumbnail_url: video.cover_image_url,
           duration: video.duration || 0,
           published_at: video.create_time ? new Date(video.create_time * 1000).toISOString() : new Date().toISOString(),
-          hashtags: video.hashtags || [], // Guardar array de hashtags
-          sound: video.music_info?.title || 'Original',   // Guardar título del sonido
+          hashtags: extractedHashtags,
+          sound: 'Original Sound',
           metadata: {
-            share_url: video.share_url,
-            music_info: video.music_info
+            share_url: video.share_url
           }
         }, {
           onConflict: 'user_id,platform,platform_video_id'
@@ -98,28 +109,17 @@ export async function POST(request: NextRequest) {
       const newComments = video.comment_count || 0
       const newShares = video.share_count || 0
       
-      console.log(`Processing video record ID: ${videoRecord.id} (TikTok ID: ${video.id})`)
-      
-      // Buscar la métrica más reciente de este video
-      const { data: existingMetric, error: metricFetchError } = await supabase
+      // Buscar la métrica más reciente
+      const { data: existingMetric } = await supabase
         .from('video_metrics')
-        .select('id, recorded_at, views, likes, comments, shares')
+        .select('id')
         .eq('video_id', videoRecord.id)
         .order('recorded_at', { ascending: false })
         .limit(1)
       
-      if (metricFetchError) {
-        console.error(`Error fetching existing metric for video ${video.id}:`, metricFetchError)
-      }
-      
-      console.log(`Existing metric found: ${existingMetric ? existingMetric.length : 0}`)
       if (existingMetric && existingMetric.length > 0) {
-        console.log(`Current metric values: views=${existingMetric[0].views}, likes=${existingMetric[0].likes}, recorded_at=${existingMetric[0].recorded_at}`)
-      }
-      
-      if (existingMetric && existingMetric.length > 0) {
-        // Actualizar la métrica existente
-        const { data: updatedMetric, error: updateError } = await supabase
+        // Actualizar métrica existente
+        const { error: updateError } = await supabase
           .from('video_metrics')
           .update({
             views: newViews,
@@ -129,22 +129,14 @@ export async function POST(request: NextRequest) {
             recorded_at: new Date().toISOString()
           })
           .eq('id', existingMetric[0].id)
-          .select()
         
-        if (updateError) {
-          console.error(`❌ Update error for video ${video.id}:`, updateError)
-        } else {
+        if (!updateError) {
           metricsUpdated++
-          console.log(`✅ Updated metrics for video ${video.id}: views=${newViews}, likes=${newLikes}, comments=${newComments}, shares=${newShares}`)
-          if (updatedMetric && updatedMetric.length > 0) {
-            console.log(`   DB row ID: ${updatedMetric[0].id}, new recorded_at: ${updatedMetric[0].recorded_at}`)
-          } else {
-            console.log(`   No data returned from update (possible no change?)`)
-          }
+          console.log(`Updated metrics for ${video.id}: views=${newViews}`)
         }
       } else {
         // Insertar primera métrica
-        const { data: insertedMetric, error: insertError } = await supabase
+        const { error: insertError } = await supabase
           .from('video_metrics')
           .insert({
             video_id: videoRecord.id,
@@ -158,16 +150,10 @@ export async function POST(request: NextRequest) {
             avg_watch_time: 0,
             avg_watch_percentage: 0,
           })
-          .select()
         
-        if (insertError) {
-          console.error(`❌ Insert error for video ${video.id}:`, insertError)
-        } else {
+        if (!insertError) {
           metricsUpdated++
-          console.log(`➕ Inserted initial metrics for video ${video.id}: views=${newViews}`)
-          if (insertedMetric && insertedMetric.length > 0) {
-            console.log(`   New row ID: ${insertedMetric[0].id}`)
-          }
+          console.log(`Inserted metrics for ${video.id}`)
         }
       }
     }
