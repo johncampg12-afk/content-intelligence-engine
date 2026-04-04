@@ -19,7 +19,10 @@ import {
   LineChart,
   Sparkles,
   Zap,
-  Target
+  Target,
+  Clock,
+  Hash,
+  Music
 } from 'lucide-react'
 import {
   LineChart as ReLineChart,
@@ -47,18 +50,15 @@ interface VideoMetric {
   title: string
   thumbnail_url: string
   published_at: string
+  duration: number
+  hashtags: string[]
+  sound: string
   views: number
   likes: number
   comments: number
   shares: number
   engagement_rate: number
   recorded_at: string
-}
-
-interface PeriodData {
-  startDate: Date
-  endDate: Date
-  label: string
 }
 
 export default function AnalyticsPage() {
@@ -93,7 +93,7 @@ export default function AnalyticsPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       
-      // Obtener videos con métricas
+      // Obtener videos con métricas y campos adicionales
       const { data: videosData } = await supabase
         .from('videos')
         .select(`
@@ -101,6 +101,10 @@ export default function AnalyticsPage() {
           title,
           thumbnail_url,
           published_at,
+          duration,
+          hashtags,
+          sound,
+          metadata,
           video_metrics (
             views,
             likes,
@@ -126,12 +130,24 @@ export default function AnalyticsPage() {
         
         if (!latestMetrics) return []
         
+        // Extraer hashtags del metadata o de la descripción
+        let hashtags = v.hashtags || []
+        if (hashtags.length === 0 && v.metadata?.hashtags) {
+          hashtags = v.metadata.hashtags
+        }
+        
+        // Extraer sonido del metadata
+        const sound = v.sound || v.metadata?.sound || v.metadata?.music_info?.title || 'Unknown'
+        
         return [{
           id: v.id,
           video_id: v.id,
           title: v.title || 'Untitled',
           thumbnail_url: v.thumbnail_url,
           published_at: v.published_at,
+          duration: v.duration || 0,
+          hashtags: hashtags,
+          sound: sound,
           views: latestMetrics.views || 0,
           likes: latestMetrics.likes || 0,
           comments: latestMetrics.comments || 0,
@@ -185,7 +201,9 @@ export default function AnalyticsPage() {
     // Filtrar por búsqueda
     if (searchTerm) {
       filtered = filtered.filter(v => 
-        v.title.toLowerCase().includes(searchTerm.toLowerCase())
+        v.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        v.hashtags?.some(h => h.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        v.sound?.toLowerCase().includes(searchTerm.toLowerCase())
       )
     }
     
@@ -219,6 +237,13 @@ export default function AnalyticsPage() {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
     if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
     return num.toString()
+  }
+
+  const formatDuration = (seconds: number) => {
+    if (!seconds) return '--'
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
   const calculateTotals = () => {
@@ -273,10 +298,13 @@ export default function AnalyticsPage() {
   }
 
   const handleExportCSV = () => {
-    const headers = ['Title', 'Published Date', 'Views', 'Likes', 'Comments', 'Shares', 'Engagement Rate']
+    const headers = ['Title', 'Published Date', 'Duration', 'Hashtags', 'Sound', 'Views', 'Likes', 'Comments', 'Shares', 'Engagement Rate']
     const rows = filteredVideos.map(v => [
       v.title,
       format(new Date(v.published_at), 'dd/MM/yyyy'),
+      formatDuration(v.duration),
+      v.hashtags?.join(', ') || '',
+      v.sound || '',
       v.views,
       v.likes,
       v.comments,
@@ -407,7 +435,7 @@ export default function AnalyticsPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Search Video</label>
                 <input
                   type="text"
-                  placeholder="Search by title..."
+                  placeholder="Search by title, hashtag, or sound..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -548,6 +576,9 @@ export default function AnalyticsPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Video</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Duration</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hashtags</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sound</th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Views</th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Likes</th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Comments</th>
@@ -570,9 +601,36 @@ export default function AnalyticsPage() {
                             </div>
                           )}
                         </div>
-                        <span className="text-sm text-gray-900 line-clamp-1 max-w-[200px]">
+                        <span className="text-sm text-gray-900 line-clamp-2 max-w-[250px]">
                           {video.title}
                         </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex items-center justify-center gap-1 text-sm text-gray-600">
+                        <Clock className="w-3 h-3" />
+                        {formatDuration(video.duration)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-wrap gap-1 max-w-[200px]">
+                        {video.hashtags?.slice(0, 3).map((tag, idx) => (
+                          <span key={idx} className="text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full">
+                            #{tag}
+                          </span>
+                        ))}
+                        {video.hashtags && video.hashtags.length > 3 && (
+                          <span className="text-xs text-gray-400">+{video.hashtags.length - 3}</span>
+                        )}
+                        {(!video.hashtags || video.hashtags.length === 0) && (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-1 max-w-[180px]">
+                        <Music className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                        <span className="text-sm text-gray-600 truncate">{video.sound || 'Original'}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right text-sm text-gray-900">{formatNumber(video.views)}</td>
