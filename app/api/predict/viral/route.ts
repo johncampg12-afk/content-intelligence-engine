@@ -5,7 +5,14 @@ import { DeepSeekAI } from '@/lib/ai/deepseek'
 
 export async function POST(request: NextRequest) {
   try {
-    const { videoIdea, duration, hashtags, sound } = await request.json()
+    const { 
+      videoIdea, 
+      contentType, 
+      campaignGoal, 
+      duration, 
+      hashtags, 
+      sound 
+    } = await request.json()
     
     const cookieStore = await cookies()
     const supabase = createServerClient(
@@ -46,14 +53,14 @@ export async function POST(request: NextRequest) {
       .order('published_at', { ascending: false })
       .limit(50)
     
-    // Obtener perfil del usuario (nicho, objetivo)
+    // Obtener perfil del usuario
     const { data: profile } = await supabase
       .from('profiles')
       .select('account_type_id, content_goal, target_audience')
       .eq('id', user.id)
       .single()
     
-    // Preparar datos históricos para el análisis
+    // Preparar datos históricos
     const historicalData = videos?.map(v => ({
       title: v.title,
       duration: v.duration,
@@ -63,7 +70,7 @@ export async function POST(request: NextRequest) {
       engagement: v.video_metrics?.[0]?.engagement_rate || 0
     })) || []
     
-    // Llamar a DeepSeek para predecir viralidad
+    // Llamar a DeepSeek para predecir
     const deepseek = new DeepSeekAI()
     
     const prompt = `
@@ -79,6 +86,8 @@ ${JSON.stringify(historicalData.slice(0, 20), null, 2)}
 
 ## Nueva idea de contenido:
 - Idea: "${videoIdea}"
+- Tipo: ${contentType}
+- Objetivo: ${campaignGoal}
 - Duración: ${duration} segundos
 - Hashtags: ${hashtags?.join(', ') || 'ninguno'}
 - Sonido: ${sound || 'original'}
@@ -86,26 +95,37 @@ ${JSON.stringify(historicalData.slice(0, 20), null, 2)}
 ## Analiza y responde EXACTAMENTE en formato JSON:
 {
   "predicted_views": número,
-  "predicted_engagement": número (porcentaje),
+  "predicted_engagement": número,
   "viral_score": número (0-100),
   "optimal_day": "Lunes|Martes|Miércoles|Jueves|Viernes|Sábado|Domingo",
   "optimal_hour": número (0-23),
   "confidence_score": número (0-100),
   "reasoning": "explicación breve",
-  "recommendations": ["recomendación1", "recomendación2"]
-}
-
-Basado en los patrones históricos, predice el rendimiento de esta nueva idea.
-Sé realista y usa los datos históricos como referencia.`
+  "recommendations": ["recomendación1", "recomendación2", "recomendación3"],
+  "benchmark": {
+    "avg_views": número,
+    "avg_engagement": número,
+    "percentile": número
+  },
+  "confidence_interval": {
+    "lower": número,
+    "upper": número
+  }
+}`
     
     const prediction = await deepseek.predictViral(prompt)
     
-    // Guardar predicción en la base de datos
+    // Guardar predicción completa en la base de datos
     const { data: savedPrediction, error: saveError } = await supabase
       .from('predictions')
       .insert({
         user_id: user.id,
         video_idea: videoIdea,
+        content_type: contentType,
+        campaign_goal: campaignGoal,
+        duration: duration,
+        hashtags: hashtags,
+        sound: sound || 'Original',
         predicted_views: prediction.predicted_views,
         predicted_engagement: prediction.predicted_engagement,
         viral_score: prediction.viral_score,
@@ -113,7 +133,10 @@ Sé realista y usa los datos históricos como referencia.`
         optimal_hour: prediction.optimal_hour,
         confidence_score: prediction.confidence_score,
         reasoning: prediction.reasoning,
-        status: 'pending'
+        recommendations: prediction.recommendations,
+        benchmark: prediction.benchmark,
+        confidence_interval: prediction.confidence_interval,
+        status: 'active'
       })
       .select()
       .single()
