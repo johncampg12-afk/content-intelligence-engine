@@ -196,7 +196,7 @@ export class DeepSeekAI {
     }
   }
 
-  // Nuevo método con integración de nicho y patrones de éxito
+  // Método con integración de nicho y patrones de éxito
   async analyzePatternsWithNiche(metricsData: any, nicheContext: {
     accountType: string,
     contentGoal: string,
@@ -324,6 +324,44 @@ ${JSON.stringify(metricsData, null, 2)}`
       
     } catch (error) {
       console.error('DeepSeek API error:', error)
+      throw error
+    }
+  }
+
+  // ============================================
+  // NUEVO MÉTODO: Predicción de viralidad
+  // ============================================
+  async predictViral(prompt: string): Promise<any> {
+    try {
+      const completion = await this.client.chat.completions.create({
+        model: 'deepseek-chat',
+        messages: [
+          {
+            role: 'system',
+            content: `Eres un analista de datos experto en predicción de viralidad en TikTok.
+            Debes responder SOLO con JSON válido, sin texto adicional fuera del JSON.
+            Basa tus predicciones en los datos históricos proporcionados.
+            Sé conservador en las predicciones, no sobreestimes.`
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 1000,
+        response_format: { type: 'json_object' }
+      })
+      
+      const content = completion.choices[0]?.message?.content
+      if (!content) {
+        throw new Error('No content returned')
+      }
+      
+      return JSON.parse(content)
+      
+    } catch (error) {
+      console.error('DeepSeek prediction error:', error)
       throw error
     }
   }
