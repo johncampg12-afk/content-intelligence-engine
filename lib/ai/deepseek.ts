@@ -332,37 +332,46 @@ ${JSON.stringify(metricsData, null, 2)}`
   // NUEVO MÉTODO: Predicción de viralidad
   // ============================================
   async predictViral(prompt: string): Promise<any> {
-    try {
-      const completion = await this.client.chat.completions.create({
-        model: 'deepseek-chat',
-        messages: [
-          {
-            role: 'system',
-            content: `Eres un analista de datos experto en predicción de viralidad en TikTok.
-            Debes responder SOLO con JSON válido, sin texto adicional fuera del JSON.
-            Basa tus predicciones en los datos históricos proporcionados.
-            Sé conservador en las predicciones, no sobreestimes.`
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.3,
-        max_tokens: 1000,
-        response_format: { type: 'json_object' }
-      })
-      
-      const content = completion.choices[0]?.message?.content
-      if (!content) {
-        throw new Error('No content returned')
-      }
-      
-      return JSON.parse(content)
-      
-    } catch (error) {
-      console.error('DeepSeek prediction error:', error)
-      throw error
+  try {
+    const completion = await this.client.chat.completions.create({
+      model: 'deepseek-chat',
+      messages: [
+        {
+          role: 'system',
+          content: `Eres un analista de datos experto en predicción de viralidad en TikTok.
+          
+          IMPORTANTE: Las recomendaciones deben ser PRÁCTICAS y ACCIONABLES, basadas en patrones reales del nicho del usuario.
+          
+          Ejemplos de buenas recomendaciones:
+          - "Publica los martes entre 20:00-21:00, cuando tu audiencia está más activa"
+          - "Usa un hook en los primeros 3 segundos preguntando '¿Sabías que...?' para captar atención"
+          - "Incluye un llamado a la acción específico como 'Comparte esto con alguien que le pueda servir'"
+          - "Añade texto en pantalla durante los primeros 5 segundos para reforzar el mensaje"
+          - "Usa hashtags de nicho como #tutorial y #consejos en lugar de hashtags genéricos"
+          
+          Debes responder SOLO con JSON válido, sin texto adicional fuera del JSON.
+          Sé conservador en las predicciones, no sobreestimes.`
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.4,
+      max_tokens: 1500,
+      response_format: { type: 'json_object' }
+    })
+    
+    const content = completion.choices[0]?.message?.content
+    if (!content) {
+      throw new Error('No content returned')
     }
+    
+    return JSON.parse(content)
+    
+  } catch (error) {
+    console.error('DeepSeek prediction error:', error)
+    throw error
   }
+}
 }

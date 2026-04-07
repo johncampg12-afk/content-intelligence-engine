@@ -206,45 +206,58 @@ export default function ViralPredictorPage() {
   }
 
   const handleExportReport = (pred: any) => {
-    const report = `
+  const contentTypeLabel = contentTypes.find(c => c.value === pred.content_type)?.label || pred.content_type || 'No especificado'
+  const campaignGoalLabel = campaignGoals.find(g => g.value === pred.campaign_goal)?.label || pred.campaign_goal || 'No especificado'
+  
+  const report = `
 CONTENT VIRALITY REPORT
 Generated: ${new Date().toLocaleString()}
 
 IDEA ANALYSIS
 -------------------
-Content Idea: ${pred.video_idea}
-Content Type: ${contentTypes.find(c => c.value === pred.content_type)?.label || pred.content_type}
-Campaign Goal: ${campaignGoals.find(g => g.value === pred.campaign_goal)?.label || pred.campaign_goal}
-Duration: ${pred.duration}s
+Content Idea: ${pred.video_idea || 'No especificada'}
+Content Type: ${contentTypeLabel}
+Campaign Goal: ${campaignGoalLabel}
+Duration: ${pred.duration || 'No especificada'}s
+Hashtags: ${pred.hashtags?.join(', ') || 'Ninguno'}
+Sound: ${pred.sound || 'Original'}
 
 PREDICTIONS
 -------------------
-Viral Score: ${pred.viral_score}/100
-Predicted Views: ${formatNumber(pred.predicted_views)}
-Predicted Engagement: ${pred.predicted_engagement}%
-Optimal Posting: ${pred.optimal_day} at ${pred.optimal_hour}:00
-Confidence: ${pred.confidence_score}%
+Viral Score: ${pred.viral_score || 0}/100
+Predicted Views: ${formatNumber(pred.predicted_views || 0)}
+Predicted Engagement: ${(pred.predicted_engagement || 0).toFixed(2)}%
+Optimal Posting: ${pred.optimal_day || 'No especificado'} at ${pred.optimal_hour || 0}:00
+Confidence: ${pred.confidence_score || 0}%
+
+${pred.benchmark ? `
+BENCHMARK VS NICHO
+-------------------
+Promedio del nicho: ${formatNumber(pred.benchmark.avg_views)} vistas
+Engagement promedio nicho: ${pred.benchmark.avg_engagement}%
+Tu posición: Percentil ${pred.benchmark.percentile}
+` : ''}
 
 AI ANALYSIS
 -------------------
-${pred.reasoning}
+${pred.reasoning || 'No hay análisis disponible'}
 
 RECOMMENDATIONS
 -------------------
-${pred.recommendations?.map((r: string, i: number) => `${i + 1}. ${r}`).join('\n')}
+${pred.recommendations?.map((r: string, i: number) => `${i + 1}. ${r}`).join('\n') || 'No hay recomendaciones disponibles'}
 
 ---
 Content Intelligence Engine - Professional Analytics Suite
     `
     
-    const blob = new Blob([report], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `virality_report_${new Date().toISOString().slice(0, 19)}.txt`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
+  const blob = new Blob([report], { type: 'text/plain' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `virality_report_${new Date().toISOString().slice(0, 19)}.txt`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
   return (
     <div className="min-h-screen bg-gray-50">
