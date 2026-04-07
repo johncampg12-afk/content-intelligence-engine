@@ -9,7 +9,6 @@ import {
   Share2, 
   MessageCircle,
   Download,
-  Calendar,
   Filter,
   ChevronDown,
   ArrowUp,
@@ -17,12 +16,10 @@ import {
   BarChart3,
   PieChart,
   LineChart,
-  Sparkles,
-  Zap,
-  Target,
   Clock,
   Hash,
-  Music
+  Music,
+  Calendar as CalendarIcon
 } from 'lucide-react'
 import {
   LineChart as ReLineChart,
@@ -41,7 +38,7 @@ import {
   AreaChart,
   Area
 } from 'recharts'
-import { format, subDays, startOfWeek, endOfWeek, subWeeks } from 'date-fns'
+import { format, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isWithinInterval } from 'date-fns'
 import { es } from 'date-fns/locale'
 
 interface VideoMetric {
@@ -73,15 +70,31 @@ export default function AnalyticsPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [searchTerm, setSearchTerm] = useState('')
   
+  // Datos para gráficos (solo afectados por período)
+  const [chartData, setChartData] = useState({
+    viewsTrend: [] as any[],
+    engagementTrend: [] as any[],
+    hashtagsTop: [] as any[],
+    weekdayPerformance: [] as any[],
+    durationDistribution: [] as any[]
+  })
+  
   const supabase = createClient()
 
-  // Colores para gráficos
-  const COLORS = ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#06B6D4', '#EC4899']
+  const COLORS = ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#06B6D4', '#EC4899', '#14B8A6', '#F97316']
 
   useEffect(() => {
     loadData()
   }, [])
 
+  // Efecto para actualizar gráficos cuando cambia el período
+  useEffect(() => {
+    if (videos.length > 0) {
+      updateCharts()
+    }
+  }, [videos, period, customStartDate, customEndDate])
+
+  // Efecto para actualizar tabla cuando cambian todos los filtros
   useEffect(() => {
     filterAndSortData()
   }, [videos, period, customStartDate, customEndDate, sortBy, sortOrder, searchTerm])
@@ -93,7 +106,6 @@ export default function AnalyticsPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       
-      // Obtener videos con métricas y campos adicionales
       const { data: videosData } = await supabase
         .from('videos')
         .select(`
@@ -122,22 +134,12 @@ export default function AnalyticsPage() {
         return
       }
       
-      // Procesar métricas más recientes por video
       const processedVideos = videosData.flatMap(v => {
         const latestMetrics = v.video_metrics?.sort((a: any, b: any) => 
           new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime()
         )[0]
         
         if (!latestMetrics) return []
-        
-        // Extraer hashtags del metadata o de la descripción
-        let hashtags = v.hashtags || []
-        if (hashtags.length === 0 && v.metadata?.hashtags) {
-          hashtags = v.metadata.hashtags
-        }
-        
-        // Extraer sonido del metadata
-        const sound = v.sound || v.metadata?.sound || v.metadata?.music_info?.title || 'Unknown'
         
         return [{
           id: v.id,
@@ -146,8 +148,8 @@ export default function AnalyticsPage() {
           thumbnail_url: v.thumbnail_url,
           published_at: v.published_at,
           duration: v.duration || 0,
-          hashtags: hashtags,
-          sound: sound,
+          hashtags: v.hashtags || [],
+          sound: v.sound || 'Original Sound',
           views: latestMetrics.views || 0,
           likes: latestMetrics.likes || 0,
           comments: latestMetrics.comments || 0,
@@ -166,37 +168,131 @@ export default function AnalyticsPage() {
     }
   }
 
+  const getDateRange = (): { start: Date; end: Date } => {
+    const now = new Date()
+    let start: Date
+    
+    switch (period) {
+      case 'week':
+        start = subDays(now, 7)
+        break
+      case 'month':
+        start = subDays(now, 30)
+        break
+      case 'quarter':
+        start = subDays(now, 90)
+        break
+      case 'custom':
+        start = customStartDate ? new Date(customStartDate) : subDays(now, 7)
+        break
+      default:
+        start = subDays(now, 7)
+    }
+    
+    const end = (period === 'custom' && customEndDate) ? new Date(customEndDate) : now
+    
+    return { start, end }
+  }
+
+  const updateCharts = () => {
+    const { start, end } = getDateRange()
+    
+    // Filtrar videos por período (sin búsqueda ni orden)
+    const periodVideos = videos.filter(v => {
+      const pubDate = new Date(v.published_at)
+      return pubDate >= start && pubDate <= end
+    })
+    
+    if (periodVideos.length === 0) {
+      setChartData({
+        viewsTrend: [],
+        engagementTrend: [],
+        hashtagsTop: [],
+        weekdayPerformance: [],
+        durationDistribution: []
+      })
+      return
+    }
+    
+    // 1. Views Trend (por día)
+    const daysInRange = eachDayOfInterval({ start, end })
+    const viewsByDay = daysInRange.map(day => {
+      const dayStr = format(day, 'dd/MM')
+      const dayVideos = periodVideos.filter(v => 
+        format(new Date(v.published_at), 'dd/MM') === dayStr
+      )
+      const totalViews = dayVideos.reduce((sum, v) => sum + v.views, 0)
+      return { date: dayStr, views: totalViews }
+    })
+    
+    // 2. Engagement Trend (por día)
+    const engagementByDay = daysInRange.map(day => {
+      const dayStr = format(day, 'dd/MM')
+      const dayVideos = periodVideos.filter(v => 
+        format(new Date(v.published_at), 'dd/MM') === dayStr
+      )
+      const avgEngagement = dayVideos.length > 0
+        ? dayVideos.reduce((sum, v) => sum + v.engagement_rate, 0) / dayVideos.length
+        : 0
+      return { date: dayStr, engagement: parseFloat((avgEngagement * 100).toFixed(2)) }
+    })
+    
+    // 3. Top Hashtags
+    const hashtagCount: Record<string, number> = {}
+    periodVideos.forEach(v => {
+      v.hashtags?.forEach(tag => {
+        hashtagCount[tag] = (hashtagCount[tag] || 0) + 1
+      })
+    })
+    const topHashtags = Object.entries(hashtagCount)
+      .map(([name, value]) => ({ name: `#${name}`, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10)
+    
+    // 4. Rendimiento por día de la semana
+    const weekdays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+    const weekdayData = weekdays.map((day, idx) => {
+      const dayVideos = periodVideos.filter(v => new Date(v.published_at).getDay() === idx + 1)
+      const avgViews = dayVideos.length > 0
+        ? dayVideos.reduce((sum, v) => sum + v.views, 0) / dayVideos.length
+        : 0
+      const avgEngagement = dayVideos.length > 0
+        ? dayVideos.reduce((sum, v) => sum + v.engagement_rate, 0) / dayVideos.length
+        : 0
+      return { day, avgViews, avgEngagement: parseFloat((avgEngagement * 100).toFixed(2)) }
+    })
+    
+    // 5. Distribución por duración
+    const durationRanges = [
+      { name: '0-15s', min: 0, max: 15, color: '#3B82F6' },
+      { name: '16-30s', min: 16, max: 30, color: '#10B981' },
+      { name: '31-60s', min: 31, max: 60, color: '#F59E0B' },
+      { name: '60s+', min: 61, max: Infinity, color: '#EF4444' }
+    ]
+    const durationData = durationRanges.map(range => ({
+      name: range.name,
+      value: periodVideos.filter(v => v.duration >= range.min && v.duration <= range.max).length,
+      color: range.color
+    })).filter(d => d.value > 0)
+    
+    setChartData({
+      viewsTrend: viewsByDay,
+      engagementTrend: engagementByDay,
+      hashtagsTop: topHashtags,
+      weekdayPerformance: weekdayData,
+      durationDistribution: durationData
+    })
+  }
+
   const filterAndSortData = () => {
     let filtered = [...videos]
+    const { start, end } = getDateRange()
     
     // Filtrar por período
-    if (period !== 'custom') {
-      const now = new Date()
-      let startDate: Date
-      
-      switch (period) {
-        case 'week':
-          startDate = subDays(now, 7)
-          break
-        case 'month':
-          startDate = subDays(now, 30)
-          break
-        case 'quarter':
-          startDate = subDays(now, 90)
-          break
-        default:
-          startDate = subDays(now, 7)
-      }
-      
-      filtered = filtered.filter(v => new Date(v.published_at) >= startDate)
-    } else {
-      if (customStartDate) {
-        filtered = filtered.filter(v => new Date(v.published_at) >= new Date(customStartDate))
-      }
-      if (customEndDate) {
-        filtered = filtered.filter(v => new Date(v.published_at) <= new Date(customEndDate))
-      }
-    }
+    filtered = filtered.filter(v => {
+      const pubDate = new Date(v.published_at)
+      return pubDate >= start && pubDate <= end
+    })
     
     // Filtrar por búsqueda
     if (searchTerm) {
@@ -259,44 +355,6 @@ export default function AnalyticsPage() {
     }
   }
 
-  const prepareTrendData = () => {
-    const grouped = filteredVideos.reduce((acc: any, v) => {
-      const date = format(new Date(v.published_at), 'dd/MM')
-      if (!acc[date]) {
-        acc[date] = { date, views: 0, engagement: 0, count: 0 }
-      }
-      acc[date].views += v.views
-      acc[date].engagement += v.engagement_rate
-      acc[date].count += 1
-      return acc
-    }, {})
-    
-    return Object.values(grouped).map((item: any) => ({
-      date: item.date,
-      views: item.views,
-      engagement: parseFloat((item.engagement / item.count).toFixed(2))
-    })).slice(-14)
-  }
-
-  const prepareEngagementDistribution = () => {
-    const ranges = [
-      { name: '0-2%', value: 0, color: '#EF4444' },
-      { name: '2-5%', value: 0, color: '#F59E0B' },
-      { name: '5-10%', value: 0, color: '#10B981' },
-      { name: '10%+', value: 0, color: '#3B82F6' }
-    ]
-    
-    filteredVideos.forEach(v => {
-      const rate = v.engagement_rate * 100
-      if (rate < 2) ranges[0].value++
-      else if (rate < 5) ranges[1].value++
-      else if (rate < 10) ranges[2].value++
-      else ranges[3].value++
-    })
-    
-    return ranges.filter(r => r.value > 0)
-  }
-
   const handleExportCSV = () => {
     const headers = ['Title', 'Published Date', 'Duration', 'Hashtags', 'Sound', 'Views', 'Likes', 'Comments', 'Shares', 'Engagement Rate']
     const rows = filteredVideos.map(v => [
@@ -325,8 +383,6 @@ export default function AnalyticsPage() {
   }
 
   const totals = calculateTotals()
-  const trendData = prepareTrendData()
-  const engagementDistribution = prepareEngagementDistribution()
 
   if (loading) {
     return (
@@ -489,62 +545,84 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* Charts */}
+        {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Views Trend */}
           <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-base font-semibold text-gray-900">Views Trend</h3>
               <LineChart className="w-4 h-4 text-gray-400" />
             </div>
             <ResponsiveContainer width="100%" height={280}>
-              <AreaChart data={trendData}>
+              <AreaChart data={chartData.viewsTrend}>
                 <defs>
-                  <linearGradient id="analyticsViews" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
                     <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                 <XAxis dataKey="date" stroke="#9CA3AF" fontSize={12} />
-                <YAxis stroke="#9CA3AF" fontSize={12} />
+                <YAxis stroke="#9CA3AF" fontSize={12} tickFormatter={(v) => formatNumber(v)} />
                 <Tooltip formatter={(value: any) => formatNumber(value)} />
-                <Area type="monotone" dataKey="views" stroke="#3B82F6" fill="url(#analyticsViews)" />
+                <Area type="monotone" dataKey="views" stroke="#3B82F6" fill="url(#viewsGradient)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
 
+          {/* Engagement Trend */}
           <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-base font-semibold text-gray-900">Engagement Distribution</h3>
-              <PieChart className="w-4 h-4 text-gray-400" />
+              <h3 className="text-base font-semibold text-gray-900">Engagement Trend</h3>
+              <TrendingUp className="w-4 h-4 text-gray-400" />
             </div>
             <ResponsiveContainer width="100%" height={280}>
-              <RePieChart>
-                <Pie
-                  data={engagementDistribution}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={2}
-                  dataKey="value"
-                  label={({ name, percent }) => {
-                    if (percent === undefined) return name
-                    return `${name}: ${(percent * 100).toFixed(0)}%`
-                  }}
-                >
-                  {engagementDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
+              <ReLineChart data={chartData.engagementTrend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                <XAxis dataKey="date" stroke="#9CA3AF" fontSize={12} />
+                <YAxis stroke="#9CA3AF" fontSize={12} unit="%" />
+                <Tooltip formatter={(value: any) => `${value}%`} />
+                <Line type="monotone" dataKey="engagement" stroke="#8B5CF6" strokeWidth={2} dot={{ fill: '#8B5CF6', r: 4 }} />
+              </ReLineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Top Hashtags */}
+          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-base font-semibold text-gray-900">Top Hashtags</h3>
+              <Hash className="w-4 h-4 text-gray-400" />
+            </div>
+            <ResponsiveContainer width="100%" height={280}>
+              <ReBarChart data={chartData.hashtagsTop} layout="vertical" margin={{ left: 50 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                <XAxis type="number" stroke="#9CA3AF" fontSize={12} />
+                <YAxis type="category" dataKey="name" stroke="#9CA3AF" fontSize={12} width={80} />
                 <Tooltip />
-                <Legend />
-              </RePieChart>
+                <Bar dataKey="value" fill="#10B981" radius={[0, 4, 4, 0]} />
+              </ReBarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Weekday Performance */}
+          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-base font-semibold text-gray-900">Performance by Day</h3>
+              <CalendarIcon className="w-4 h-4 text-gray-400" />
+            </div>
+            <ResponsiveContainer width="100%" height={280}>
+              <ReBarChart data={chartData.weekdayPerformance}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                <XAxis dataKey="day" stroke="#9CA3AF" fontSize={12} />
+                <YAxis stroke="#9CA3AF" fontSize={12} />
+                <Tooltip />
+                <Bar dataKey="avgEngagement" name="Avg Engagement (%)" fill="#F59E0B" radius={[4, 4, 0, 0]} />
+              </ReBarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Top Videos Table */}
+        {/* Video Performance Table */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
             <div>
@@ -630,7 +708,7 @@ export default function AnalyticsPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-1 max-w-[180px]">
                         <Music className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                        <span className="text-sm text-gray-600 truncate">{video.sound || 'Original'}</span>
+                        <span className="text-sm text-gray-600 truncate">{video.sound || 'Original Sound'}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right text-sm text-gray-900">{formatNumber(video.views)}</td>
