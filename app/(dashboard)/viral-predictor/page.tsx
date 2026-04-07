@@ -9,7 +9,6 @@ import {
   Hash, 
   Music, 
   TrendingUp, 
-  TrendingDown,
   Sparkles,
   CheckCircle,
   AlertCircle,
@@ -17,19 +16,15 @@ import {
   Target,
   BarChart3,
   Download,
-  Save,
   Eye,
   Heart,
   Share2,
   Users,
-  Activity,
-  Shield,
   Award,
   History,
   Trash2,
   ChevronDown,
-  ChevronUp,
-  X
+  ChevronUp
 } from 'lucide-react'
 
 interface Prediction {
@@ -153,10 +148,17 @@ export default function ViralPredictorPage() {
   }
 
   const getViralScoreColor = (score: number) => {
-    if (score >= 80) return 'text-emerald-600 bg-emerald-50'
-    if (score >= 60) return 'text-blue-600 bg-blue-50'
-    if (score >= 40) return 'text-amber-600 bg-amber-50'
-    return 'text-gray-600 bg-gray-50'
+    if (score >= 80) return 'border-emerald-200 bg-emerald-50'
+    if (score >= 60) return 'border-blue-200 bg-blue-50'
+    if (score >= 40) return 'border-amber-200 bg-amber-50'
+    return 'border-gray-200 bg-gray-50'
+  }
+
+  const getViralScoreTextColor = (score: number) => {
+    if (score >= 80) return 'text-emerald-600'
+    if (score >= 60) return 'text-blue-600'
+    if (score >= 40) return 'text-amber-600'
+    return 'text-gray-600'
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -189,8 +191,7 @@ export default function ViralPredictorPage() {
       
       if (data.success) {
         setPrediction(data.prediction)
-        await loadHistory() // Recargar historial
-        // Limpiar formulario
+        await loadHistory()
         setVideoIdea('')
         setHashtags('')
         setSound('')
@@ -206,10 +207,10 @@ export default function ViralPredictorPage() {
   }
 
   const handleExportReport = (pred: any) => {
-  const contentTypeLabel = contentTypes.find(c => c.value === pred.content_type)?.label || pred.content_type || 'No especificado'
-  const campaignGoalLabel = campaignGoals.find(g => g.value === pred.campaign_goal)?.label || pred.campaign_goal || 'No especificado'
-  
-  const report = `
+    const contentTypeLabel = contentTypes.find(c => c.value === pred.content_type)?.label || pred.content_type || 'No especificado'
+    const campaignGoalLabel = campaignGoals.find(g => g.value === pred.campaign_goal)?.label || pred.campaign_goal || 'No especificado'
+    
+    const report = `
 CONTENT VIRALITY REPORT
 Generated: ${new Date().toLocaleString()}
 
@@ -250,14 +251,14 @@ ${pred.recommendations?.map((r: string, i: number) => `${i + 1}. ${r}`).join('\n
 Content Intelligence Engine - Professional Analytics Suite
     `
     
-  const blob = new Blob([report], { type: 'text/plain' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `virality_report_${new Date().toISOString().slice(0, 19)}.txt`
-  a.click()
-  URL.revokeObjectURL(url)
-}
+    const blob = new Blob([report], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `virality_report_${new Date().toISOString().slice(0, 19)}.txt`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -291,7 +292,6 @@ Content Intelligence Engine - Professional Analytics Suite
             </div>
             
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
-              {/* Idea del video */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Concepto del contenido *
@@ -346,6 +346,10 @@ Content Intelligence Engine - Professional Analytics Suite
                   max={60}
                   className="w-full"
                 />
+                <div className="flex justify-between text-xs text-gray-400 mt-1">
+                  <span>Óptimo: 11-15s</span>
+                  <span>Máx recomendado: 30s</span>
+                </div>
               </div>
               
               <div>
@@ -360,6 +364,7 @@ Content Intelligence Engine - Professional Analytics Suite
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
+                <p className="text-xs text-gray-400 mt-1">Separados por comas, sin #</p>
               </div>
               
               <div>
@@ -416,34 +421,76 @@ Content Intelligence Engine - Professional Analytics Suite
                     <span className="text-xs opacity-70">{prediction.confidence_score}% confianza</span>
                   </div>
                   <div className="text-center">
-                    <span className="text-5xl font-bold">{prediction.viral_score}</span>
+                    <span className={`text-5xl font-bold ${getViralScoreTextColor(prediction.viral_score)}`}>
+                      {prediction.viral_score}
+                    </span>
                     <span className="text-xl opacity-70">/100</span>
-                    <p className="text-sm mt-2">{prediction.reasoning?.substring(0, 100)}...</p>
+                    <p className="text-sm text-gray-600 mt-3 leading-relaxed">
+                      {prediction.reasoning}
+                    </p>
                   </div>
                 </div>
                 
                 <div className="bg-white rounded-xl border border-gray-200 p-5">
                   <div className="grid grid-cols-3 gap-4 mb-4">
                     <div className="text-center">
-                      <p className="text-xs text-gray-400">Vistas</p>
-                      <p className="text-lg font-bold">{formatNumber(prediction.predicted_views)}</p>
+                      <p className="text-xs text-gray-400">Vistas estimadas</p>
+                      <p className="text-lg font-bold text-gray-900">{formatNumber(prediction.predicted_views)}</p>
                     </div>
                     <div className="text-center">
                       <p className="text-xs text-gray-400">Engagement</p>
-                      <p className="text-lg font-bold">{prediction.predicted_engagement}%</p>
+                      <p className="text-lg font-bold text-gray-900">{prediction.predicted_engagement}%</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-xs text-gray-400">Momento</p>
-                      <p className="text-sm font-semibold">{prediction.optimal_day} {prediction.optimal_hour}:00</p>
+                      <p className="text-xs text-gray-400">Momento óptimo</p>
+                      <p className="text-sm font-semibold text-gray-900">{prediction.optimal_day} {prediction.optimal_hour}:00</p>
                     </div>
                   </div>
+                  
+                  {prediction.benchmark && (
+                    <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                      <p className="text-xs text-gray-500 text-center">
+                        Benchmark nicho: {formatNumber(prediction.benchmark.avg_views)} vistas · 
+                        Engagement {prediction.benchmark.avg_engagement}% · 
+                        Percentil {prediction.benchmark.percentile}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {prediction.recommendations && prediction.recommendations.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      <p className="text-sm font-semibold text-gray-700 mb-3">Recomendaciones estratégicas</p>
+                      <ul className="space-y-2">
+                        {prediction.recommendations.map((rec: string, idx: number) => (
+                          <li key={idx} className="flex items-start gap-2 text-sm text-gray-600">
+                            <span className="text-blue-500 font-bold min-w-[20px]">{idx + 1}.</span>
+                            <span className="leading-relaxed">{rec}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
                   <button
                     onClick={() => handleExportReport(prediction)}
-                    className="w-full py-2 text-sm text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+                    className="w-full mt-5 py-2 text-sm text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
                   >
-                    Exportar informe
+                    <Download className="w-4 h-4" />
+                    Exportar informe completo
                   </button>
                 </div>
+              </div>
+            )}
+            
+            {!prediction && !error && (
+              <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Zap className="w-8 h-8 text-gray-300" />
+                </div>
+                <h3 className="text-gray-500 font-medium">Sin análisis generado</h3>
+                <p className="text-sm text-gray-400 mt-1">
+                  Completa el formulario para obtener una predicción basada en IA
+                </p>
               </div>
             )}
           </div>
@@ -478,65 +525,91 @@ Content Intelligence Engine - Professional Analytics Suite
               ) : (
                 history.map((item) => (
                   <div key={item.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                    <div className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50" onClick={() => toggleExpand(item.id)}>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3">
-                          <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${getViralScoreColor(item.viral_score)}`}>
+                    <div 
+                      className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
+                      onClick={() => toggleExpand(item.id)}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${getViralScoreColor(item.viral_score)} ${getViralScoreTextColor(item.viral_score)}`}>
                             Score: {item.viral_score}
                           </div>
                           <span className="text-xs text-gray-400">{formatDate(item.created_at)}</span>
                         </div>
-                        <p className="text-sm font-medium text-gray-900 mt-1 line-clamp-1">{item.video_idea}</p>
+                        <p className="text-sm font-medium text-gray-900 mt-1 line-clamp-2">
+                          {item.video_idea}
+                        </p>
                         <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
                           <span>{contentTypes.find(c => c.value === item.content_type)?.label || item.content_type}</span>
                           <span>{item.duration}s</span>
                           <span>{item.hashtags?.length || 0} hashtags</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 ml-4">
                         <button
                           onClick={(e) => { e.stopPropagation(); handleExportReport(item); }}
-                          className="p-1.5 text-gray-400 hover:text-gray-600"
+                          className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg"
+                          title="Exportar informe"
                         >
                           <Download className="w-4 h-4" />
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); deletePrediction(item.id); }}
-                          className="p-1.5 text-gray-400 hover:text-red-600"
+                          className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg"
+                          title="Eliminar"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
-                        {expandedItems.has(item.id) ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                        {expandedItems.has(item.id) ? (
+                          <ChevronUp className="w-4 h-4 text-gray-400" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 text-gray-400" />
+                        )}
                       </div>
                     </div>
                     
                     {expandedItems.has(item.id) && (
-                      <div className="px-4 pb-4 pt-2 border-t border-gray-100 bg-gray-50">
-                        <div className="grid grid-cols-3 gap-3 mb-3">
-                          <div className="bg-white rounded p-2 text-center">
+                      <div className="px-5 pb-5 pt-3 border-t border-gray-100 bg-gray-50">
+                        <div className="grid grid-cols-3 gap-3 mb-4">
+                          <div className="bg-white rounded-lg p-2 text-center border border-gray-100">
                             <p className="text-xs text-gray-400">Vistas estimadas</p>
-                            <p className="text-sm font-bold">{formatNumber(item.predicted_views)}</p>
+                            <p className="text-base font-bold text-gray-900">{formatNumber(item.predicted_views)}</p>
                           </div>
-                          <div className="bg-white rounded p-2 text-center">
+                          <div className="bg-white rounded-lg p-2 text-center border border-gray-100">
                             <p className="text-xs text-gray-400">Engagement</p>
-                            <p className="text-sm font-bold">{item.predicted_engagement}%</p>
+                            <p className="text-base font-bold text-gray-900">{item.predicted_engagement}%</p>
                           </div>
-                          <div className="bg-white rounded p-2 text-center">
+                          <div className="bg-white rounded-lg p-2 text-center border border-gray-100">
                             <p className="text-xs text-gray-400">Mejor momento</p>
-                            <p className="text-sm font-semibold">{item.optimal_day} {item.optimal_hour}:00</p>
+                            <p className="text-sm font-semibold text-gray-900">{item.optimal_day} {item.optimal_hour}:00</p>
                           </div>
                         </div>
-                        <p className="text-xs text-gray-600 mb-2">{item.reasoning}</p>
+                        
+                        <p className="text-sm text-gray-700 leading-relaxed mb-4">
+                          {item.reasoning}
+                        </p>
+                        
                         {item.recommendations && item.recommendations.length > 0 && (
-                          <div className="mt-2">
-                            <p className="text-xs font-medium text-gray-700 mb-1">Recomendaciones:</p>
-                            <ul className="text-xs text-gray-600 list-disc list-inside">
-                              {item.recommendations.slice(0, 2).map((rec, idx) => (
-                                <li key={idx}>{rec}</li>
+                          <div className="mb-4">
+                            <p className="text-sm font-semibold text-gray-700 mb-2">Recomendaciones:</p>
+                            <ul className="space-y-2">
+                              {item.recommendations.map((rec: string, idx: number) => (
+                                <li key={idx} className="flex items-start gap-2 text-sm text-gray-600">
+                                  <span className="text-blue-500 font-bold min-w-[20px]">{idx + 1}.</span>
+                                  <span className="leading-relaxed">{rec}</span>
+                                </li>
                               ))}
                             </ul>
                           </div>
                         )}
+                        
+                        <button
+                          onClick={() => handleExportReport(item)}
+                          className="w-full py-2 text-sm text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
+                        >
+                          <Download className="w-4 h-4" />
+                          Exportar informe completo
+                        </button>
                       </div>
                     )}
                   </div>
