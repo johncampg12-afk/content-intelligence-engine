@@ -82,6 +82,13 @@ export default async function DashboardLayout({
                   Viral Predictor
                 </Link>
                 <Link
+                  href="/calendar"
+                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                >
+                  <CalendarIcon className="w-4 h-4 mr-1" />
+                  Calendar
+                </Link>
+                <Link
                   href="/settings"
                   className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
                 >
