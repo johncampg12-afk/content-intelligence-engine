@@ -70,8 +70,8 @@ const statuses = [
 const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
-// Función auxiliar para formatear fecha local
-const formatLocalDate = (date: Date): string => {
+// Función para obtener fecha local en formato YYYY-MM-DDThh:mm
+const getLocalDateTimeString = (date: Date): string => {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
@@ -80,10 +80,17 @@ const formatLocalDate = (date: Date): string => {
   return `${year}-${month}-${day}T${hours}:${minutes}`
 }
 
-// Función para obtener fecha sin zona horaria
-const getLocalDate = (dateString: string): Date => {
-  const date = new Date(dateString)
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes())
+// Función para crear fecha UTC a partir de fecha local
+const createUTCDate = (year: number, month: number, day: number, hour: number = 0, minute: number = 0): Date => {
+  return new Date(Date.UTC(year, month, day, hour, minute))
+}
+
+// Función para obtener la fecha en UTC a partir de un string local
+const getUTCDateFromLocal = (localDateTime: string): Date => {
+  const [datePart, timePart] = localDateTime.split('T')
+  const [year, month, day] = datePart.split('-').map(Number)
+  const [hour, minute] = timePart.split(':').map(Number)
+  return createUTCDate(year, month - 1, day, hour, minute)
 }
 
 export default function CalendarPage() {
@@ -102,7 +109,7 @@ export default function CalendarPage() {
     title: '',
     description: '',
     content_type: 'tutorial',
-    scheduled_for: formatLocalDate(new Date()),
+    scheduled_for: getLocalDateTimeString(new Date()),
     duration: 15,
     hashtags: '',
     sound: 'Original'
@@ -123,17 +130,16 @@ export default function CalendarPage() {
       let endDate: Date
       
       if (viewType === 'month') {
-        startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
-        endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
+        startDate = createUTCDate(currentDate.getFullYear(), currentDate.getMonth(), 1)
+        endDate = createUTCDate(currentDate.getFullYear(), currentDate.getMonth() + 1, 0, 23, 59)
       } else {
-        // Para vista semana y agenda, obtener el domingo de la semana actual
         const dayOfWeek = currentDate.getDay()
         const diff = currentDate.getDate() - dayOfWeek
-        startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), diff)
-        startDate.setHours(0, 0, 0, 0)
-        endDate = new Date(startDate)
-        endDate.setDate(startDate.getDate() + 6)
-        endDate.setHours(23, 59, 59, 999)
+        const start = new Date(currentDate.getFullYear(), currentDate.getMonth(), diff)
+        startDate = createUTCDate(start.getFullYear(), start.getMonth(), start.getDate())
+        const end = new Date(start)
+        end.setDate(start.getDate() + 6)
+        endDate = createUTCDate(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59)
       }
       
       const response = await fetch(`/api/calendar?start=${startDate.toISOString()}&end=${endDate.toISOString()}`)
@@ -166,7 +172,8 @@ export default function CalendarPage() {
     setSubmitting(true)
     
     try {
-      const scheduledDate = new Date(formData.scheduled_for)
+      // Convertir fecha local a UTC para almacenar
+      const utcDate = getUTCDateFromLocal(formData.scheduled_for)
       
       const response = await fetch('/api/calendar', {
         method: 'POST',
@@ -175,7 +182,7 @@ export default function CalendarPage() {
           title: formData.title,
           description: formData.description,
           content_type: formData.content_type,
-          scheduled_for: scheduledDate.toISOString(),
+          scheduled_for: utcDate.toISOString(),
           duration: formData.duration,
           hashtags: formData.hashtags.split(',').map(h => h.trim()).filter(h => h),
           sound: formData.sound
@@ -191,7 +198,7 @@ export default function CalendarPage() {
           title: '',
           description: '',
           content_type: 'tutorial',
-          scheduled_for: formatLocalDate(new Date()),
+          scheduled_for: getLocalDateTimeString(new Date()),
           duration: 15,
           hashtags: '',
           sound: 'Original'
@@ -209,14 +216,14 @@ export default function CalendarPage() {
     setSubmitting(true)
     
     try {
-      const scheduledDate = new Date(selectedEvent.scheduled_for)
+      const utcDate = getUTCDateFromLocal(selectedEvent.scheduled_for)
       
       const response = await fetch('/api/calendar', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: selectedEvent.id,
-          scheduled_for: scheduledDate.toISOString(),
+          scheduled_for: utcDate.toISOString(),
           status: selectedEvent.status
         })
       })
@@ -240,7 +247,7 @@ export default function CalendarPage() {
       'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4, 'Viernes': 5, 'Sábado': 6, 'Domingo': 0
     }
     
-    const targetDate = new Date(formData.scheduled_for || new Date())
+    const targetDate = new Date()
     const currentDay = targetDate.getDay()
     const targetDay = days[prediction.optimal_day]
     let diff = targetDay - currentDay
@@ -253,7 +260,7 @@ export default function CalendarPage() {
       title: prediction.video_idea.substring(0, 100),
       description: prediction.video_idea,
       content_type: prediction.content_type || 'tutorial',
-      scheduled_for: formatLocalDate(targetDate),
+      scheduled_for: getLocalDateTimeString(targetDate),
       duration: 15,
       hashtags: '',
       sound: 'Original'
@@ -285,7 +292,7 @@ export default function CalendarPage() {
         event.title,
         contentTypes.find(c => c.value === event.content_type)?.label || event.content_type,
         eventDate.toLocaleDateString('es-ES'),
-        `${eventDate.getHours()}:00`,
+        `${eventDate.getUTCHours()}:00`,
         `${event.duration}s`,
         event.hashtags?.join(', ') || '',
         event.sound,
@@ -384,25 +391,10 @@ export default function CalendarPage() {
     const filtered = getFilteredEvents()
     return filtered.filter(e => {
       const eventDate = new Date(e.scheduled_for)
-      return eventDate.getDate() === date.getDate() &&
-             eventDate.getMonth() === date.getMonth() &&
-             eventDate.getFullYear() === date.getFullYear()
+      return eventDate.getUTCDate() === date.getDate() &&
+             eventDate.getUTCMonth() === date.getMonth() &&
+             eventDate.getUTCFullYear() === date.getFullYear()
     })
-  }
-
-  const getEventsByHour = (date: Date) => {
-    const eventsByHour: { [hour: string]: CalendarEvent[] } = {}
-    for (let i = 0; i <= 23; i++) {
-      eventsByHour[`${i}:00`] = []
-    }
-    
-    const dayEvents = getEventsForDate(date)
-    dayEvents.forEach(event => {
-      const hour = new Date(event.scheduled_for).getHours()
-      eventsByHour[`${hour}:00`].push(event)
-    })
-    
-    return eventsByHour
   }
 
   const goPrev = () => {
@@ -431,7 +423,7 @@ export default function CalendarPage() {
       title: '',
       description: '',
       content_type: 'tutorial',
-      scheduled_for: formatLocalDate(date),
+      scheduled_for: getLocalDateTimeString(date),
       duration: 15,
       hashtags: '',
       sound: 'Original'
@@ -480,25 +472,28 @@ export default function CalendarPage() {
                     </div>
                     
                     <div className="space-y-1">
-                      {dayEvents.slice(0, 3).map(event => (
-                        <div
-                          key={event.id}
-                          onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); setShowModal(true); }}
-                          className={`text-xs p-1.5 rounded cursor-pointer ${getContentTypeStyle(event.content_type)}`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="truncate">{event.title.substring(0, 25)}</span>
-                            {event.status === 'published' && <Check className="w-3 h-3" />}
+                      {dayEvents.slice(0, 3).map(event => {
+                        const eventDate = new Date(event.scheduled_for)
+                        return (
+                          <div
+                            key={event.id}
+                            onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); setShowModal(true); }}
+                            className={`text-xs p-1.5 rounded cursor-pointer ${getContentTypeStyle(event.content_type)}`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="truncate">{event.title.substring(0, 25)}</span>
+                              {event.status === 'published' && <Check className="w-3 h-3" />}
+                            </div>
+                            <div className="flex items-center gap-1 mt-0.5 text-xs opacity-75">
+                              <Clock className="w-2 h-2" />
+                              <span>{eventDate.getUTCHours()}:00</span>
+                              {event.predictions?.viral_score && (
+                                <span className="ml-1">🔥{event.predictions.viral_score}</span>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1 mt-0.5 text-xs opacity-75">
-                            <Clock className="w-2 h-2" />
-                            <span>{new Date(event.scheduled_for).getHours()}:00</span>
-                            {event.predictions?.viral_score && (
-                              <span className="ml-1">🔥{event.predictions.viral_score}</span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                       {dayEvents.length > 3 && (
                         <div className="text-xs text-gray-400 text-center pt-1">
                           +{dayEvents.length - 3} más
@@ -541,28 +536,31 @@ export default function CalendarPage() {
               </div>
               
               <div className="space-y-2">
-                {dayEvents.map(event => (
-                  <div
-                    key={event.id}
-                    onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); setShowModal(true); }}
-                    className={`p-2 rounded-lg cursor-pointer ${getContentTypeStyle(event.content_type)}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium truncate">{event.title.substring(0, 20)}</span>
-                      {event.status === 'published' && <Check className="w-3 h-3" />}
-                    </div>
-                    <div className="flex items-center gap-2 mt-1 text-xs opacity-75">
-                      <Clock className="w-3 h-3" />
-                      <span>{new Date(event.scheduled_for).getHours()}:00</span>
-                      <span>{event.duration}s</span>
-                    </div>
-                    {event.predictions?.viral_score && (
-                      <div className="mt-1 text-xs font-medium">
-                        🔥 Score: {event.predictions.viral_score}
+                {dayEvents.map(event => {
+                  const eventDate = new Date(event.scheduled_for)
+                  return (
+                    <div
+                      key={event.id}
+                      onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); setShowModal(true); }}
+                      className={`p-2 rounded-lg cursor-pointer ${getContentTypeStyle(event.content_type)}`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium truncate">{event.title.substring(0, 20)}</span>
+                        {event.status === 'published' && <Check className="w-3 h-3" />}
                       </div>
-                    )}
-                  </div>
-                ))}
+                      <div className="flex items-center gap-2 mt-1 text-xs opacity-75">
+                        <Clock className="w-3 h-3" />
+                        <span>{eventDate.getUTCHours()}:00</span>
+                        <span>{event.duration}s</span>
+                      </div>
+                      {event.predictions?.viral_score && (
+                        <div className="mt-1 text-xs font-medium">
+                          🔥 Score: {event.predictions.viral_score}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )
@@ -578,7 +576,7 @@ export default function CalendarPage() {
     
     filteredEvents.forEach(event => {
       const eventDate = new Date(event.scheduled_for)
-      const dateKey = `${eventDate.getFullYear()}-${eventDate.getMonth()}-${eventDate.getDate()}`
+      const dateKey = `${eventDate.getUTCFullYear()}-${eventDate.getUTCMonth()}-${eventDate.getUTCDate()}`
       if (!groupedByDate[dateKey]) {
         groupedByDate[dateKey] = []
       }
@@ -606,39 +604,42 @@ export default function CalendarPage() {
                   </h3>
                 </div>
                 <div className="space-y-2 mt-2">
-                  {groupedByDate[dateKey].map(event => (
-                    <div
-                      key={event.id}
-                      onClick={() => { setSelectedEvent(event); setShowModal(true); }}
-                      className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
-                    >
-                      <div className="w-16 text-center">
-                        <div className="text-sm font-medium text-gray-900">
-                          {new Date(event.scheduled_for).getHours()}:00
-                        </div>
-                      </div>
-                      <div className={`w-1 h-10 rounded-full ${getContentTypeStyle(event.content_type).split(' ')[0]}`} />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-900">{event.title}</span>
-                          {event.status === 'published' && <Check className="w-3 h-3 text-green-500" />}
-                        </div>
-                        <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
-                          <span>{contentTypes.find(c => c.value === event.content_type)?.label}</span>
-                          <span>{event.duration}s</span>
-                          {event.predictions?.viral_score && (
-                            <span className="text-blue-600">Score: {event.predictions.viral_score}</span>
-                          )}
-                        </div>
-                      </div>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); deleteEvent(event.id); }}
-                        className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                  {groupedByDate[dateKey].map(event => {
+                    const eventDate = new Date(event.scheduled_for)
+                    return (
+                      <div
+                        key={event.id}
+                        onClick={() => { setSelectedEvent(event); setShowModal(true); }}
+                        className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
+                        <div className="w-16 text-center">
+                          <div className="text-sm font-medium text-gray-900">
+                            {eventDate.getUTCHours()}:00
+                          </div>
+                        </div>
+                        <div className={`w-1 h-10 rounded-full ${getContentTypeStyle(event.content_type).split(' ')[0]}`} />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-gray-900">{event.title}</span>
+                            {event.status === 'published' && <Check className="w-3 h-3 text-green-500" />}
+                          </div>
+                          <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
+                            <span>{contentTypes.find(c => c.value === event.content_type)?.label}</span>
+                            <span>{event.duration}s</span>
+                            {event.predictions?.viral_score && (
+                              <span className="text-blue-600">Score: {event.predictions.viral_score}</span>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deleteEvent(event.id); }}
+                          className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )
@@ -774,23 +775,26 @@ export default function CalendarPage() {
             
             {showNotifications && (
               <div className="mt-3 space-y-2">
-                {upcomingEvents.slice(0, 5).map(event => (
-                  <div key={event.id} className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-3 h-3 text-amber-600" />
-                      <span>
-                        {new Date(event.scheduled_for).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                      <span className="text-gray-700 line-clamp-1 max-w-[200px]">{event.title}</span>
+                {upcomingEvents.slice(0, 5).map(event => {
+                  const eventDate = new Date(event.scheduled_for)
+                  return (
+                    <div key={event.id} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-3 h-3 text-amber-600" />
+                        <span>
+                          {eventDate.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        <span className="text-gray-700 line-clamp-1 max-w-[200px]">{event.title}</span>
+                      </div>
+                      <button
+                        onClick={() => { setSelectedEvent(event); setShowModal(true); }}
+                        className="text-xs text-blue-600 hover:text-blue-800"
+                      >
+                        Editar
+                      </button>
                     </div>
-                    <button
-                      onClick={() => { setSelectedEvent(event); setShowModal(true); }}
-                      className="text-xs text-blue-600 hover:text-blue-800"
-                    >
-                      Editar
-                    </button>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>
@@ -903,8 +907,11 @@ export default function CalendarPage() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">Fecha y hora</label>
                       <input
                         type="datetime-local"
-                        value={formatLocalDate(new Date(selectedEvent.scheduled_for))}
-                        onChange={(e) => setSelectedEvent({...selectedEvent, scheduled_for: new Date(e.target.value).toISOString()})}
+                        value={getLocalDateTimeString(new Date(selectedEvent.scheduled_for))}
+                        onChange={(e) => {
+                          const utcDate = getUTCDateFromLocal(e.target.value)
+                          setSelectedEvent({...selectedEvent, scheduled_for: utcDate.toISOString()})
+                        }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
