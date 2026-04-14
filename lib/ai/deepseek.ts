@@ -101,7 +101,7 @@ export class DeepSeekAI {
         messages: [
           {
             role: 'system',
-            content: `Eres un analista de datos senior especializado en social media para empresas.
+            content: `Eres un analista de datos senior especializado en social media para empresas en 2026.
             
             Debes generar un análisis COMPLETO en formato texto plano con markdown simple.
             La estructura DEBE ser EXACTAMENTE la siguiente:
@@ -338,7 +338,7 @@ ${JSON.stringify(metricsData, null, 2)}`
       messages: [
         {
           role: 'system',
-          content: `Eres un analista de datos experto en predicción de viralidad en TikTok.
+          content: `Eres un analista de datos experto en predicción de viralidad en TikTok en 2026.
           
           IMPORTANTE: Las recomendaciones deben ser PRÁCTICAS y ACCIONABLES, basadas en patrones reales del nicho del usuario.
           
