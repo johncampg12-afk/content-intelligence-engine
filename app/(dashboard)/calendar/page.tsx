@@ -52,12 +52,12 @@ interface Prediction {
 }
 
 const contentTypes = [
-  { value: 'tutorial', label: 'Tutorial', color: 'bg-blue-100 text-blue-700', border: 'border-blue-200' },
-  { value: 'entertainment', label: 'Entretenimiento', color: 'bg-purple-100 text-purple-700', border: 'border-purple-200' },
-  { value: 'educational', label: 'Educativo', color: 'bg-green-100 text-green-700', border: 'border-green-200' },
-  { value: 'inspirational', label: 'Inspiracional', color: 'bg-amber-100 text-amber-700', border: 'border-amber-200' },
-  { value: 'challenge', label: 'Challenge', color: 'bg-pink-100 text-pink-700', border: 'border-pink-200' },
-  { value: 'review', label: 'Review', color: 'bg-indigo-100 text-indigo-700', border: 'border-indigo-200' }
+  { value: 'tutorial', label: 'Tutorial', color: 'bg-blue-100 text-blue-700' },
+  { value: 'entertainment', label: 'Entretenimiento', color: 'bg-purple-100 text-purple-700' },
+  { value: 'educational', label: 'Educativo', color: 'bg-green-100 text-green-700' },
+  { value: 'inspirational', label: 'Inspiracional', color: 'bg-amber-100 text-amber-700' },
+  { value: 'challenge', label: 'Challenge', color: 'bg-pink-100 text-pink-700' },
+  { value: 'review', label: 'Review', color: 'bg-indigo-100 text-indigo-700' }
 ]
 
 const statuses = [
@@ -70,25 +70,39 @@ const statuses = [
 const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
+// Función auxiliar para formatear fecha local
+const formatLocalDate = (date: Date): string => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day}T${hours}:${minutes}`
+}
+
+// Función para obtener fecha sin zona horaria
+const getLocalDate = (dateString: string): Date => {
+  const date = new Date(dateString)
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes())
+}
+
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [viewType, setViewType] = useState<'month' | 'week' | 'agenda'>('month')
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
-  const [selectedDate, setSelectedDate] = useState<string>('')
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
   const [predictions, setPredictions] = useState<Prediction[]>([])
   const [showPredictions, setShowPredictions] = useState(false)
   const [filterType, setFilterType] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<string>('all')
-  const [draggedEvent, setDraggedEvent] = useState<CalendarEvent | null>(null)
   const [showNotifications, setShowNotifications] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     content_type: 'tutorial',
-    scheduled_for: '',
+    scheduled_for: formatLocalDate(new Date()),
     duration: 15,
     hashtags: '',
     sound: 'Original'
@@ -96,13 +110,6 @@ export default function CalendarPage() {
   const [submitting, setSubmitting] = useState(false)
   
   const supabase = createClient()
-
-  // Validar fecha actual
-  useEffect(() => {
-    if (isNaN(currentDate.getTime())) {
-      setCurrentDate(new Date())
-    }
-  }, [currentDate])
 
   useEffect(() => {
     loadEvents()
@@ -118,18 +125,14 @@ export default function CalendarPage() {
       if (viewType === 'month') {
         startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
         endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
-        endDate.setHours(23, 59, 59, 999)
       } else {
-        // Para vista semana y agenda
-        const weekStart = new Date(currentDate)
-        const dayOfWeek = weekStart.getDay()
-        const diff = weekStart.getDate() - dayOfWeek
-        weekStart.setDate(diff)
-        weekStart.setHours(0, 0, 0, 0)
-        startDate = new Date(weekStart)
-        
-        endDate = new Date(weekStart)
-        endDate.setDate(weekStart.getDate() + 6)
+        // Para vista semana y agenda, obtener el domingo de la semana actual
+        const dayOfWeek = currentDate.getDay()
+        const diff = currentDate.getDate() - dayOfWeek
+        startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), diff)
+        startDate.setHours(0, 0, 0, 0)
+        endDate = new Date(startDate)
+        endDate.setDate(startDate.getDate() + 6)
         endDate.setHours(23, 59, 59, 999)
       }
       
@@ -163,6 +166,8 @@ export default function CalendarPage() {
     setSubmitting(true)
     
     try {
+      const scheduledDate = new Date(formData.scheduled_for)
+      
       const response = await fetch('/api/calendar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -170,9 +175,9 @@ export default function CalendarPage() {
           title: formData.title,
           description: formData.description,
           content_type: formData.content_type,
-          scheduled_for: formData.scheduled_for,
+          scheduled_for: scheduledDate.toISOString(),
           duration: formData.duration,
-          hashtags: formData.hashtags.split(',').map(h => h.trim()),
+          hashtags: formData.hashtags.split(',').map(h => h.trim()).filter(h => h),
           sound: formData.sound
         })
       })
@@ -186,7 +191,7 @@ export default function CalendarPage() {
           title: '',
           description: '',
           content_type: 'tutorial',
-          scheduled_for: '',
+          scheduled_for: formatLocalDate(new Date()),
           duration: 15,
           hashtags: '',
           sound: 'Original'
@@ -204,12 +209,14 @@ export default function CalendarPage() {
     setSubmitting(true)
     
     try {
+      const scheduledDate = new Date(selectedEvent.scheduled_for)
+      
       const response = await fetch('/api/calendar', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: selectedEvent.id,
-          scheduled_for: selectedEvent.scheduled_for,
+          scheduled_for: scheduledDate.toISOString(),
           status: selectedEvent.status
         })
       })
@@ -233,7 +240,7 @@ export default function CalendarPage() {
       'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4, 'Viernes': 5, 'Sábado': 6, 'Domingo': 0
     }
     
-    const targetDate = new Date(selectedDate || formData.scheduled_for || new Date())
+    const targetDate = new Date(formData.scheduled_for || new Date())
     const currentDay = targetDate.getDay()
     const targetDay = days[prediction.optimal_day]
     let diff = targetDay - currentDay
@@ -246,7 +253,7 @@ export default function CalendarPage() {
       title: prediction.video_idea.substring(0, 100),
       description: prediction.video_idea,
       content_type: prediction.content_type || 'tutorial',
-      scheduled_for: targetDate.toISOString(),
+      scheduled_for: formatLocalDate(targetDate),
       duration: 15,
       hashtags: '',
       sound: 'Original'
@@ -269,53 +276,23 @@ export default function CalendarPage() {
     }
   }
 
-  const handleDragStart = (event: CalendarEvent) => {
-    setDraggedEvent(event)
-  }
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-  }
-
-  const handleDrop = async (e: React.DragEvent, targetDate: Date) => {
-    e.preventDefault()
-    if (!draggedEvent) return
-    
-    try {
-      const response = await fetch('/api/calendar', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: draggedEvent.id,
-          scheduled_for: targetDate.toISOString()
-        })
-      })
-      
-      const data = await response.json()
-      
-      if (data.event) {
-        setEvents(events.map(e => e.id === draggedEvent.id ? data.event : e))
-      }
-    } catch (error) {
-      console.error('Error moving event:', error)
-    }
-    setDraggedEvent(null)
-  }
-
   const exportToCSV = () => {
     const filteredEvents = getFilteredEvents()
     const headers = ['Título', 'Tipo', 'Fecha', 'Hora', 'Duración', 'Hashtags', 'Sonido', 'Estado', 'Viral Score']
-    const rows = filteredEvents.map(event => [
-      event.title,
-      contentTypes.find(c => c.value === event.content_type)?.label || event.content_type,
-      new Date(event.scheduled_for).toLocaleDateString('es-ES'),
-      `${new Date(event.scheduled_for).getHours()}:00`,
-      `${event.duration}s`,
-      event.hashtags?.join(', ') || '',
-      event.sound,
-      statuses.find(s => s.value === event.status)?.label || event.status,
-      event.predictions?.viral_score || '-'
-    ])
+    const rows = filteredEvents.map(event => {
+      const eventDate = new Date(event.scheduled_for)
+      return [
+        event.title,
+        contentTypes.find(c => c.value === event.content_type)?.label || event.content_type,
+        eventDate.toLocaleDateString('es-ES'),
+        `${eventDate.getHours()}:00`,
+        `${event.duration}s`,
+        event.hashtags?.join(', ') || '',
+        event.sound,
+        statuses.find(s => s.value === event.status)?.label || event.status,
+        event.predictions?.viral_score || '-'
+      ]
+    })
     
     const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n')
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
@@ -389,16 +366,14 @@ export default function CalendarPage() {
   }
 
   const getWeekDays = () => {
-    const weekStart = new Date(currentDate)
-    const dayOfWeek = weekStart.getDay()
-    const diff = weekStart.getDate() - dayOfWeek
-    weekStart.setDate(diff)
-    weekStart.setHours(0, 0, 0, 0)
+    const dayOfWeek = currentDate.getDay()
+    const diff = currentDate.getDate() - dayOfWeek
+    const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), diff)
     
     const days = []
     for (let i = 0; i < 7; i++) {
-      const day = new Date(weekStart)
-      day.setDate(weekStart.getDate() + i)
+      const day = new Date(startDate)
+      day.setDate(startDate.getDate() + i)
       days.push(day)
     }
     return days
@@ -407,12 +382,17 @@ export default function CalendarPage() {
   const getEventsForDate = (date: Date) => {
     if (!date) return []
     const filtered = getFilteredEvents()
-    return filtered.filter(e => new Date(e.scheduled_for).toDateString() === date.toDateString())
+    return filtered.filter(e => {
+      const eventDate = new Date(e.scheduled_for)
+      return eventDate.getDate() === date.getDate() &&
+             eventDate.getMonth() === date.getMonth() &&
+             eventDate.getFullYear() === date.getFullYear()
+    })
   }
 
   const getEventsByHour = (date: Date) => {
     const eventsByHour: { [hour: string]: CalendarEvent[] } = {}
-    for (let i = 8; i <= 23; i++) {
+    for (let i = 0; i <= 23; i++) {
       eventsByHour[`${i}:00`] = []
     }
     
@@ -446,12 +426,16 @@ export default function CalendarPage() {
   }
 
   const openModalForDate = (date: Date) => {
-    setSelectedDate(date.toISOString())
-    setFormData({
-      ...formData,
-      scheduled_for: date.toISOString()
-    })
     setSelectedEvent(null)
+    setFormData({
+      title: '',
+      description: '',
+      content_type: 'tutorial',
+      scheduled_for: formatLocalDate(date),
+      duration: 15,
+      hashtags: '',
+      sound: 'Original'
+    })
     setShowModal(true)
   }
 
@@ -479,10 +463,8 @@ export default function CalendarPage() {
             return (
               <div
                 key={idx}
-                onDragOver={(e) => date && handleDragOver(e)}
-                onDrop={(e) => date && handleDrop(e, date)}
                 onClick={() => date && openModalForDate(date)}
-                className={`min-h-[130px] border-r border-b border-gray-100 p-2 cursor-pointer hover:bg-gray-50 transition-colors ${
+                className={`min-h-[120px] border-r border-b border-gray-100 p-2 cursor-pointer hover:bg-gray-50 transition-colors ${
                   !date ? 'bg-gray-50' : ''
                 }`}
               >
@@ -501,22 +483,18 @@ export default function CalendarPage() {
                       {dayEvents.slice(0, 3).map(event => (
                         <div
                           key={event.id}
-                          draggable
-                          onDragStart={() => handleDragStart(event)}
                           onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); setShowModal(true); }}
-                          className={`text-xs p-1.5 rounded cursor-move ${getContentTypeStyle(event.content_type)}`}
+                          className={`text-xs p-1.5 rounded cursor-pointer ${getContentTypeStyle(event.content_type)}`}
                         >
                           <div className="flex items-center justify-between">
                             <span className="truncate">{event.title.substring(0, 25)}</span>
                             {event.status === 'published' && <Check className="w-3 h-3" />}
                           </div>
-                          <div className="flex items-center justify-between mt-0.5">
-                            <div className="flex items-center gap-1 text-xs opacity-75">
-                              <Clock className="w-2 h-2" />
-                              <span>{new Date(event.scheduled_for).getHours()}:00</span>
-                            </div>
+                          <div className="flex items-center gap-1 mt-0.5 text-xs opacity-75">
+                            <Clock className="w-2 h-2" />
+                            <span>{new Date(event.scheduled_for).getHours()}:00</span>
                             {event.predictions?.viral_score && (
-                              <span className="text-xs font-medium">🔥 {event.predictions.viral_score}</span>
+                              <span className="ml-1">🔥{event.predictions.viral_score}</span>
                             )}
                           </div>
                         </div>
@@ -537,85 +515,58 @@ export default function CalendarPage() {
     )
   }
 
-  // Renderizar vista semanal con horas
-  const renderWeekWithHours = () => {
+  // Renderizar vista semanal
+  const renderWeekView = () => {
     const weekDaysList = getWeekDays()
     
-    if (!weekDaysList.length || weekDaysList.some(day => isNaN(day.getTime()))) {
-      return <div className="p-8 text-center text-gray-500">Cargando vista semanal...</div>
-    }
-    
     return (
-      <div className="overflow-x-auto">
-        <div className="min-w-[800px]">
-          <div className="grid grid-cols-8 border-b border-gray-200">
-            <div className="py-3 text-center text-sm font-medium text-gray-500">Hora</div>
-            {weekDaysList.map((day, idx) => {
-              const isValidDate = day && !isNaN(day.getTime())
-              return (
-                <div key={idx} className="py-3 text-center">
-                  <div className="text-sm font-medium text-gray-500">{weekDays[idx]}</div>
-                  <div className={`text-sm font-semibold ${isValidDate && day.toDateString() === new Date().toDateString() ? 'text-blue-600' : 'text-gray-700'}`}>
-                    {isValidDate ? day.getDate() : '?'}
+      <div className="grid grid-cols-7">
+        {weekDaysList.map((date, idx) => {
+          const dayEvents = getEventsForDate(date)
+          const isToday = date.toDateString() === new Date().toDateString()
+          
+          return (
+            <div
+              key={idx}
+              onClick={() => openModalForDate(date)}
+              className={`min-h-[400px] border-r border-gray-100 p-2 cursor-pointer hover:bg-gray-50 transition-colors ${idx === 6 ? 'border-r-0' : ''}`}
+            >
+              <div className={`sticky top-0 bg-white pb-2 mb-2 border-b ${isToday ? 'border-blue-500' : 'border-gray-100'}`}>
+                <div className="text-center">
+                  <div className="text-xs text-gray-500">{weekDays[idx]}</div>
+                  <div className={`text-lg font-semibold ${isToday ? 'text-blue-600' : 'text-gray-700'}`}>
+                    {date.getDate()}
                   </div>
                 </div>
-              )
-            })}
-          </div>
-          
-          {Array.from({ length: 16 }, (_, i) => i + 8).map(hour => {
-            const timeSlot = `${hour}:00`
-            return (
-              <div key={hour} className="grid grid-cols-8 border-b border-gray-100 min-h-[80px]">
-                <div className="py-2 text-center text-sm text-gray-500 border-r border-gray-100">
-                  {timeSlot}
-                </div>
-                {weekDaysList.map((date, idx) => {
-                  if (!date || isNaN(date.getTime())) {
-                    return <div key={idx} className="p-1 min-h-[80px] bg-gray-50"></div>
-                  }
-                  
-                  const eventsByHour = getEventsByHour(date)
-                  const hourEvents = eventsByHour[timeSlot] || []
-                  
-                  return (
-                    <div
-                      key={idx}
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(e, date)}
-                      onClick={() => {
-                        const newDate = new Date(date)
-                        newDate.setHours(hour, 0, 0)
-                        openModalForDate(newDate)
-                      }}
-                      className="p-1 cursor-pointer hover:bg-gray-50 transition-colors min-h-[80px]"
-                    >
-                      <div className="space-y-1">
-                        {hourEvents.map(event => (
-                          <div
-                            key={event.id}
-                            draggable
-                            onDragStart={() => handleDragStart(event)}
-                            onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); setShowModal(true); }}
-                            className={`text-xs p-1.5 rounded cursor-move ${getContentTypeStyle(event.content_type)}`}
-                          >
-                            <div className="truncate">{event.title.substring(0, 20)}</div>
-                            <div className="flex items-center justify-between mt-0.5">
-                              <span className="text-xs opacity-75">{event.duration}s</span>
-                              {event.predictions?.viral_score && (
-                                <span className="text-xs">🔥{event.predictions.viral_score}</span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                })}
               </div>
-            )
-          })}
-        </div>
+              
+              <div className="space-y-2">
+                {dayEvents.map(event => (
+                  <div
+                    key={event.id}
+                    onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); setShowModal(true); }}
+                    className={`p-2 rounded-lg cursor-pointer ${getContentTypeStyle(event.content_type)}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium truncate">{event.title.substring(0, 20)}</span>
+                      {event.status === 'published' && <Check className="w-3 h-3" />}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1 text-xs opacity-75">
+                      <Clock className="w-3 h-3" />
+                      <span>{new Date(event.scheduled_for).getHours()}:00</span>
+                      <span>{event.duration}s</span>
+                    </div>
+                    {event.predictions?.viral_score && (
+                      <div className="mt-1 text-xs font-medium">
+                        🔥 Score: {event.predictions.viral_score}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })}
       </div>
     )
   }
@@ -626,14 +577,15 @@ export default function CalendarPage() {
     const groupedByDate: { [date: string]: CalendarEvent[] } = {}
     
     filteredEvents.forEach(event => {
-      const dateKey = new Date(event.scheduled_for).toDateString()
+      const eventDate = new Date(event.scheduled_for)
+      const dateKey = `${eventDate.getFullYear()}-${eventDate.getMonth()}-${eventDate.getDate()}`
       if (!groupedByDate[dateKey]) {
         groupedByDate[dateKey] = []
       }
       groupedByDate[dateKey].push(event)
     })
     
-    const sortedDates = Object.keys(groupedByDate).sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+    const sortedDates = Object.keys(groupedByDate).sort()
     
     return (
       <div className="divide-y divide-gray-100 p-4">
@@ -642,50 +594,55 @@ export default function CalendarPage() {
             No hay publicaciones programadas
           </div>
         ) : (
-          sortedDates.map((dateKey) => (
-            <div key={dateKey} className="py-4 first:pt-0">
-              <div className="sticky top-0 bg-white pb-2">
-                <h3 className="text-sm font-semibold text-gray-700">
-                  {new Date(dateKey).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
-                </h3>
-              </div>
-              <div className="space-y-2 mt-2">
-                {groupedByDate[dateKey].map(event => (
-                  <div
-                    key={event.id}
-                    onClick={() => { setSelectedEvent(event); setShowModal(true); }}
-                    className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
-                  >
-                    <div className="w-16 text-center">
-                      <div className="text-sm font-medium text-gray-900">
-                        {new Date(event.scheduled_for).getHours()}:00
-                      </div>
-                    </div>
-                    <div className={`w-1 h-10 rounded-full ${getContentTypeStyle(event.content_type).split(' ')[0].replace('bg-', 'bg-')}`} />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-900">{event.title}</span>
-                        {event.status === 'published' && <Check className="w-3 h-3 text-green-500" />}
-                      </div>
-                      <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
-                        <span>{contentTypes.find(c => c.value === event.content_type)?.label}</span>
-                        <span>{event.duration}s</span>
-                        {event.predictions?.viral_score && (
-                          <span className="text-blue-600">Score: {event.predictions.viral_score}</span>
-                        )}
-                      </div>
-                    </div>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); deleteEvent(event.id); }}
-                      className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+          sortedDates.map((dateKey) => {
+            const firstEvent = groupedByDate[dateKey][0]
+            const date = new Date(firstEvent.scheduled_for)
+            
+            return (
+              <div key={dateKey} className="py-4 first:pt-0">
+                <div className="sticky top-0 bg-white pb-2">
+                  <h3 className="text-sm font-semibold text-gray-700">
+                    {date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+                  </h3>
+                </div>
+                <div className="space-y-2 mt-2">
+                  {groupedByDate[dateKey].map(event => (
+                    <div
+                      key={event.id}
+                      onClick={() => { setSelectedEvent(event); setShowModal(true); }}
+                      className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
                     >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
+                      <div className="w-16 text-center">
+                        <div className="text-sm font-medium text-gray-900">
+                          {new Date(event.scheduled_for).getHours()}:00
+                        </div>
+                      </div>
+                      <div className={`w-1 h-10 rounded-full ${getContentTypeStyle(event.content_type).split(' ')[0]}`} />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-900">{event.title}</span>
+                          {event.status === 'published' && <Check className="w-3 h-3 text-green-500" />}
+                        </div>
+                        <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
+                          <span>{contentTypes.find(c => c.value === event.content_type)?.label}</span>
+                          <span>{event.duration}s</span>
+                          {event.predictions?.viral_score && (
+                            <span className="text-blue-600">Score: {event.predictions.viral_score}</span>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteEvent(event.id); }}
+                        className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))
+            )
+          })
         )}
       </div>
     )
@@ -753,19 +710,7 @@ export default function CalendarPage() {
             </button>
             
             <button
-              onClick={() => {
-                setSelectedEvent(null)
-                setFormData({
-                  title: '',
-                  description: '',
-                  content_type: 'tutorial',
-                  scheduled_for: new Date().toISOString(),
-                  duration: 15,
-                  hashtags: '',
-                  sound: 'Original'
-                })
-                setShowModal(true)
-              }}
+              onClick={() => openModalForDate(new Date())}
               className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               <Plus className="w-4 h-4" />
@@ -836,7 +781,7 @@ export default function CalendarPage() {
                       <span>
                         {new Date(event.scheduled_for).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </span>
-                      <span className="text-gray-700">{event.title}</span>
+                      <span className="text-gray-700 line-clamp-1 max-w-[200px]">{event.title}</span>
                     </div>
                     <button
                       onClick={() => { setSelectedEvent(event); setShowModal(true); }}
@@ -887,7 +832,7 @@ export default function CalendarPage() {
           <h2 className="text-lg font-semibold text-gray-900">
             {viewType === 'month' 
               ? `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`
-              : `Semana del ${getWeekDays()[0]?.getDate() || ''} de ${monthNames[getWeekDays()[0]?.getMonth() || 0]}`
+              : `Semana del ${getWeekDays()[0].getDate()} de ${monthNames[getWeekDays()[0].getMonth()]}`
             }
           </h2>
           <button onClick={goNext} className="p-1 hover:bg-gray-200 rounded-lg transition-colors">
@@ -898,7 +843,7 @@ export default function CalendarPage() {
         {/* Calendar View */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           {viewType === 'month' && renderMonthView()}
-          {viewType === 'week' && renderWeekWithHours()}
+          {viewType === 'week' && renderWeekView()}
           {viewType === 'agenda' && renderAgendaView()}
         </div>
 
@@ -958,8 +903,8 @@ export default function CalendarPage() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">Fecha y hora</label>
                       <input
                         type="datetime-local"
-                        value={selectedEvent.scheduled_for.slice(0, 16)}
-                        onChange={(e) => setSelectedEvent({...selectedEvent, scheduled_for: e.target.value})}
+                        value={formatLocalDate(new Date(selectedEvent.scheduled_for))}
+                        onChange={(e) => setSelectedEvent({...selectedEvent, scheduled_for: new Date(e.target.value).toISOString()})}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
@@ -1033,7 +978,7 @@ export default function CalendarPage() {
                         <label className="block text-sm font-medium text-gray-700 mb-1">Fecha y hora</label>
                         <input
                           type="datetime-local"
-                          value={formData.scheduled_for.slice(0, 16)}
+                          value={formData.scheduled_for}
                           onChange={(e) => setFormData({...formData, scheduled_for: e.target.value})}
                           required
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
