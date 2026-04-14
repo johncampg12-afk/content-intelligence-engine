@@ -8,7 +8,6 @@ import {
   ChevronRight,
   Plus,
   Trash2,
-  Edit,
   Check,
   X,
   Clock,
@@ -17,17 +16,12 @@ import {
   Loader2,
   Sparkles,
   TrendingUp,
-  Copy,
   LayoutGrid,
   List,
   Filter,
   Download,
   BarChart3,
-  Bell,
-  AlertCircle,
-  Eye,
-  Heart,
-  Share2
+  Bell
 } from 'lucide-react'
 
 interface CalendarEvent {
@@ -58,12 +52,12 @@ interface Prediction {
 }
 
 const contentTypes = [
-  { value: 'tutorial', label: 'Tutorial', color: 'bg-blue-100 text-blue-700', border: 'border-blue-200', bgLight: 'bg-blue-50' },
-  { value: 'entertainment', label: 'Entretenimiento', color: 'bg-purple-100 text-purple-700', border: 'border-purple-200', bgLight: 'bg-purple-50' },
-  { value: 'educational', label: 'Educativo', color: 'bg-green-100 text-green-700', border: 'border-green-200', bgLight: 'bg-green-50' },
-  { value: 'inspirational', label: 'Inspiracional', color: 'bg-amber-100 text-amber-700', border: 'border-amber-200', bgLight: 'bg-amber-50' },
-  { value: 'challenge', label: 'Challenge', color: 'bg-pink-100 text-pink-700', border: 'border-pink-200', bgLight: 'bg-pink-50' },
-  { value: 'review', label: 'Review', color: 'bg-indigo-100 text-indigo-700', border: 'border-indigo-200', bgLight: 'bg-indigo-50' }
+  { value: 'tutorial', label: 'Tutorial', color: 'bg-blue-100 text-blue-700', border: 'border-blue-200' },
+  { value: 'entertainment', label: 'Entretenimiento', color: 'bg-purple-100 text-purple-700', border: 'border-purple-200' },
+  { value: 'educational', label: 'Educativo', color: 'bg-green-100 text-green-700', border: 'border-green-200' },
+  { value: 'inspirational', label: 'Inspiracional', color: 'bg-amber-100 text-amber-700', border: 'border-amber-200' },
+  { value: 'challenge', label: 'Challenge', color: 'bg-pink-100 text-pink-700', border: 'border-pink-200' },
+  { value: 'review', label: 'Review', color: 'bg-indigo-100 text-indigo-700', border: 'border-indigo-200' }
 ]
 
 const statuses = [
@@ -74,7 +68,6 @@ const statuses = [
 ]
 
 const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
-const fullWeekDays = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
 export default function CalendarPage() {
@@ -104,16 +97,17 @@ export default function CalendarPage() {
   
   const supabase = createClient()
 
+  // Validar fecha actual
+  useEffect(() => {
+    if (isNaN(currentDate.getTime())) {
+      setCurrentDate(new Date())
+    }
+  }, [currentDate])
+
   useEffect(() => {
     loadEvents()
     loadPredictions()
   }, [currentDate, viewType])
-
-  useEffect(() => {
-    if (events.length > 0) {
-      // Actualizar eventos próximos
-    }
-  }, [events])
 
   const loadEvents = async () => {
     try {
@@ -124,11 +118,16 @@ export default function CalendarPage() {
       if (viewType === 'month') {
         startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
         endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
+        endDate.setHours(23, 59, 59, 999)
       } else {
+        // Para vista semana y agenda
         const weekStart = new Date(currentDate)
-        weekStart.setDate(currentDate.getDate() - currentDate.getDay())
+        const dayOfWeek = weekStart.getDay()
+        const diff = weekStart.getDate() - dayOfWeek
+        weekStart.setDate(diff)
         weekStart.setHours(0, 0, 0, 0)
-        startDate = weekStart
+        startDate = new Date(weekStart)
+        
         endDate = new Date(weekStart)
         endDate.setDate(weekStart.getDate() + 6)
         endDate.setHours(23, 59, 59, 999)
@@ -274,7 +273,7 @@ export default function CalendarPage() {
     setDraggedEvent(event)
   }
 
-  const handleDragOver = (e: React.DragEvent, date: Date) => {
+  const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
   }
 
@@ -391,7 +390,11 @@ export default function CalendarPage() {
 
   const getWeekDays = () => {
     const weekStart = new Date(currentDate)
-    weekStart.setDate(currentDate.getDate() - currentDate.getDay())
+    const dayOfWeek = weekStart.getDay()
+    const diff = weekStart.getDate() - dayOfWeek
+    weekStart.setDate(diff)
+    weekStart.setHours(0, 0, 0, 0)
+    
     const days = []
     for (let i = 0; i < 7; i++) {
       const day = new Date(weekStart)
@@ -476,7 +479,7 @@ export default function CalendarPage() {
             return (
               <div
                 key={idx}
-                onDragOver={(e) => date && handleDragOver(e, date)}
+                onDragOver={(e) => date && handleDragOver(e)}
                 onDrop={(e) => date && handleDrop(e, date)}
                 onClick={() => date && openModalForDate(date)}
                 className={`min-h-[130px] border-r border-b border-gray-100 p-2 cursor-pointer hover:bg-gray-50 transition-colors ${
@@ -538,19 +541,26 @@ export default function CalendarPage() {
   const renderWeekWithHours = () => {
     const weekDaysList = getWeekDays()
     
+    if (!weekDaysList.length || weekDaysList.some(day => isNaN(day.getTime()))) {
+      return <div className="p-8 text-center text-gray-500">Cargando vista semanal...</div>
+    }
+    
     return (
       <div className="overflow-x-auto">
         <div className="min-w-[800px]">
           <div className="grid grid-cols-8 border-b border-gray-200">
             <div className="py-3 text-center text-sm font-medium text-gray-500">Hora</div>
-            {weekDaysList.map((day, idx) => (
-              <div key={idx} className="py-3 text-center">
-                <div className="text-sm font-medium text-gray-500">{weekDays[idx]}</div>
-                <div className={`text-sm font-semibold ${day.toDateString() === new Date().toDateString() ? 'text-blue-600' : 'text-gray-700'}`}>
-                  {day.getDate()}
+            {weekDaysList.map((day, idx) => {
+              const isValidDate = day && !isNaN(day.getTime())
+              return (
+                <div key={idx} className="py-3 text-center">
+                  <div className="text-sm font-medium text-gray-500">{weekDays[idx]}</div>
+                  <div className={`text-sm font-semibold ${isValidDate && day.toDateString() === new Date().toDateString() ? 'text-blue-600' : 'text-gray-700'}`}>
+                    {isValidDate ? day.getDate() : '?'}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
           
           {Array.from({ length: 16 }, (_, i) => i + 8).map(hour => {
@@ -561,13 +571,17 @@ export default function CalendarPage() {
                   {timeSlot}
                 </div>
                 {weekDaysList.map((date, idx) => {
+                  if (!date || isNaN(date.getTime())) {
+                    return <div key={idx} className="p-1 min-h-[80px] bg-gray-50"></div>
+                  }
+                  
                   const eventsByHour = getEventsByHour(date)
                   const hourEvents = eventsByHour[timeSlot] || []
                   
                   return (
                     <div
                       key={idx}
-                      onDragOver={(e) => handleDragOver(e, date)}
+                      onDragOver={handleDragOver}
                       onDrop={(e) => handleDrop(e, date)}
                       onClick={() => {
                         const newDate = new Date(date)
@@ -622,7 +636,7 @@ export default function CalendarPage() {
     const sortedDates = Object.keys(groupedByDate).sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
     
     return (
-      <div className="divide-y divide-gray-100">
+      <div className="divide-y divide-gray-100 p-4">
         {sortedDates.length === 0 ? (
           <div className="py-12 text-center text-gray-400">
             No hay publicaciones programadas
@@ -873,7 +887,7 @@ export default function CalendarPage() {
           <h2 className="text-lg font-semibold text-gray-900">
             {viewType === 'month' 
               ? `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`
-              : `Semana del ${getWeekDays()[0].getDate()} de ${monthNames[getWeekDays()[0].getMonth()]}`
+              : `Semana del ${getWeekDays()[0]?.getDate() || ''} de ${monthNames[getWeekDays()[0]?.getMonth() || 0]}`
             }
           </h2>
           <button onClick={goNext} className="p-1 hover:bg-gray-200 rounded-lg transition-colors">
@@ -885,7 +899,7 @@ export default function CalendarPage() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           {viewType === 'month' && renderMonthView()}
           {viewType === 'week' && renderWeekWithHours()}
-          {viewType === 'agenda' && <div className="p-6">{renderAgendaView()}</div>}
+          {viewType === 'agenda' && renderAgendaView()}
         </div>
 
         {/* Modal de publicación */}
