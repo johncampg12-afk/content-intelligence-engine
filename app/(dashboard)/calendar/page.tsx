@@ -22,12 +22,10 @@ import {
   Download,
   BarChart3,
   Bell,
-  Eye,
-  Heart,
-  Share2,
-  Target,
-  Calendar as CalendarDays,
-  GripVertical
+  GripVertical,
+  Moon,
+  Sun,
+  Briefcase
 } from 'lucide-react'
 
 interface CalendarEvent {
@@ -331,7 +329,7 @@ export default function CalendarPage() {
         event.title,
         contentTypes.find(c => c.value === event.content_type)?.label || event.content_type,
         eventDate.toLocaleDateString('es-ES'),
-        `${eventDate.getUTCHours()}:00`,
+        `${eventDate.getUTCHours().toString().padStart(2, '0')}:00`,
         `${event.duration}s`,
         event.hashtags?.join(', ') || '',
         event.sound,
@@ -543,7 +541,7 @@ export default function CalendarPage() {
                             </div>
                             <div className="flex items-center gap-2 mt-0.5 text-xs opacity-75">
                               <Clock className="w-3 h-3" />
-                              <span>{eventDate.getUTCHours().toString().padStart(2, '0')}:00</span>
+                              <span className="font-mono">{eventDate.getUTCHours().toString().padStart(2, '0')}:00</span>
                               <span className="text-gray-500">•</span>
                               <span>{event.duration}s</span>
                               {event.predictions?.viral_score && (
@@ -572,16 +570,18 @@ export default function CalendarPage() {
     )
   }
 
-  // Renderizar vista semanal
+  // Renderizar vista semanal con 24 horas completas
   const renderWeekView = () => {
     const weekDaysList = getWeekDaysList()
-    const hours = Array.from({ length: 14 }, (_, i) => i + 8) // 8am a 9pm
+    const hours = Array.from({ length: 24 }, (_, i) => i)
     
     return (
       <div className="overflow-x-auto">
         <div className="min-w-[800px]">
-          <div className="grid grid-cols-8 border-b border-gray-200 bg-gray-50">
-            <div className="py-3 text-center text-sm font-semibold text-gray-600">Hora</div>
+          <div className="grid grid-cols-8 border-b border-gray-200 bg-gray-50 sticky top-0 z-10">
+            <div className="py-3 text-center text-sm font-semibold text-gray-600 border-r border-gray-200">
+              Hora
+            </div>
             {weekDaysList.map((date, idx) => {
               const isToday = date.toDateString() === new Date().toDateString()
               return (
@@ -596,10 +596,22 @@ export default function CalendarPage() {
           </div>
           
           {hours.map(hour => {
-            const timeSlot = `${hour}:00`
+            const timeSlot = `${hour.toString().padStart(2, '0')}:00`
+            const isWorkingHour = hour >= 8 && hour <= 22
+            const isLateNight = hour >= 23 || hour <= 5
+            
             return (
-              <div key={hour} className="grid grid-cols-8 border-b border-gray-100 min-h-[70px] hover:bg-gray-50 transition-colors">
-                <div className="py-2 text-center text-sm text-gray-500 border-r border-gray-100 bg-gray-50">
+              <div 
+                key={hour} 
+                className={`grid grid-cols-8 border-b border-gray-100 min-h-[70px] hover:bg-gray-50 transition-colors ${
+                  !isWorkingHour ? 'bg-gray-50/30' : ''
+                }`}
+              >
+                <div className={`py-2 text-center text-sm font-mono border-r border-gray-100 flex items-center justify-center gap-1 ${
+                  isWorkingHour ? 'text-gray-700' : 'text-gray-400'
+                }`}>
+                  {isLateNight && <Moon className="w-3 h-3" />}
+                  {isWorkingHour && <Sun className="w-3 h-3 text-amber-500" />}
                   {timeSlot}
                 </div>
                 {weekDaysList.map((date, idx) => {
@@ -616,7 +628,9 @@ export default function CalendarPage() {
                         newDate.setHours(hour, 0, 0)
                         openModalForDate(newDate)
                       }}
-                      className="p-1 cursor-pointer transition-colors min-h-[70px]"
+                      className={`p-1 cursor-pointer transition-colors min-h-[70px] ${
+                        !isWorkingHour ? 'bg-gray-50/20' : ''
+                      }`}
                     >
                       <div className="space-y-1">
                         {hourEvents.map(event => (
@@ -646,6 +660,25 @@ export default function CalendarPage() {
               </div>
             )
           })}
+          
+          <div className="mt-3 px-4 py-2 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 flex items-center justify-end gap-4">
+            <div className="flex items-center gap-1">
+              <Sun className="w-3 h-3 text-amber-500" />
+              <span>Horario laboral (8:00 - 22:00)</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Moon className="w-3 h-3 text-gray-400" />
+              <span>Horario nocturno</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 bg-blue-100 rounded"></div>
+              <span>Evento programado</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <GripVertical className="w-3 h-3 text-gray-400" />
+              <span>Arrastrar para reordenar</span>
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -671,7 +704,7 @@ export default function CalendarPage() {
       <div className="divide-y divide-gray-100">
         {sortedDates.length === 0 ? (
           <div className="py-16 text-center">
-            <CalendarDays className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <CalendarIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-400">No hay publicaciones programadas</p>
             <button
               onClick={() => openModalForDate(new Date())}
@@ -709,7 +742,7 @@ export default function CalendarPage() {
                         className="flex items-center gap-4 p-4 bg-white rounded-xl border border-gray-200 shadow-sm cursor-pointer hover:shadow-md hover:border-blue-200 transition-all"
                       >
                         <div className="w-20 text-center">
-                          <div className="text-lg font-bold text-gray-800">
+                          <div className="text-lg font-bold text-gray-800 font-mono">
                             {eventDate.getUTCHours().toString().padStart(2, '0')}:00
                           </div>
                           <div className="text-xs text-gray-400">{event.duration}s</div>
@@ -787,7 +820,7 @@ export default function CalendarPage() {
                 <CalendarIcon className="w-5 h-5 text-white" />
               </div>
               <h1 className="text-xl font-bold text-gray-900">Calendario de Contenido</h1>
-              <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">Beta</span>
+              <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">Professional</span>
             </div>
             <p className="text-sm text-gray-500 ml-11">
               Planifica, organiza y gestiona tu estrategia de contenido
@@ -846,7 +879,7 @@ export default function CalendarPage() {
                 <p className="text-2xl font-bold text-gray-900">{stats.totalPlanned}</p>
               </div>
               <div className="p-2 bg-blue-100 rounded-lg">
-                <CalendarDays className="w-5 h-5 text-blue-600" />
+                <CalendarIcon className="w-5 h-5 text-blue-600" />
               </div>
             </div>
           </div>
