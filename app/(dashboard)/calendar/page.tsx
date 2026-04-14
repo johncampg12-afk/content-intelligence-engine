@@ -21,7 +21,13 @@ import {
   Filter,
   Download,
   BarChart3,
-  Bell
+  Bell,
+  Eye,
+  Heart,
+  Share2,
+  Target,
+  Calendar as CalendarDays,
+  GripVertical
 } from 'lucide-react'
 
 interface CalendarEvent {
@@ -52,25 +58,25 @@ interface Prediction {
 }
 
 const contentTypes = [
-  { value: 'tutorial', label: 'Tutorial', color: 'bg-blue-100 text-blue-700' },
-  { value: 'entertainment', label: 'Entretenimiento', color: 'bg-purple-100 text-purple-700' },
-  { value: 'educational', label: 'Educativo', color: 'bg-green-100 text-green-700' },
-  { value: 'inspirational', label: 'Inspiracional', color: 'bg-amber-100 text-amber-700' },
-  { value: 'challenge', label: 'Challenge', color: 'bg-pink-100 text-pink-700' },
-  { value: 'review', label: 'Review', color: 'bg-indigo-100 text-indigo-700' }
+  { value: 'tutorial', label: 'Tutorial', color: 'bg-blue-100 text-blue-800 border-blue-200', icon: '📚' },
+  { value: 'entertainment', label: 'Entretenimiento', color: 'bg-purple-100 text-purple-800 border-purple-200', icon: '🎬' },
+  { value: 'educational', label: 'Educativo', color: 'bg-green-100 text-green-800 border-green-200', icon: '💡' },
+  { value: 'inspirational', label: 'Inspiracional', color: 'bg-amber-100 text-amber-800 border-amber-200', icon: '✨' },
+  { value: 'challenge', label: 'Challenge', color: 'bg-pink-100 text-pink-800 border-pink-200', icon: '🔥' },
+  { value: 'review', label: 'Review', color: 'bg-indigo-100 text-indigo-800 border-indigo-200', icon: '⭐' }
 ]
 
 const statuses = [
-  { value: 'planned', label: 'Planificado', color: 'bg-gray-100 text-gray-600' },
-  { value: 'published', label: 'Publicado', color: 'bg-green-100 text-green-700' },
-  { value: 'rescheduled', label: 'Reprogramado', color: 'bg-amber-100 text-amber-700' },
-  { value: 'cancelled', label: 'Cancelado', color: 'bg-red-100 text-red-700' }
+  { value: 'planned', label: 'Planificado', color: 'bg-slate-100 text-slate-700', icon: '📅' },
+  { value: 'published', label: 'Publicado', color: 'bg-emerald-100 text-emerald-700', icon: '✅' },
+  { value: 'rescheduled', label: 'Reprogramado', color: 'bg-amber-100 text-amber-700', icon: '🔄' },
+  { value: 'cancelled', label: 'Cancelado', color: 'bg-red-100 text-red-700', icon: '❌' }
 ]
 
 const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
-// Función para obtener fecha local en formato YYYY-MM-DDThh:mm
+// Funciones de fecha
 const getLocalDateTimeString = (date: Date): string => {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -80,12 +86,10 @@ const getLocalDateTimeString = (date: Date): string => {
   return `${year}-${month}-${day}T${hours}:${minutes}`
 }
 
-// Función para crear fecha UTC a partir de fecha local
 const createUTCDate = (year: number, month: number, day: number, hour: number = 0, minute: number = 0): Date => {
   return new Date(Date.UTC(year, month, day, hour, minute))
 }
 
-// Función para obtener la fecha en UTC a partir de un string local
 const getUTCDateFromLocal = (localDateTime: string): Date => {
   const [datePart, timePart] = localDateTime.split('T')
   const [year, month, day] = datePart.split('-').map(Number)
@@ -105,6 +109,7 @@ export default function CalendarPage() {
   const [filterType, setFilterType] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [showNotifications, setShowNotifications] = useState(false)
+  const [draggedEvent, setDraggedEvent] = useState<CalendarEvent | null>(null)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -172,7 +177,6 @@ export default function CalendarPage() {
     setSubmitting(true)
     
     try {
-      // Convertir fecha local a UTC para almacenar
       const utcDate = getUTCDateFromLocal(formData.scheduled_for)
       
       const response = await fetch('/api/calendar', {
@@ -283,6 +287,41 @@ export default function CalendarPage() {
     }
   }
 
+  const handleDragStart = (event: CalendarEvent) => {
+    setDraggedEvent(event)
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+  }
+
+  const handleDrop = async (e: React.DragEvent, targetDate: Date) => {
+    e.preventDefault()
+    if (!draggedEvent) return
+    
+    try {
+      const utcDate = createUTCDate(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), targetDate.getHours(), targetDate.getMinutes())
+      
+      const response = await fetch('/api/calendar', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: draggedEvent.id,
+          scheduled_for: utcDate.toISOString()
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (data.event) {
+        setEvents(events.map(e => e.id === draggedEvent.id ? data.event : e))
+      }
+    } catch (error) {
+      console.error('Error moving event:', error)
+    }
+    setDraggedEvent(null)
+  }
+
   const exportToCSV = () => {
     const filteredEvents = getFilteredEvents()
     const headers = ['Título', 'Tipo', 'Fecha', 'Hora', 'Duración', 'Hashtags', 'Sonido', 'Estado', 'Viral Score']
@@ -326,9 +365,10 @@ export default function CalendarPage() {
     const filtered = getFilteredEvents()
     const totalPlanned = filtered.filter(e => e.status === 'planned').length
     const totalPublished = filtered.filter(e => e.status === 'published').length
+    const totalCancelled = filtered.filter(e => e.status === 'cancelled').length
     const avgViralScore = filtered.filter(e => e.predictions?.viral_score).reduce((sum, e) => sum + (e.predictions?.viral_score || 0), 0) / (filtered.filter(e => e.predictions?.viral_score).length || 1)
     
-    return { totalPlanned, totalPublished, avgViralScore: avgViralScore.toFixed(0) }
+    return { totalPlanned, totalPublished, totalCancelled, avgViralScore: avgViralScore.toFixed(0) }
   }
 
   const getUpcomingEvents = () => {
@@ -338,7 +378,7 @@ export default function CalendarPage() {
     
     const filtered = events.filter(e => {
       const eventDate = new Date(e.scheduled_for)
-      return eventDate >= now && eventDate <= next7Days && e.status !== 'published'
+      return eventDate >= now && eventDate <= next7Days && e.status !== 'published' && e.status !== 'cancelled'
     })
     
     return filtered.sort((a, b) => new Date(a.scheduled_for).getTime() - new Date(b.scheduled_for).getTime())
@@ -352,6 +392,14 @@ export default function CalendarPage() {
 
   const getContentTypeStyle = (type: string) => {
     return contentTypes.find(c => c.value === type)?.color || 'bg-gray-100 text-gray-700'
+  }
+
+  const getContentTypeIcon = (type: string) => {
+    return contentTypes.find(c => c.value === type)?.icon || '📄'
+  }
+
+  const getStatusIcon = (status: string) => {
+    return statuses.find(s => s.value === status)?.icon || '📅'
   }
 
   const getDaysInMonth = (date: Date) => {
@@ -372,7 +420,7 @@ export default function CalendarPage() {
     return days
   }
 
-  const getWeekDays = () => {
+  const getWeekDaysList = () => {
     const dayOfWeek = currentDate.getDay()
     const diff = currentDate.getDate() - dayOfWeek
     const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), diff)
@@ -440,9 +488,9 @@ export default function CalendarPage() {
     
     return (
       <>
-        <div className="grid grid-cols-7 border-b border-gray-200">
+        <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50">
           {weekDays.map(day => (
-            <div key={day} className="py-3 text-center text-sm font-medium text-gray-500">
+            <div key={day} className="py-3 text-center text-sm font-semibold text-gray-600">
               {day}
             </div>
           ))}
@@ -455,19 +503,23 @@ export default function CalendarPage() {
             return (
               <div
                 key={idx}
+                onDragOver={handleDragOver}
+                onDrop={(e) => date && handleDrop(e, date)}
                 onClick={() => date && openModalForDate(date)}
-                className={`min-h-[120px] border-r border-b border-gray-100 p-2 cursor-pointer hover:bg-gray-50 transition-colors ${
-                  !date ? 'bg-gray-50' : ''
-                }`}
+                className={`min-h-[120px] border-r border-b border-gray-100 p-2 cursor-pointer transition-all ${
+                  !date ? 'bg-gray-50' : 'hover:bg-gray-50'
+                } ${isToday ? 'bg-blue-50/30' : ''}`}
               >
                 {date && (
                   <>
                     <div className="flex justify-between items-start mb-2">
-                      <span className={`text-sm font-medium ${isToday ? 'bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center' : 'text-gray-700'}`}>
+                      <span className={`text-sm font-medium ${isToday ? 'bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center shadow-sm' : 'text-gray-700'}`}>
                         {date.getDate()}
                       </span>
                       {dayEvents.length > 0 && (
-                        <span className="text-xs text-gray-400">{dayEvents.length}</span>
+                        <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">
+                          {dayEvents.length}
+                        </span>
                       )}
                     </div>
                     
@@ -477,18 +529,28 @@ export default function CalendarPage() {
                         return (
                           <div
                             key={event.id}
+                            draggable
+                            onDragStart={() => handleDragStart(event)}
                             onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); setShowModal(true); }}
-                            className={`text-xs p-1.5 rounded cursor-pointer ${getContentTypeStyle(event.content_type)}`}
+                            className={`text-xs p-1.5 rounded-md cursor-grab active:cursor-grabbing shadow-sm ${getContentTypeStyle(event.content_type)} border`}
                           >
-                            <div className="flex items-center justify-between">
-                              <span className="truncate">{event.title.substring(0, 25)}</span>
-                              {event.status === 'published' && <Check className="w-3 h-3" />}
+                            <div className="flex items-center justify-between gap-1">
+                              <div className="flex items-center gap-1 truncate">
+                                <span className="text-sm">{getContentTypeIcon(event.content_type)}</span>
+                                <span className="truncate font-medium">{event.title.substring(0, 20)}</span>
+                              </div>
+                              {event.status === 'published' && <Check className="w-3 h-3 text-emerald-600 flex-shrink-0" />}
                             </div>
-                            <div className="flex items-center gap-1 mt-0.5 text-xs opacity-75">
-                              <Clock className="w-2 h-2" />
-                              <span>{eventDate.getUTCHours()}:00</span>
+                            <div className="flex items-center gap-2 mt-0.5 text-xs opacity-75">
+                              <Clock className="w-3 h-3" />
+                              <span>{eventDate.getUTCHours().toString().padStart(2, '0')}:00</span>
+                              <span className="text-gray-500">•</span>
+                              <span>{event.duration}s</span>
                               {event.predictions?.viral_score && (
-                                <span className="ml-1">🔥{event.predictions.viral_score}</span>
+                                <>
+                                  <span className="text-gray-500">•</span>
+                                  <span className="text-amber-600">🔥 {event.predictions.viral_score}</span>
+                                </>
                               )}
                             </div>
                           </div>
@@ -512,59 +574,79 @@ export default function CalendarPage() {
 
   // Renderizar vista semanal
   const renderWeekView = () => {
-    const weekDaysList = getWeekDays()
+    const weekDaysList = getWeekDaysList()
+    const hours = Array.from({ length: 14 }, (_, i) => i + 8) // 8am a 9pm
     
     return (
-      <div className="grid grid-cols-7">
-        {weekDaysList.map((date, idx) => {
-          const dayEvents = getEventsForDate(date)
-          const isToday = date.toDateString() === new Date().toDateString()
-          
-          return (
-            <div
-              key={idx}
-              onClick={() => openModalForDate(date)}
-              className={`min-h-[400px] border-r border-gray-100 p-2 cursor-pointer hover:bg-gray-50 transition-colors ${idx === 6 ? 'border-r-0' : ''}`}
-            >
-              <div className={`sticky top-0 bg-white pb-2 mb-2 border-b ${isToday ? 'border-blue-500' : 'border-gray-100'}`}>
-                <div className="text-center">
-                  <div className="text-xs text-gray-500">{weekDays[idx]}</div>
-                  <div className={`text-lg font-semibold ${isToday ? 'text-blue-600' : 'text-gray-700'}`}>
+      <div className="overflow-x-auto">
+        <div className="min-w-[800px]">
+          <div className="grid grid-cols-8 border-b border-gray-200 bg-gray-50">
+            <div className="py-3 text-center text-sm font-semibold text-gray-600">Hora</div>
+            {weekDaysList.map((date, idx) => {
+              const isToday = date.toDateString() === new Date().toDateString()
+              return (
+                <div key={idx} className="py-3 text-center">
+                  <div className="text-sm font-medium text-gray-500">{weekDays[idx]}</div>
+                  <div className={`text-base font-semibold ${isToday ? 'text-blue-600' : 'text-gray-700'}`}>
                     {date.getDate()}
                   </div>
                 </div>
-              </div>
-              
-              <div className="space-y-2">
-                {dayEvents.map(event => {
-                  const eventDate = new Date(event.scheduled_for)
+              )
+            })}
+          </div>
+          
+          {hours.map(hour => {
+            const timeSlot = `${hour}:00`
+            return (
+              <div key={hour} className="grid grid-cols-8 border-b border-gray-100 min-h-[70px] hover:bg-gray-50 transition-colors">
+                <div className="py-2 text-center text-sm text-gray-500 border-r border-gray-100 bg-gray-50">
+                  {timeSlot}
+                </div>
+                {weekDaysList.map((date, idx) => {
+                  const dayEvents = getEventsForDate(date)
+                  const hourEvents = dayEvents.filter(e => new Date(e.scheduled_for).getUTCHours() === hour)
+                  
                   return (
                     <div
-                      key={event.id}
-                      onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); setShowModal(true); }}
-                      className={`p-2 rounded-lg cursor-pointer ${getContentTypeStyle(event.content_type)}`}
+                      key={idx}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, date)}
+                      onClick={() => {
+                        const newDate = new Date(date)
+                        newDate.setHours(hour, 0, 0)
+                        openModalForDate(newDate)
+                      }}
+                      className="p-1 cursor-pointer transition-colors min-h-[70px]"
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium truncate">{event.title.substring(0, 20)}</span>
-                        {event.status === 'published' && <Check className="w-3 h-3" />}
+                      <div className="space-y-1">
+                        {hourEvents.map(event => (
+                          <div
+                            key={event.id}
+                            draggable
+                            onDragStart={() => handleDragStart(event)}
+                            onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); setShowModal(true); }}
+                            className={`text-xs p-1.5 rounded-md cursor-grab active:cursor-grabbing ${getContentTypeStyle(event.content_type)} border shadow-sm`}
+                          >
+                            <div className="flex items-center gap-1">
+                              <span className="text-sm">{getContentTypeIcon(event.content_type)}</span>
+                              <span className="truncate font-medium">{event.title.substring(0, 15)}</span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5 text-xs opacity-75">
+                              <span>{event.duration}s</span>
+                              {event.predictions?.viral_score && (
+                                <span className="text-amber-600">🔥{event.predictions.viral_score}</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <div className="flex items-center gap-2 mt-1 text-xs opacity-75">
-                        <Clock className="w-3 h-3" />
-                        <span>{eventDate.getUTCHours()}:00</span>
-                        <span>{event.duration}s</span>
-                      </div>
-                      {event.predictions?.viral_score && (
-                        <div className="mt-1 text-xs font-medium">
-                          🔥 Score: {event.predictions.viral_score}
-                        </div>
-                      )}
                     </div>
                   )
                 })}
               </div>
-            </div>
-          )
-        })}
+            )
+          })}
+        </div>
       </div>
     )
   }
@@ -586,57 +668,90 @@ export default function CalendarPage() {
     const sortedDates = Object.keys(groupedByDate).sort()
     
     return (
-      <div className="divide-y divide-gray-100 p-4">
+      <div className="divide-y divide-gray-100">
         {sortedDates.length === 0 ? (
-          <div className="py-12 text-center text-gray-400">
-            No hay publicaciones programadas
+          <div className="py-16 text-center">
+            <CalendarDays className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-400">No hay publicaciones programadas</p>
+            <button
+              onClick={() => openModalForDate(new Date())}
+              className="mt-4 text-sm text-blue-600 hover:text-blue-700 font-medium"
+            >
+              + Crear primera publicación
+            </button>
           </div>
         ) : (
           sortedDates.map((dateKey) => {
             const firstEvent = groupedByDate[dateKey][0]
             const date = new Date(firstEvent.scheduled_for)
+            const isToday = date.toDateString() === new Date().toDateString()
             
             return (
-              <div key={dateKey} className="py-4 first:pt-0">
-                <div className="sticky top-0 bg-white pb-2">
-                  <h3 className="text-sm font-semibold text-gray-700">
-                    {date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
-                  </h3>
+              <div key={dateKey} className="py-5 first:pt-0">
+                <div className={`sticky top-0 bg-white pb-3 mb-3 border-b ${isToday ? 'border-blue-200' : 'border-gray-100'}`}>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-1 h-6 rounded-full ${isToday ? 'bg-blue-500' : 'bg-gray-300'}`} />
+                    <h3 className={`text-base font-semibold ${isToday ? 'text-blue-700' : 'text-gray-800'}`}>
+                      {date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    </h3>
+                    {isToday && (
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Hoy</span>
+                    )}
+                  </div>
                 </div>
-                <div className="space-y-2 mt-2">
+                <div className="space-y-3">
                   {groupedByDate[dateKey].map(event => {
                     const eventDate = new Date(event.scheduled_for)
                     return (
                       <div
                         key={event.id}
                         onClick={() => { setSelectedEvent(event); setShowModal(true); }}
-                        className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                        className="flex items-center gap-4 p-4 bg-white rounded-xl border border-gray-200 shadow-sm cursor-pointer hover:shadow-md hover:border-blue-200 transition-all"
                       >
-                        <div className="w-16 text-center">
-                          <div className="text-sm font-medium text-gray-900">
-                            {eventDate.getUTCHours()}:00
+                        <div className="w-20 text-center">
+                          <div className="text-lg font-bold text-gray-800">
+                            {eventDate.getUTCHours().toString().padStart(2, '0')}:00
                           </div>
+                          <div className="text-xs text-gray-400">{event.duration}s</div>
                         </div>
-                        <div className={`w-1 h-10 rounded-full ${getContentTypeStyle(event.content_type).split(' ')[0]}`} />
+                        <div className={`w-1 h-12 rounded-full ${getContentTypeStyle(event.content_type).split(' ')[0]}`} />
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-gray-900">{event.title}</span>
-                            {event.status === 'published' && <Check className="w-3 h-3 text-green-500" />}
+                            <span className="text-lg">{getContentTypeIcon(event.content_type)}</span>
+                            <span className="font-semibold text-gray-900">{event.title}</span>
+                            {event.status === 'published' && <Check className="w-4 h-4 text-emerald-500" />}
                           </div>
-                          <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
-                            <span>{contentTypes.find(c => c.value === event.content_type)?.label}</span>
-                            <span>{event.duration}s</span>
+                          {event.description && (
+                            <p className="text-sm text-gray-500 mt-1 line-clamp-1">{event.description}</p>
+                          )}
+                          <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
+                            <span className="flex items-center gap-1">
+                              <Hash className="w-3 h-3" />
+                              {event.hashtags?.slice(0, 3).join(', ') || 'Sin hashtags'}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Music className="w-3 h-3" />
+                              {event.sound}
+                            </span>
                             {event.predictions?.viral_score && (
-                              <span className="text-blue-600">Score: {event.predictions.viral_score}</span>
+                              <span className="flex items-center gap-1 text-amber-600">
+                                <TrendingUp className="w-3 h-3" />
+                                Score: {event.predictions.viral_score}
+                              </span>
                             )}
                           </div>
                         </div>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); deleteEvent(event.id); }}
-                          className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <div className={`px-2 py-1 rounded-full text-xs ${statuses.find(s => s.value === event.status)?.color}`}>
+                            {getStatusIcon(event.status)} {statuses.find(s => s.value === event.status)?.label}
+                          </div>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); deleteEvent(event.id); }}
+                            className="p-2 text-gray-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     )
                   })}
@@ -653,8 +768,8 @@ export default function CalendarPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-500">Cargando calendario...</p>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-sm text-gray-500">Cargando calendario...</p>
         </div>
       </div>
     )
@@ -662,40 +777,41 @@ export default function CalendarPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="p-8">
+      <div className="p-6 lg:p-8">
         
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-blue-600 rounded-xl">
-                <CalendarIcon className="w-6 h-6 text-white" />
+            <div className="flex items-center gap-3 mb-1">
+              <div className="p-2 bg-blue-600 rounded-xl shadow-sm">
+                <CalendarIcon className="w-5 h-5 text-white" />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900">Content Calendar</h1>
+              <h1 className="text-xl font-bold text-gray-900">Calendario de Contenido</h1>
+              <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">Beta</span>
             </div>
-            <p className="text-gray-500 ml-11">
-              Planifica y organiza tu estrategia de contenido
+            <p className="text-sm text-gray-500 ml-11">
+              Planifica, organiza y gestiona tu estrategia de contenido
             </p>
           </div>
-          <div className="flex items-center gap-3 mt-4 md:mt-0">
-            <div className="flex bg-white border border-gray-200 rounded-lg">
+          <div className="flex items-center gap-3 mt-4 lg:mt-0">
+            <div className="flex bg-white border border-gray-200 rounded-lg shadow-sm">
               <button
                 onClick={() => setViewType('month')}
-                className={`px-3 py-1.5 text-sm rounded-l-lg transition-colors ${viewType === 'month' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+                className={`px-3 py-1.5 text-sm rounded-l-lg transition-all ${viewType === 'month' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'}`}
               >
                 <LayoutGrid className="w-4 h-4 inline mr-1" />
                 Mes
               </button>
               <button
                 onClick={() => setViewType('week')}
-                className={`px-3 py-1.5 text-sm transition-colors ${viewType === 'week' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+                className={`px-3 py-1.5 text-sm transition-all ${viewType === 'week' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'}`}
               >
                 <List className="w-4 h-4 inline mr-1" />
                 Semana
               </button>
               <button
                 onClick={() => setViewType('agenda')}
-                className={`px-3 py-1.5 text-sm rounded-r-lg transition-colors ${viewType === 'agenda' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+                className={`px-3 py-1.5 text-sm rounded-r-lg transition-all ${viewType === 'agenda' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'}`}
               >
                 <BarChart3 className="w-4 h-4 inline mr-1" />
                 Agenda
@@ -704,54 +820,66 @@ export default function CalendarPage() {
             
             <button
               onClick={exportToCSV}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+              title="Exportar a CSV"
             >
               <Download className="w-4 h-4" />
-              Exportar
+              <span className="hidden sm:inline">Exportar</span>
             </button>
             
             <button
               onClick={() => openModalForDate(new Date())}
-              className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
             >
               <Plus className="w-4 h-4" />
-              Nueva publicación
+              <span className="hidden sm:inline">Nueva publicación</span>
             </button>
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Planificados</p>
+                <p className="text-xs text-gray-500 uppercase tracking-wide">Planificados</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.totalPlanned}</p>
               </div>
               <div className="p-2 bg-blue-100 rounded-lg">
-                <CalendarIcon className="w-5 h-5 text-blue-600" />
+                <CalendarDays className="w-5 h-5 text-blue-600" />
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Publicados</p>
+                <p className="text-xs text-gray-500 uppercase tracking-wide">Publicados</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.totalPublished}</p>
               </div>
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Check className="w-5 h-5 text-green-600" />
+              <div className="p-2 bg-emerald-100 rounded-lg">
+                <Check className="w-5 h-5 text-emerald-600" />
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Viral Score Promedio</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.avgViralScore}</p>
+                <p className="text-xs text-gray-500 uppercase tracking-wide">Cancelados</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalCancelled}</p>
               </div>
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <TrendingUp className="w-5 h-5 text-purple-600" />
+              <div className="p-2 bg-red-100 rounded-lg">
+                <X className="w-5 h-5 text-red-600" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-4 shadow-sm text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-blue-100 uppercase tracking-wide">Viral Score Promedio</p>
+                <p className="text-2xl font-bold">{stats.avgViralScore}</p>
+              </div>
+              <div className="p-2 bg-white/20 rounded-lg">
+                <TrendingUp className="w-5 h-5" />
               </div>
             </div>
           </div>
@@ -759,15 +887,16 @@ export default function CalendarPage() {
 
         {/* Notifications Panel */}
         {upcomingEvents.length > 0 && (
-          <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4">
+          <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Bell className="w-5 h-5 text-amber-600" />
                 <span className="text-sm font-medium text-amber-800">Próximas publicaciones</span>
+                <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">{upcomingEvents.length}</span>
               </div>
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="text-xs text-amber-600 hover:text-amber-800"
+                className="text-xs text-amber-700 hover:text-amber-900 font-medium"
               >
                 {showNotifications ? 'Ocultar' : `Ver ${upcomingEvents.length}`}
               </button>
@@ -778,23 +907,30 @@ export default function CalendarPage() {
                 {upcomingEvents.slice(0, 5).map(event => {
                   const eventDate = new Date(event.scheduled_for)
                   return (
-                    <div key={event.id} className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-3 h-3 text-amber-600" />
-                        <span>
-                          {eventDate.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                        <span className="text-gray-700 line-clamp-1 max-w-[200px]">{event.title}</span>
+                    <div key={event.id} className="flex items-center justify-between p-2 bg-white rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm">{getContentTypeIcon(event.content_type)}</span>
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">{event.title}</p>
+                          <p className="text-xs text-gray-500">
+                            {eventDate.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
                       </div>
                       <button
                         onClick={() => { setSelectedEvent(event); setShowModal(true); }}
-                        className="text-xs text-blue-600 hover:text-blue-800"
+                        className="text-xs text-blue-600 hover:text-blue-800 font-medium"
                       >
                         Editar
                       </button>
                     </div>
                   )
                 })}
+                {upcomingEvents.length > 5 && (
+                  <p className="text-center text-xs text-gray-500 pt-2">
+                    +{upcomingEvents.length - 5} más
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -804,42 +940,42 @@ export default function CalendarPage() {
         <div className="flex flex-wrap gap-3 mb-6">
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-gray-400" />
-            <span className="text-sm text-gray-600">Filtrar:</span>
+            <span className="text-sm text-gray-600 font-medium">Filtrar:</span>
           </div>
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           >
             <option value="all">Todos los tipos</option>
             {contentTypes.map(type => (
-              <option key={type.value} value={type.value}>{type.label}</option>
+              <option key={type.value} value={type.value}>{type.icon} {type.label}</option>
             ))}
           </select>
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           >
             <option value="all">Todos los estados</option>
             {statuses.map(status => (
-              <option key={status.value} value={status.value}>{status.label}</option>
+              <option key={status.value} value={status.value}>{status.icon} {status.label}</option>
             ))}
           </select>
         </div>
 
         {/* Calendar Navigation */}
         <div className="flex items-center justify-between mb-4">
-          <button onClick={goPrev} className="p-1 hover:bg-gray-200 rounded-lg transition-colors">
+          <button onClick={goPrev} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
             <ChevronLeft className="w-5 h-5 text-gray-600" />
           </button>
-          <h2 className="text-lg font-semibold text-gray-900">
+          <h2 className="text-lg font-semibold text-gray-800">
             {viewType === 'month' 
               ? `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`
-              : `Semana del ${getWeekDays()[0].getDate()} de ${monthNames[getWeekDays()[0].getMonth()]}`
+              : `Semana del ${getWeekDaysList()[0].getDate()} de ${monthNames[getWeekDaysList()[0].getMonth()]}`
             }
           </h2>
-          <button onClick={goNext} className="p-1 hover:bg-gray-200 rounded-lg transition-colors">
+          <button onClick={goNext} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
             <ChevronRight className="w-5 h-5 text-gray-600" />
           </button>
         </div>
@@ -859,7 +995,7 @@ export default function CalendarPage() {
                 <h3 className="text-lg font-semibold text-gray-900">
                   {selectedEvent ? 'Editar publicación' : 'Nueva publicación'}
                 </h3>
-                <button onClick={() => setShowModal(false)} className="p-1 hover:bg-gray-100 rounded-lg">
+                <button onClick={() => setShowModal(false)} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
               </div>
@@ -923,7 +1059,7 @@ export default function CalendarPage() {
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         {statuses.map(status => (
-                          <option key={status.value} value={status.value}>{status.label}</option>
+                          <option key={status.value} value={status.value}>{status.icon} {status.label}</option>
                         ))}
                       </select>
                     </div>
@@ -977,7 +1113,7 @@ export default function CalendarPage() {
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                           {contentTypes.map(type => (
-                            <option key={type.value} value={type.value}>{type.label}</option>
+                            <option key={type.value} value={type.value}>{type.icon} {type.label}</option>
                           ))}
                         </select>
                       </div>
