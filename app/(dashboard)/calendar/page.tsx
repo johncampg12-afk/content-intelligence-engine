@@ -17,7 +17,17 @@ import {
   Loader2,
   Sparkles,
   TrendingUp,
-  Copy
+  Copy,
+  LayoutGrid,
+  List,
+  Filter,
+  Download,
+  BarChart3,
+  Bell,
+  AlertCircle,
+  Eye,
+  Heart,
+  Share2
 } from 'lucide-react'
 
 interface CalendarEvent {
@@ -48,16 +58,28 @@ interface Prediction {
 }
 
 const contentTypes = [
-  { value: 'tutorial', label: 'Tutorial', color: 'bg-blue-100 text-blue-700' },
-  { value: 'entertainment', label: 'Entretenimiento', color: 'bg-purple-100 text-purple-700' },
-  { value: 'educational', label: 'Educativo', color: 'bg-green-100 text-green-700' },
-  { value: 'inspirational', label: 'Inspiracional', color: 'bg-amber-100 text-amber-700' },
-  { value: 'challenge', label: 'Challenge', color: 'bg-pink-100 text-pink-700' },
-  { value: 'review', label: 'Review', color: 'bg-indigo-100 text-indigo-700' }
+  { value: 'tutorial', label: 'Tutorial', color: 'bg-blue-100 text-blue-700', border: 'border-blue-200', bgLight: 'bg-blue-50' },
+  { value: 'entertainment', label: 'Entretenimiento', color: 'bg-purple-100 text-purple-700', border: 'border-purple-200', bgLight: 'bg-purple-50' },
+  { value: 'educational', label: 'Educativo', color: 'bg-green-100 text-green-700', border: 'border-green-200', bgLight: 'bg-green-50' },
+  { value: 'inspirational', label: 'Inspiracional', color: 'bg-amber-100 text-amber-700', border: 'border-amber-200', bgLight: 'bg-amber-50' },
+  { value: 'challenge', label: 'Challenge', color: 'bg-pink-100 text-pink-700', border: 'border-pink-200', bgLight: 'bg-pink-50' },
+  { value: 'review', label: 'Review', color: 'bg-indigo-100 text-indigo-700', border: 'border-indigo-200', bgLight: 'bg-indigo-50' }
 ]
+
+const statuses = [
+  { value: 'planned', label: 'Planificado', color: 'bg-gray-100 text-gray-600' },
+  { value: 'published', label: 'Publicado', color: 'bg-green-100 text-green-700' },
+  { value: 'rescheduled', label: 'Reprogramado', color: 'bg-amber-100 text-amber-700' },
+  { value: 'cancelled', label: 'Cancelado', color: 'bg-red-100 text-red-700' }
+]
+
+const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+const fullWeekDays = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date())
+  const [viewType, setViewType] = useState<'month' | 'week' | 'agenda'>('month')
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -65,6 +87,10 @@ export default function CalendarPage() {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
   const [predictions, setPredictions] = useState<Prediction[]>([])
   const [showPredictions, setShowPredictions] = useState(false)
+  const [filterType, setFilterType] = useState<string>('all')
+  const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [draggedEvent, setDraggedEvent] = useState<CalendarEvent | null>(null)
+  const [showNotifications, setShowNotifications] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -81,13 +107,32 @@ export default function CalendarPage() {
   useEffect(() => {
     loadEvents()
     loadPredictions()
-  }, [currentDate])
+  }, [currentDate, viewType])
+
+  useEffect(() => {
+    if (events.length > 0) {
+      // Actualizar eventos próximos
+    }
+  }, [events])
 
   const loadEvents = async () => {
     try {
       setLoading(true)
-      const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
-      const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
+      let startDate: Date
+      let endDate: Date
+      
+      if (viewType === 'month') {
+        startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
+        endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
+      } else {
+        const weekStart = new Date(currentDate)
+        weekStart.setDate(currentDate.getDate() - currentDate.getDay())
+        weekStart.setHours(0, 0, 0, 0)
+        startDate = weekStart
+        endDate = new Date(weekStart)
+        endDate.setDate(weekStart.getDate() + 6)
+        endDate.setHours(23, 59, 59, 999)
+      }
       
       const response = await fetch(`/api/calendar?start=${startDate.toISOString()}&end=${endDate.toISOString()}`)
       const data = await response.json()
@@ -155,8 +200,36 @@ export default function CalendarPage() {
     }
   }
 
+  const updateEvent = async () => {
+    if (!selectedEvent) return
+    setSubmitting(true)
+    
+    try {
+      const response = await fetch('/api/calendar', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: selectedEvent.id,
+          scheduled_for: selectedEvent.scheduled_for,
+          status: selectedEvent.status
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (data.event) {
+        setEvents(events.map(e => e.id === selectedEvent.id ? data.event : e))
+        setShowModal(false)
+        setSelectedEvent(null)
+      }
+    } catch (error) {
+      console.error('Error updating event:', error)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   const addFromPrediction = (prediction: Prediction) => {
-    // Convertir el día óptimo a una fecha
     const days: Record<string, number> = {
       'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4, 'Viernes': 5, 'Sábado': 6, 'Domingo': 0
     }
@@ -190,22 +263,112 @@ export default function CalendarPage() {
     try {
       await fetch(`/api/calendar?id=${id}`, { method: 'DELETE' })
       setEvents(events.filter(e => e.id !== id))
+      setShowModal(false)
+      setSelectedEvent(null)
     } catch (error) {
       console.error('Error deleting event:', error)
     }
   }
 
-  const updateStatus = async (id: string, status: string) => {
+  const handleDragStart = (event: CalendarEvent) => {
+    setDraggedEvent(event)
+  }
+
+  const handleDragOver = (e: React.DragEvent, date: Date) => {
+    e.preventDefault()
+  }
+
+  const handleDrop = async (e: React.DragEvent, targetDate: Date) => {
+    e.preventDefault()
+    if (!draggedEvent) return
+    
     try {
-      await fetch('/api/calendar', {
+      const response = await fetch('/api/calendar', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, status })
+        body: JSON.stringify({
+          id: draggedEvent.id,
+          scheduled_for: targetDate.toISOString()
+        })
       })
-      setEvents(events.map(e => e.id === id ? { ...e, status } : e))
+      
+      const data = await response.json()
+      
+      if (data.event) {
+        setEvents(events.map(e => e.id === draggedEvent.id ? data.event : e))
+      }
     } catch (error) {
-      console.error('Error updating status:', error)
+      console.error('Error moving event:', error)
     }
+    setDraggedEvent(null)
+  }
+
+  const exportToCSV = () => {
+    const filteredEvents = getFilteredEvents()
+    const headers = ['Título', 'Tipo', 'Fecha', 'Hora', 'Duración', 'Hashtags', 'Sonido', 'Estado', 'Viral Score']
+    const rows = filteredEvents.map(event => [
+      event.title,
+      contentTypes.find(c => c.value === event.content_type)?.label || event.content_type,
+      new Date(event.scheduled_for).toLocaleDateString('es-ES'),
+      `${new Date(event.scheduled_for).getHours()}:00`,
+      `${event.duration}s`,
+      event.hashtags?.join(', ') || '',
+      event.sound,
+      statuses.find(s => s.value === event.status)?.label || event.status,
+      event.predictions?.viral_score || '-'
+    ])
+    
+    const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `calendar_${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const getFilteredEvents = () => {
+    let filtered = events
+    if (filterType !== 'all') {
+      filtered = filtered.filter(e => e.content_type === filterType)
+    }
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter(e => e.status === filterStatus)
+    }
+    return filtered
+  }
+
+  const getCalendarStats = () => {
+    const filtered = getFilteredEvents()
+    const totalPlanned = filtered.filter(e => e.status === 'planned').length
+    const totalPublished = filtered.filter(e => e.status === 'published').length
+    const avgViralScore = filtered.filter(e => e.predictions?.viral_score).reduce((sum, e) => sum + (e.predictions?.viral_score || 0), 0) / (filtered.filter(e => e.predictions?.viral_score).length || 1)
+    
+    return { totalPlanned, totalPublished, avgViralScore: avgViralScore.toFixed(0) }
+  }
+
+  const getUpcomingEvents = () => {
+    const now = new Date()
+    const next7Days = new Date()
+    next7Days.setDate(now.getDate() + 7)
+    
+    const filtered = events.filter(e => {
+      const eventDate = new Date(e.scheduled_for)
+      return eventDate >= now && eventDate <= next7Days && e.status !== 'published'
+    })
+    
+    return filtered.sort((a, b) => new Date(a.scheduled_for).getTime() - new Date(b.scheduled_for).getTime())
+  }
+
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
+    return num.toString()
+  }
+
+  const getContentTypeStyle = (type: string) => {
+    return contentTypes.find(c => c.value === type)?.color || 'bg-gray-100 text-gray-700'
   }
 
   const getDaysInMonth = (date: Date) => {
@@ -226,27 +389,57 @@ export default function CalendarPage() {
     return days
   }
 
+  const getWeekDays = () => {
+    const weekStart = new Date(currentDate)
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay())
+    const days = []
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(weekStart)
+      day.setDate(weekStart.getDate() + i)
+      days.push(day)
+    }
+    return days
+  }
+
   const getEventsForDate = (date: Date) => {
     if (!date) return []
-    const dateStr = date.toDateString()
-    return events.filter(e => new Date(e.scheduled_for).toDateString() === dateStr)
+    const filtered = getFilteredEvents()
+    return filtered.filter(e => new Date(e.scheduled_for).toDateString() === date.toDateString())
   }
 
-  const formatNumber = (num: number) => {
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
-    return num.toString()
+  const getEventsByHour = (date: Date) => {
+    const eventsByHour: { [hour: string]: CalendarEvent[] } = {}
+    for (let i = 8; i <= 23; i++) {
+      eventsByHour[`${i}:00`] = []
+    }
+    
+    const dayEvents = getEventsForDate(date)
+    dayEvents.forEach(event => {
+      const hour = new Date(event.scheduled_for).getHours()
+      eventsByHour[`${hour}:00`].push(event)
+    })
+    
+    return eventsByHour
   }
 
-  const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
-  const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
-  const days = getDaysInMonth(currentDate)
-
-  const goPrevMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))
+  const goPrev = () => {
+    if (viewType === 'month') {
+      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))
+    } else {
+      const newDate = new Date(currentDate)
+      newDate.setDate(currentDate.getDate() - 7)
+      setCurrentDate(newDate)
+    }
   }
 
-  const goNextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))
+  const goNext = () => {
+    if (viewType === 'month') {
+      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))
+    } else {
+      const newDate = new Date(currentDate)
+      newDate.setDate(currentDate.getDate() + 7)
+      setCurrentDate(newDate)
+    }
   }
 
   const openModalForDate = (date: Date) => {
@@ -259,8 +452,240 @@ export default function CalendarPage() {
     setShowModal(true)
   }
 
-  const getContentTypeStyle = (type: string) => {
-    return contentTypes.find(c => c.value === type)?.color || 'bg-gray-100 text-gray-700'
+  const stats = getCalendarStats()
+  const upcomingEvents = getUpcomingEvents()
+
+  // Renderizar vista mensual
+  const renderMonthView = () => {
+    const days = getDaysInMonth(currentDate)
+    
+    return (
+      <>
+        <div className="grid grid-cols-7 border-b border-gray-200">
+          {weekDays.map(day => (
+            <div key={day} className="py-3 text-center text-sm font-medium text-gray-500">
+              {day}
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 auto-rows-fr">
+          {days.map((date, idx) => {
+            const dayEvents = date ? getEventsForDate(date) : []
+            const isToday = date && date.toDateString() === new Date().toDateString()
+            
+            return (
+              <div
+                key={idx}
+                onDragOver={(e) => date && handleDragOver(e, date)}
+                onDrop={(e) => date && handleDrop(e, date)}
+                onClick={() => date && openModalForDate(date)}
+                className={`min-h-[130px] border-r border-b border-gray-100 p-2 cursor-pointer hover:bg-gray-50 transition-colors ${
+                  !date ? 'bg-gray-50' : ''
+                }`}
+              >
+                {date && (
+                  <>
+                    <div className="flex justify-between items-start mb-2">
+                      <span className={`text-sm font-medium ${isToday ? 'bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center' : 'text-gray-700'}`}>
+                        {date.getDate()}
+                      </span>
+                      {dayEvents.length > 0 && (
+                        <span className="text-xs text-gray-400">{dayEvents.length}</span>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-1">
+                      {dayEvents.slice(0, 3).map(event => (
+                        <div
+                          key={event.id}
+                          draggable
+                          onDragStart={() => handleDragStart(event)}
+                          onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); setShowModal(true); }}
+                          className={`text-xs p-1.5 rounded cursor-move ${getContentTypeStyle(event.content_type)}`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="truncate">{event.title.substring(0, 25)}</span>
+                            {event.status === 'published' && <Check className="w-3 h-3" />}
+                          </div>
+                          <div className="flex items-center justify-between mt-0.5">
+                            <div className="flex items-center gap-1 text-xs opacity-75">
+                              <Clock className="w-2 h-2" />
+                              <span>{new Date(event.scheduled_for).getHours()}:00</span>
+                            </div>
+                            {event.predictions?.viral_score && (
+                              <span className="text-xs font-medium">🔥 {event.predictions.viral_score}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      {dayEvents.length > 3 && (
+                        <div className="text-xs text-gray-400 text-center pt-1">
+                          +{dayEvents.length - 3} más
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </>
+    )
+  }
+
+  // Renderizar vista semanal con horas
+  const renderWeekWithHours = () => {
+    const weekDaysList = getWeekDays()
+    
+    return (
+      <div className="overflow-x-auto">
+        <div className="min-w-[800px]">
+          <div className="grid grid-cols-8 border-b border-gray-200">
+            <div className="py-3 text-center text-sm font-medium text-gray-500">Hora</div>
+            {weekDaysList.map((day, idx) => (
+              <div key={idx} className="py-3 text-center">
+                <div className="text-sm font-medium text-gray-500">{weekDays[idx]}</div>
+                <div className={`text-sm font-semibold ${day.toDateString() === new Date().toDateString() ? 'text-blue-600' : 'text-gray-700'}`}>
+                  {day.getDate()}
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {Array.from({ length: 16 }, (_, i) => i + 8).map(hour => {
+            const timeSlot = `${hour}:00`
+            return (
+              <div key={hour} className="grid grid-cols-8 border-b border-gray-100 min-h-[80px]">
+                <div className="py-2 text-center text-sm text-gray-500 border-r border-gray-100">
+                  {timeSlot}
+                </div>
+                {weekDaysList.map((date, idx) => {
+                  const eventsByHour = getEventsByHour(date)
+                  const hourEvents = eventsByHour[timeSlot] || []
+                  
+                  return (
+                    <div
+                      key={idx}
+                      onDragOver={(e) => handleDragOver(e, date)}
+                      onDrop={(e) => handleDrop(e, date)}
+                      onClick={() => {
+                        const newDate = new Date(date)
+                        newDate.setHours(hour, 0, 0)
+                        openModalForDate(newDate)
+                      }}
+                      className="p-1 cursor-pointer hover:bg-gray-50 transition-colors min-h-[80px]"
+                    >
+                      <div className="space-y-1">
+                        {hourEvents.map(event => (
+                          <div
+                            key={event.id}
+                            draggable
+                            onDragStart={() => handleDragStart(event)}
+                            onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); setShowModal(true); }}
+                            className={`text-xs p-1.5 rounded cursor-move ${getContentTypeStyle(event.content_type)}`}
+                          >
+                            <div className="truncate">{event.title.substring(0, 20)}</div>
+                            <div className="flex items-center justify-between mt-0.5">
+                              <span className="text-xs opacity-75">{event.duration}s</span>
+                              {event.predictions?.viral_score && (
+                                <span className="text-xs">🔥{event.predictions.viral_score}</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
+  // Renderizar vista agenda
+  const renderAgendaView = () => {
+    const filteredEvents = getFilteredEvents()
+    const groupedByDate: { [date: string]: CalendarEvent[] } = {}
+    
+    filteredEvents.forEach(event => {
+      const dateKey = new Date(event.scheduled_for).toDateString()
+      if (!groupedByDate[dateKey]) {
+        groupedByDate[dateKey] = []
+      }
+      groupedByDate[dateKey].push(event)
+    })
+    
+    const sortedDates = Object.keys(groupedByDate).sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+    
+    return (
+      <div className="divide-y divide-gray-100">
+        {sortedDates.length === 0 ? (
+          <div className="py-12 text-center text-gray-400">
+            No hay publicaciones programadas
+          </div>
+        ) : (
+          sortedDates.map((dateKey) => (
+            <div key={dateKey} className="py-4 first:pt-0">
+              <div className="sticky top-0 bg-white pb-2">
+                <h3 className="text-sm font-semibold text-gray-700">
+                  {new Date(dateKey).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+                </h3>
+              </div>
+              <div className="space-y-2 mt-2">
+                {groupedByDate[dateKey].map(event => (
+                  <div
+                    key={event.id}
+                    onClick={() => { setSelectedEvent(event); setShowModal(true); }}
+                    className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="w-16 text-center">
+                      <div className="text-sm font-medium text-gray-900">
+                        {new Date(event.scheduled_for).getHours()}:00
+                      </div>
+                    </div>
+                    <div className={`w-1 h-10 rounded-full ${getContentTypeStyle(event.content_type).split(' ')[0].replace('bg-', 'bg-')}`} />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-900">{event.title}</span>
+                        {event.status === 'published' && <Check className="w-3 h-3 text-green-500" />}
+                      </div>
+                      <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
+                        <span>{contentTypes.find(c => c.value === event.content_type)?.label}</span>
+                        <span>{event.duration}s</span>
+                        {event.predictions?.viral_score && (
+                          <span className="text-blue-600">Score: {event.predictions.viral_score}</span>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); deleteEvent(event.id); }}
+                      className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-500">Cargando calendario...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -268,7 +693,7 @@ export default function CalendarPage() {
       <div className="p-8">
         
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
           <div>
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-blue-600 rounded-xl">
@@ -280,115 +705,194 @@ export default function CalendarPage() {
               Planifica y organiza tu estrategia de contenido
             </p>
           </div>
-          <button
-            onClick={() => {
-              setSelectedEvent(null)
-              setFormData({
-                title: '',
-                description: '',
-                content_type: 'tutorial',
-                scheduled_for: new Date().toISOString(),
-                duration: 15,
-                hashtags: '',
-                sound: 'Original'
-              })
-              setShowModal(true)
-            }}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          <div className="flex items-center gap-3 mt-4 md:mt-0">
+            <div className="flex bg-white border border-gray-200 rounded-lg">
+              <button
+                onClick={() => setViewType('month')}
+                className={`px-3 py-1.5 text-sm rounded-l-lg transition-colors ${viewType === 'month' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+              >
+                <LayoutGrid className="w-4 h-4 inline mr-1" />
+                Mes
+              </button>
+              <button
+                onClick={() => setViewType('week')}
+                className={`px-3 py-1.5 text-sm transition-colors ${viewType === 'week' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+              >
+                <List className="w-4 h-4 inline mr-1" />
+                Semana
+              </button>
+              <button
+                onClick={() => setViewType('agenda')}
+                className={`px-3 py-1.5 text-sm rounded-r-lg transition-colors ${viewType === 'agenda' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+              >
+                <BarChart3 className="w-4 h-4 inline mr-1" />
+                Agenda
+              </button>
+            </div>
+            
+            <button
+              onClick={exportToCSV}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Exportar
+            </button>
+            
+            <button
+              onClick={() => {
+                setSelectedEvent(null)
+                setFormData({
+                  title: '',
+                  description: '',
+                  content_type: 'tutorial',
+                  scheduled_for: new Date().toISOString(),
+                  duration: 15,
+                  hashtags: '',
+                  sound: 'Original'
+                })
+                setShowModal(true)
+              }}
+              className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Nueva publicación
+            </button>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Planificados</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalPlanned}</p>
+              </div>
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <CalendarIcon className="w-5 h-5 text-blue-600" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Publicados</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalPublished}</p>
+              </div>
+              <div className="p-2 bg-green-100 rounded-lg">
+                <Check className="w-5 h-5 text-green-600" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Viral Score Promedio</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.avgViralScore}</p>
+              </div>
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-purple-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Notifications Panel */}
+        {upcomingEvents.length > 0 && (
+          <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bell className="w-5 h-5 text-amber-600" />
+                <span className="text-sm font-medium text-amber-800">Próximas publicaciones</span>
+              </div>
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="text-xs text-amber-600 hover:text-amber-800"
+              >
+                {showNotifications ? 'Ocultar' : `Ver ${upcomingEvents.length}`}
+              </button>
+            </div>
+            
+            {showNotifications && (
+              <div className="mt-3 space-y-2">
+                {upcomingEvents.slice(0, 5).map(event => (
+                  <div key={event.id} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-3 h-3 text-amber-600" />
+                      <span>
+                        {new Date(event.scheduled_for).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      <span className="text-gray-700">{event.title}</span>
+                    </div>
+                    <button
+                      onClick={() => { setSelectedEvent(event); setShowModal(true); }}
+                      className="text-xs text-blue-600 hover:text-blue-800"
+                    >
+                      Editar
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Filters */}
+        <div className="flex flex-wrap gap-3 mb-6">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-gray-400" />
+            <span className="text-sm text-gray-600">Filtrar:</span>
+          </div>
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <Plus className="w-4 h-4" />
-            Nueva publicación
+            <option value="all">Todos los tipos</option>
+            {contentTypes.map(type => (
+              <option key={type.value} value={type.value}>{type.label}</option>
+            ))}
+          </select>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">Todos los estados</option>
+            {statuses.map(status => (
+              <option key={status.value} value={status.value}>{status.label}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Calendar Navigation */}
+        <div className="flex items-center justify-between mb-4">
+          <button onClick={goPrev} className="p-1 hover:bg-gray-200 rounded-lg transition-colors">
+            <ChevronLeft className="w-5 h-5 text-gray-600" />
+          </button>
+          <h2 className="text-lg font-semibold text-gray-900">
+            {viewType === 'month' 
+              ? `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`
+              : `Semana del ${getWeekDays()[0].getDate()} de ${monthNames[getWeekDays()[0].getMonth()]}`
+            }
+          </h2>
+          <button onClick={goNext} className="p-1 hover:bg-gray-200 rounded-lg transition-colors">
+            <ChevronRight className="w-5 h-5 text-gray-600" />
           </button>
         </div>
 
-        {/* Calendar */}
+        {/* Calendar View */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          {/* Calendar Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <button onClick={goPrevMonth} className="p-1 hover:bg-gray-200 rounded-lg transition-colors">
-              <ChevronLeft className="w-5 h-5 text-gray-600" />
-            </button>
-            <h2 className="text-lg font-semibold text-gray-900">
-              {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-            </h2>
-            <button onClick={goNextMonth} className="p-1 hover:bg-gray-200 rounded-lg transition-colors">
-              <ChevronRight className="w-5 h-5 text-gray-600" />
-            </button>
-          </div>
-          
-          {/* Week Days Header */}
-          <div className="grid grid-cols-7 border-b border-gray-200">
-            {weekDays.map(day => (
-              <div key={day} className="py-3 text-center text-sm font-medium text-gray-500">
-                {day}
-              </div>
-            ))}
-          </div>
-          
-          {/* Calendar Grid */}
-          <div className="grid grid-cols-7 auto-rows-fr">
-            {days.map((date, idx) => {
-              const dayEvents = date ? getEventsForDate(date) : []
-              const isToday = date && date.toDateString() === new Date().toDateString()
-              
-              return (
-                <div
-                  key={idx}
-                  onClick={() => date && openModalForDate(date)}
-                  className={`min-h-[120px] border-r border-b border-gray-100 p-2 cursor-pointer hover:bg-gray-50 transition-colors ${
-                    !date ? 'bg-gray-50' : ''
-                  }`}
-                >
-                  {date && (
-                    <>
-                      <div className="flex justify-between items-start mb-2">
-                        <span className={`text-sm font-medium ${isToday ? 'bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center' : 'text-gray-700'}`}>
-                          {date.getDate()}
-                        </span>
-                        {dayEvents.length > 0 && (
-                          <span className="text-xs text-gray-400">{dayEvents.length}</span>
-                        )}
-                      </div>
-                      
-                      <div className="space-y-1">
-                        {dayEvents.slice(0, 3).map(event => (
-                          <div
-                            key={event.id}
-                            onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); setShowModal(true); }}
-                            className={`text-xs p-1.5 rounded cursor-pointer ${getContentTypeStyle(event.content_type)}`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="truncate">{event.title.substring(0, 30)}</span>
-                              {event.status === 'published' && <Check className="w-3 h-3" />}
-                            </div>
-                            <div className="flex items-center gap-1 text-xs opacity-75 mt-0.5">
-                              <Clock className="w-2 h-2" />
-                              <span>{new Date(event.scheduled_for).getHours()}:00</span>
-                              {event.predictions?.viral_score && (
-                                <span className="ml-1">🔥 {event.predictions.viral_score}</span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                        {dayEvents.length > 3 && (
-                          <div className="text-xs text-gray-400 text-center pt-1">
-                            +{dayEvents.length - 3} más
-                          </div>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+          {viewType === 'month' && renderMonthView()}
+          {viewType === 'week' && renderWeekWithHours()}
+          {viewType === 'agenda' && <div className="p-6">{renderAgendaView()}</div>}
         </div>
 
         {/* Modal de publicación */}
         {showModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-              <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
                 <h3 className="text-lg font-semibold text-gray-900">
                   {selectedEvent ? 'Editar publicación' : 'Nueva publicación'}
                 </h3>
@@ -409,8 +913,8 @@ export default function CalendarPage() {
                 )}
                 
                 {showPredictions && !selectedEvent && predictions.length > 0 && (
-                  <div className="mb-4 space-y-2 max-h-60 overflow-y-auto">
-                    <p className="text-sm font-medium text-gray-700 mb-2">Tus predicciones guardadas:</p>
+                  <div className="mb-4 space-y-2 max-h-60 overflow-y-auto border border-gray-100 rounded-lg p-2">
+                    <p className="text-sm font-medium text-gray-700 mb-2 px-2">Tus predicciones guardadas:</p>
                     {predictions.map(pred => (
                       <div
                         key={pred.id}
@@ -419,7 +923,7 @@ export default function CalendarPage() {
                       >
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-medium text-gray-900 line-clamp-1">{pred.video_idea}</p>
-                          <span className="text-xs text-blue-600">Score: {pred.viral_score}</span>
+                          <span className="text-xs text-blue-600 font-medium">Score: {pred.viral_score}</span>
                         </div>
                         <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
                           <span>{pred.optimal_day} {pred.optimal_hour}:00</span>
@@ -430,134 +934,148 @@ export default function CalendarPage() {
                   </div>
                 )}
                 
-                <form onSubmit={addEvent} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Título *</label>
-                    <input
-                      type="text"
-                      value={selectedEvent ? selectedEvent.title : formData.title}
-                      onChange={(e) => selectedEvent ? setSelectedEvent({...selectedEvent, title: e.target.value}) : setFormData({...formData, title: e.target.value})}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Ej: Tutorial de Instagram"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-                    <textarea
-                      value={selectedEvent ? selectedEvent.description : formData.description}
-                      onChange={(e) => selectedEvent ? setSelectedEvent({...selectedEvent, description: e.target.value}) : setFormData({...formData, description: e.target.value})}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Detalles del contenido..."
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
+                {selectedEvent ? (
+                  <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-                      <select
-                        value={selectedEvent ? selectedEvent.content_type : formData.content_type}
-                        onChange={(e) => selectedEvent ? setSelectedEvent({...selectedEvent, content_type: e.target.value}) : setFormData({...formData, content_type: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        {contentTypes.map(type => (
-                          <option key={type.value} value={type.value}>{type.label}</option>
-                        ))}
-                      </select>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Título</label>
+                      <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">{selectedEvent.title}</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Fecha y hora</label>
                       <input
                         type="datetime-local"
-                        value={selectedEvent ? selectedEvent.scheduled_for.slice(0, 16) : formData.scheduled_for.slice(0, 16)}
-                        onChange={(e) => selectedEvent ? setSelectedEvent({...selectedEvent, scheduled_for: e.target.value}) : setFormData({...formData, scheduled_for: e.target.value})}
-                        required
+                        value={selectedEvent.scheduled_for.slice(0, 16)}
+                        onChange={(e) => setSelectedEvent({...selectedEvent, scheduled_for: e.target.value})}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Duración (segundos)</label>
-                      <input
-                        type="number"
-                        value={selectedEvent ? selectedEvent.duration : formData.duration}
-                        onChange={(e) => selectedEvent ? setSelectedEvent({...selectedEvent, duration: parseInt(e.target.value)}) : setFormData({...formData, duration: parseInt(e.target.value)})}
-                        min={5}
-                        max={60}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Sonido</label>
-                      <div className="flex items-center gap-2">
-                        <Music className="w-4 h-4 text-gray-400" />
-                        <input
-                          type="text"
-                          value={selectedEvent ? selectedEvent.sound : formData.sound}
-                          onChange={(e) => selectedEvent ? setSelectedEvent({...selectedEvent, sound: e.target.value}) : setFormData({...formData, sound: e.target.value})}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Hashtags</label>
-                    <div className="flex items-center gap-2">
-                      <Hash className="w-4 h-4 text-gray-400" />
-                      <input
-                        type="text"
-                        value={selectedEvent ? selectedEvent.hashtags?.join(', ') : formData.hashtags}
-                        onChange={(e) => selectedEvent ? setSelectedEvent({...selectedEvent, hashtags: e.target.value.split(',').map(h => h.trim())}) : setFormData({...formData, hashtags: e.target.value})}
-                        placeholder="tutorial, instagram, tips"
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  </div>
-                  
-                  {selectedEvent && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
                       <select
                         value={selectedEvent.status}
-                        onChange={(e) => updateStatus(selectedEvent.id, e.target.value)}
+                        onChange={(e) => setSelectedEvent({...selectedEvent, status: e.target.value})}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="planned">Planificado</option>
-                        <option value="published">Publicado</option>
-                        <option value="rescheduled">Reprogramado</option>
-                        <option value="cancelled">Cancelado</option>
+                        {statuses.map(status => (
+                          <option key={status.value} value={status.value}>{status.label}</option>
+                        ))}
                       </select>
                     </div>
-                  )}
-                  
-                  <div className="flex gap-3 pt-4">
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                    >
-                      {submitting ? (
-                        <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-                      ) : (
-                        selectedEvent ? 'Actualizar' : 'Guardar'
-                      )}
-                    </button>
-                    {selectedEvent && (
+                    <div className="flex gap-3 pt-4">
                       <button
-                        type="button"
+                        onClick={updateEvent}
+                        disabled={submitting}
+                        className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                      >
+                        {submitting ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Actualizar'}
+                      </button>
+                      <button
                         onClick={() => deleteEvent(selectedEvent.id)}
                         className="py-2 px-4 text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
-                    )}
+                    </div>
                   </div>
-                </form>
+                ) : (
+                  <form onSubmit={addEvent} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Título *</label>
+                      <input
+                        type="text"
+                        value={formData.title}
+                        onChange={(e) => setFormData({...formData, title: e.target.value})}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Ej: Tutorial de Instagram"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                      <textarea
+                        value={formData.description}
+                        onChange={(e) => setFormData({...formData, description: e.target.value})}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Detalles del contenido..."
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+                        <select
+                          value={formData.content_type}
+                          onChange={(e) => setFormData({...formData, content_type: e.target.value})}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          {contentTypes.map(type => (
+                            <option key={type.value} value={type.value}>{type.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Fecha y hora</label>
+                        <input
+                          type="datetime-local"
+                          value={formData.scheduled_for.slice(0, 16)}
+                          onChange={(e) => setFormData({...formData, scheduled_for: e.target.value})}
+                          required
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Duración (segundos)</label>
+                        <input
+                          type="number"
+                          value={formData.duration}
+                          onChange={(e) => setFormData({...formData, duration: parseInt(e.target.value)})}
+                          min={5}
+                          max={60}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Sonido</label>
+                        <div className="flex items-center gap-2">
+                          <Music className="w-4 h-4 text-gray-400" />
+                          <input
+                            type="text"
+                            value={formData.sound}
+                            onChange={(e) => setFormData({...formData, sound: e.target.value})}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Hashtags</label>
+                      <div className="flex items-center gap-2">
+                        <Hash className="w-4 h-4 text-gray-400" />
+                        <input
+                          type="text"
+                          value={formData.hashtags}
+                          onChange={(e) => setFormData({...formData, hashtags: e.target.value})}
+                          placeholder="tutorial, instagram, tips"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                    
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    >
+                      {submitting ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Guardar publicación'}
+                    </button>
+                  </form>
+                )}
               </div>
             </div>
           </div>
