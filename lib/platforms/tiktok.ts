@@ -5,6 +5,10 @@ export class TikTokAPI {
     this.accessToken = accessToken
   }
   
+  updateToken(newToken: string) {
+    this.accessToken = newToken
+  }
+  
   async getUserInfo() {
     const response = await fetch(
       'https://open.tiktokapis.com/v2/user/info/?fields=id,username,display_name,avatar_url,bio_description,follower_count,following_count,video_count',
@@ -20,58 +24,56 @@ export class TikTokAPI {
     return data
   }
   
-  async getUserVideos(maxCount: number = 20) {
-  const allVideos: any[] = []
-  let cursor = 0
-  let hasMore = true
+  async getUserVideos(maxCount: number = 50) {
+    const allVideos: any[] = []
+    let cursor = 0
+    let hasMore = true
 
-  // Campos válidos que incluyen métricas
-  const fields = [
-    'id',
-    'title',
-    'create_time',
-    'cover_image_url',
-    'share_url',
-    'duration',
-    'view_count',
-    'like_count',
-    'comment_count',
-    'share_count'
-  ].join(',')
+    const fields = [
+      'id',
+      'title',
+      'create_time',
+      'cover_image_url',
+      'share_url',
+      'duration',
+      'view_count',
+      'like_count',
+      'comment_count',
+      'share_count'
+    ].join(',')
 
-  while (hasMore && allVideos.length < maxCount) {
-    const remaining = maxCount - allVideos.length
-    const fetchCount = Math.min(20, remaining)
+    while (hasMore && allVideos.length < maxCount) {
+      const remaining = maxCount - allVideos.length
+      const fetchCount = Math.min(20, remaining)
 
-    const url = `https://open.tiktokapis.com/v2/video/list/?fields=${fields}&max_count=${fetchCount}&cursor=${cursor}`
+      const url = `https://open.tiktokapis.com/v2/video/list/?fields=${fields}&max_count=${fetchCount}&cursor=${cursor}`
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.accessToken}`,
-        'Content-Type': 'application/json',
-      },
-    })
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      })
 
-    const responseText = await response.text()
-    if (!response.ok) {
-      throw new Error(`TikTok API error: ${response.status} - ${responseText}`)
+      const responseText = await response.text()
+      if (!response.ok) {
+        throw new Error(`TikTok API error: ${response.status} - ${responseText}`)
+      }
+
+      const data = JSON.parse(responseText)
+      if (data.data?.videos && Array.isArray(data.data.videos)) {
+        allVideos.push(...data.data.videos)
+        cursor = data.data.cursor || 0
+        hasMore = data.data.has_more || false
+      } else {
+        hasMore = false
+      }
     }
 
-    const data = JSON.parse(responseText)
-    if (data.data?.videos && Array.isArray(data.data.videos)) {
-      allVideos.push(...data.data.videos)
-      cursor = data.data.cursor || 0
-      hasMore = data.data.has_more || false
-    } else {
-      hasMore = false
-    }
-  }
-
-  return allVideos
+    return allVideos
   }
   
-  // Nuevo método para obtener insights detallados de un video
   async getVideoInsights(videoId: string) {
     const fields = [
       'view_count',
@@ -120,6 +122,12 @@ export class TikTokAPI {
     })
     
     const data = await response.json()
+    
+    if (!data.access_token) {
+      console.error('Refresh token error:', data)
+      throw new Error('Failed to refresh token')
+    }
+    
     return data
   }
 }

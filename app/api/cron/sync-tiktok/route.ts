@@ -6,11 +6,9 @@ import { TikTokAPI } from '@/lib/platforms/tiktok'
 // Función para extraer hashtags del texto
 function extractHashtags(text: string): string[] {
   if (!text) return []
-  // Expresión regular más robusta para hashtags (permite letras, números, guión bajo, acentos)
   const hashtagRegex = /#[\w\u00f1\u00d1\u00e1\u00e9\u00ed\u00f3\u00fa\u00fc]+/gi
   const matches = text.match(hashtagRegex)
   if (!matches) return []
-  // Limpiar: eliminar el '#' y convertir a minúsculas (opcional)
   return [...new Set(matches.map(tag => tag.substring(1).toLowerCase()))]
 }
 
@@ -56,7 +54,53 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'TikTok account not found' }, { status: 404 })
     }
     
-    const tiktok = new TikTokAPI(account.access_token)
+    // ============================================
+    // REFRESH TOKEN AUTOMÁTICO
+    // ============================================
+    let accessToken = account.access_token
+    const tokenExpiresAt = new Date(account.expires_at)
+    const now = new Date()
+    const hoursUntilExpiry = (tokenExpiresAt.getTime() - now.getTime()) / (1000 * 60 * 60)
+    
+    if (hoursUntilExpiry < 24) {
+      console.log(`Token expires in ${hoursUntilExpiry.toFixed(1)} hours. Refreshing...`)
+      
+      try {
+        const refreshResponse = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            client_key: process.env.TIKTOK_CLIENT_ID!,
+            client_secret: process.env.TIKTOK_CLIENT_SECRET!,
+            grant_type: 'refresh_token',
+            refresh_token: account.refresh_token,
+          })
+        })
+        
+        const refreshData = await refreshResponse.json()
+        
+        if (refreshData.access_token) {
+          await supabase
+            .from('connected_accounts')
+            .update({
+              access_token: refreshData.access_token,
+              refresh_token: refreshData.refresh_token,
+              expires_at: new Date(Date.now() + refreshData.expires_in * 1000).toISOString(),
+            })
+            .eq('id', account.id)
+          
+          accessToken = refreshData.access_token
+          console.log('Token refreshed successfully')
+        }
+      } catch (refreshError) {
+        console.error('Failed to refresh token:', refreshError)
+      }
+    }
+    // ============================================
+    
+    const tiktok = new TikTokAPI(accessToken)
     
     // Obtener videos recientes
     const videos = await tiktok.getUserVideos(50)
@@ -71,13 +115,12 @@ export async function POST(request: NextRequest) {
       if (processedVideoIds.has(video.id)) continue
       processedVideoIds.add(video.id)
       
-      // Extraer hashtags del título
       const title = video.title || ''
       const extractedHashtags = extractHashtags(title)
       
-      console.log(`Processing video: ${video.id} - Hashtags: ${extractedHashtags.join(', ') || 'none'}`)
+      console.log(`Processing video: ${video.id}`)
       
-      // Guardar video
+      // Guardar video con thumbnail mejorado
       const { data: videoRecord, error: videoError } = await supabase
         .from('videos')
         .upsert({
@@ -86,13 +129,15 @@ export async function POST(request: NextRequest) {
           platform_video_id: video.id,
           title: title,
           description: '',
-          thumbnail_url: video.cover_image_url,
+          thumbnail_url: video.cover_image_url || video.cover_image_url,
           duration: video.duration || 0,
           published_at: video.create_time ? new Date(video.create_time * 1000).toISOString() : new Date().toISOString(),
           hashtags: extractedHashtags,
           sound: 'Original Sound',
           metadata: {
-            share_url: video.share_url
+            share_url: video.share_url,
+            cover_url: video.cover_image_url,
+            video_url: video.video_url
           }
         }, {
           onConflict: 'user_id,platform,platform_video_id'
@@ -112,7 +157,6 @@ export async function POST(request: NextRequest) {
       const newComments = video.comment_count || 0
       const newShares = video.share_count || 0
       
-      // Buscar la métrica más reciente
       const { data: existingMetric } = await supabase
         .from('video_metrics')
         .select('id')
@@ -121,7 +165,6 @@ export async function POST(request: NextRequest) {
         .limit(1)
       
       if (existingMetric && existingMetric.length > 0) {
-        // Actualizar métrica existente
         const { error: updateError } = await supabase
           .from('video_metrics')
           .update({
@@ -138,7 +181,6 @@ export async function POST(request: NextRequest) {
           console.log(`Updated metrics for ${video.id}: views=${newViews}`)
         }
       } else {
-        // Insertar primera métrica
         const { error: insertError } = await supabase
           .from('video_metrics')
           .insert({

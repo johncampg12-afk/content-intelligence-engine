@@ -24,10 +24,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Crear un response que vamos a modificar
     let response = NextResponse.next()
     
-    // Crear el cliente de Supabase que puede modificar las cookies
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -45,7 +43,6 @@ export async function GET(request: NextRequest) {
       }
     )
     
-    // Obtener el usuario autenticado
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     
     if (userError || !user) {
@@ -80,9 +77,6 @@ export async function GET(request: NextRequest) {
     }
     
     console.log('Step 2: Token obtained')
-    
-    // Obtener información del usuario de TikTok
-    console.log('Step 3: Getting user info from TikTok...')
     
     const fields = [
       'username',
@@ -119,7 +113,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${baseUrl}/login?error=no_user_id`)
     }
     
-    // Guardar la cuenta
     console.log('Step 4: Saving to Supabase...')
     
     const { error: upsertError } = await supabase
@@ -153,7 +146,6 @@ export async function GET(request: NextRequest) {
     
     console.log('Step 5: Successfully saved to Supabase')
     
-    // Disparar sincronización
     console.log('Triggering video sync...')
     fetch(`${baseUrl}/api/cron/sync-tiktok`, {
       method: 'POST',
@@ -163,9 +155,6 @@ export async function GET(request: NextRequest) {
     
     console.log('=== TIKTOK CALLBACK SUCCESS ===')
     
-    // =====================================================
-    // CAMBIO AQUÍ: Redirigir directamente al login
-    // =====================================================
     return NextResponse.redirect(`${baseUrl}/login?tiktok_connected=true`)
     
   } catch (err) {

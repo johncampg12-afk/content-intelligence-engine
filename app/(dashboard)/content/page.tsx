@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { TikTokIcon, InstagramIcon, FacebookIcon, XIcon } from '@/components/ui/social-icons'
+import { Video } from 'lucide-react'
 
 interface Video {
   id: string
@@ -13,6 +14,11 @@ interface Video {
   thumbnail_url: string
   duration: number
   published_at: string
+  metadata?: {
+    cover_url?: string
+    video_url?: string
+    share_url?: string
+  }
   video_metrics?: {
     views: number
     likes: number
@@ -149,6 +155,25 @@ export default function ContentPage() {
     return num.toString()
   }
 
+  // Función para manejar errores de imagen y usar fallback
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>, video: Video) => {
+    const img = e.currentTarget
+    // Si la imagen falla y tenemos una URL de respaldo en metadata
+    if (video.metadata?.cover_url && img.src !== video.metadata.cover_url) {
+      img.src = video.metadata.cover_url
+    } else {
+      // Si no hay respaldo, mostrar placeholder
+      img.style.display = 'none'
+      const parent = img.parentElement
+      if (parent) {
+        const placeholder = document.createElement('div')
+        placeholder.className = 'w-full h-full flex items-center justify-center text-gray-400 bg-gray-100'
+        placeholder.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><path d="M7 10h10"></path></svg>'
+        parent.appendChild(placeholder)
+      }
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -266,10 +291,18 @@ export default function ContentPage() {
                       src={video.thumbnail_url}
                       alt={video.title || 'Video thumbnail'}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                      onError={(e) => handleImageError(e, video)}
+                    />
+                  ) : video.metadata?.cover_url ? (
+                    <img
+                      src={video.metadata.cover_url}
+                      alt={video.title || 'Video thumbnail'}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                      onError={(e) => handleImageError(e, video)}
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400">
-                      No thumbnail
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-100">
+                      <Video className="w-8 h-8" />
                     </div>
                   )}
                   
