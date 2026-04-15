@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { TikTokIcon, InstagramIcon, FacebookIcon, XIcon } from '@/components/ui/social-icons'
-import { Video } from 'lucide-react'
+import { Video, ImageOff } from 'lucide-react'
 
 interface Video {
   id: string
@@ -18,6 +18,7 @@ interface Video {
     cover_url?: string
     video_url?: string
     share_url?: string
+    cover_image_url?: string
   }
   video_metrics?: {
     views: number
@@ -36,6 +37,7 @@ export default function ContentPage() {
   const [selectedPlatform, setSelectedPlatform] = useState<string>('all')
   const [userId, setUserId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
   
   const supabase = createClient()
 
@@ -105,6 +107,7 @@ export default function ContentPage() {
         })) || []
         
         setVideos(processedVideos)
+        setFailedImages(new Set())
       }
     } catch (err) {
       console.error('Error:', err)
@@ -155,23 +158,41 @@ export default function ContentPage() {
     return num.toString()
   }
 
-  // Función para manejar errores de imagen y usar fallback
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>, video: Video) => {
-    const img = e.currentTarget
-    // Si la imagen falla y tenemos una URL de respaldo en metadata
-    if (video.metadata?.cover_url && img.src !== video.metadata.cover_url) {
-      img.src = video.metadata.cover_url
-    } else {
-      // Si no hay respaldo, mostrar placeholder
-      img.style.display = 'none'
-      const parent = img.parentElement
-      if (parent) {
-        const placeholder = document.createElement('div')
-        placeholder.className = 'w-full h-full flex items-center justify-center text-gray-400 bg-gray-100'
-        placeholder.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><path d="M7 10h10"></path></svg>'
-        parent.appendChild(placeholder)
-      }
+  // Obtener la mejor URL de thumbnail disponible
+  const getThumbnailUrl = (video: Video): string | null => {
+    // Priorizar thumbnail_url
+    if (video.thumbnail_url && video.thumbnail_url.trim() !== '') {
+      return video.thumbnail_url
     }
+    // Intentar con cover_url del metadata
+    if (video.metadata?.cover_url && video.metadata.cover_url.trim() !== '') {
+      return video.metadata.cover_url
+    }
+    // Intentar con cover_image_url del metadata
+    if (video.metadata?.cover_image_url && video.metadata.cover_image_url.trim() !== '') {
+      return video.metadata.cover_image_url
+    }
+    return null
+  }
+
+  // Construir URL con proxy para evitar problemas de CORS y expiración
+  const getProxiedImageUrl = (originalUrl: string): string => {
+    if (!originalUrl) return ''
+    // Si ya es una URL de nuestro proxy, devolverla directamente
+    if (originalUrl.includes('/api/proxy/image')) {
+      return originalUrl
+    }
+    return `/api/proxy/image?url=${encodeURIComponent(originalUrl)}`
+  }
+
+  // Manejar error de carga de imagen
+  const handleImageError = (videoId: string) => {
+    setFailedImages(prev => new Set(prev).add(videoId))
+  }
+
+  // Verificar si la imagen falló para este video
+  const hasImageFailed = (videoId: string): boolean => {
+    return failedImages.has(videoId)
   }
 
   if (loading) {
@@ -278,6 +299,9 @@ export default function ContentPage() {
                 ? ((latestMetrics.likes + latestMetrics.comments + latestMetrics.shares) / latestMetrics.views * 100).toFixed(1)
                 : '0'
             
+            const thumbnailUrl = getThumbnailUrl(video)
+            const imageFailed = hasImageFailed(video.id)
+            
             return (
               <Link
                 key={video.id}
@@ -286,23 +310,18 @@ export default function ContentPage() {
               >
                 {/* Thumbnail */}
                 <div className="relative aspect-[9/16] bg-gray-100">
-                  {video.thumbnail_url ? (
+                  {thumbnailUrl && !imageFailed ? (
                     <img
-                      src={video.thumbnail_url}
+                      src={getProxiedImageUrl(thumbnailUrl)}
                       alt={video.title || 'Video thumbnail'}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                      onError={(e) => handleImageError(e, video)}
-                    />
-                  ) : video.metadata?.cover_url ? (
-                    <img
-                      src={video.metadata.cover_url}
-                      alt={video.title || 'Video thumbnail'}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                      onError={(e) => handleImageError(e, video)}
+                      loading="lazy"
+                      onError={() => handleImageError(video.id)}
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-100">
-                      <Video className="w-8 h-8" />
+                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-100 gap-2">
+                      <ImageOff className="w-8 h-8" />
+                      <span className="text-xs">No thumbnail</span>
                     </div>
                   )}
                   
