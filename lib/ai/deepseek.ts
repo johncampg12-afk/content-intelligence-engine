@@ -12,7 +12,6 @@ export class DeepSeekAI {
     })
   }
 
-  // Obtener tendencias actuales de TikTok desde la base de datos
   async getCurrentTikTokTrends(): Promise<string> {
     try {
       const cookieStore = await cookies()
@@ -50,18 +49,55 @@ export class DeepSeekAI {
     }
   }
 
-  // Calcular estadísticas reales a partir de los datos
+  // ============================================
+  // calculateRealStats mejorado con protección division by zero
+  // ============================================
   private calculateRealStats(metricsData: any[]) {
     const totalVideos = metricsData.length
+    
+    // Si no hay videos, retornar stats vacíos
+    if (totalVideos === 0) {
+      return {
+        totalVideos: 0,
+        totalViews: 0,
+        totalLikes: 0,
+        totalComments: 0,
+        totalShares: 0,
+        totalSaves: 0,
+        totalEngagement: 0,
+        avgViews: 0,
+        avgEngagementRate: 0,
+        avgSavesRate: 0,
+        avgWatchTime: 0,
+        avgDuration: 0,
+        videosOver60s: 0,
+        bestVideo: null
+      }
+    }
+    
+    // Métricas base
     const totalViews = metricsData.reduce((sum, v) => sum + (v.metrics?.views || 0), 0)
     const totalLikes = metricsData.reduce((sum, v) => sum + (v.metrics?.likes || 0), 0)
     const totalComments = metricsData.reduce((sum, v) => sum + (v.metrics?.comments || 0), 0)
     const totalShares = metricsData.reduce((sum, v) => sum + (v.metrics?.shares || 0), 0)
+    const totalSaves = metricsData.reduce((sum, v) => sum + (v.metrics?.saves || 0), 0)
+    const totalWatchTime = metricsData.reduce((sum, v) => sum + (v.metrics?.watch_time || 0), 0)
+    
+    // FIX 2: Protección division by zero en avgDuration
+    const avgDuration = totalVideos > 0 
+      ? metricsData.reduce((sum, v) => sum + (v.duration || 0), 0) / totalVideos 
+      : 0
+    
     const totalEngagement = totalLikes + totalComments + totalShares
     const avgViews = totalVideos > 0 ? totalViews / totalVideos : 0
     const avgEngagementRate = totalViews > 0 ? (totalEngagement / totalViews) * 100 : 0
+    const avgSavesRate = totalViews > 0 ? (totalSaves / totalViews) * 100 : 0
+    const avgWatchTime = totalVideos > 0 ? totalWatchTime / totalVideos : 0
     
-    // Encontrar mejor video por engagement total
+    // Videos largos para monetización
+    const videosOver60s = metricsData.filter(v => (v.duration || 0) >= 60).length
+    
+    // Mejor video por engagement total
     let bestVideo = null
     let maxEngagement = 0
     for (const v of metricsData) {
@@ -78,9 +114,14 @@ export class DeepSeekAI {
       totalLikes,
       totalComments,
       totalShares,
+      totalSaves,
       totalEngagement,
       avgViews,
       avgEngagementRate,
+      avgSavesRate,
+      avgWatchTime,
+      avgDuration,
+      videosOver60s,
       bestVideo: bestVideo ? {
         title: bestVideo.title,
         published_at: bestVideo.published_at,
@@ -88,99 +129,102 @@ export class DeepSeekAI {
         likes: bestVideo.metrics?.likes || 0,
         comments: bestVideo.metrics?.comments || 0,
         shares: bestVideo.metrics?.shares || 0,
+        saves: bestVideo.metrics?.saves || 0,
         engagement: maxEngagement,
+        duration: bestVideo.duration,
         engagement_rate: ((maxEngagement / (bestVideo.metrics?.views || 1)) * 100).toFixed(2)
       } : null
     }
   }
   
-  async analyzePatterns(metricsData: any): Promise<string> {
+  // ============================================
+  // MÉTODO PRINCIPAL CON PROMPT BRUTAL
+  // ============================================
+  async analyzePatternsWithNiche(metricsData: any, nicheContext: {
+    accountType: string,
+    contentGoal: string,
+    targetAudience: string,
+    nichePatterns: string
+  }): Promise<string> {
     try {
+      const currentTrends = await this.getCurrentTikTokTrends()
+      const realStats = this.calculateRealStats(metricsData)
+      
+      // Si no hay datos suficientes
+      if (realStats.totalVideos === 0) {
+        return `**DIAGNÓSTICO BRUTAL**\n\nNo hay suficientes datos para analizar. Sincroniza al menos 5 videos para obtener recomendaciones precisas.\n\n**RECOMENDACIÓN 1 - LA QUE MÁS DINERO DA**\nDolor: No hay datos.\nPérdida: 0€\nHaz esto 7 días: Conecta tu TikTok y sincroniza al menos 5 videos.\nSi funciona verás: Análisis completo en 48h.\n\nElige 1 y hazla. Si haces las 3 a la vez, no harás ninguna.`
+      }
+      
+      const isMonetization = nicheContext.contentGoal.toLowerCase().includes('monet')
+      const benchmark = typeof nicheContext.nichePatterns === 'string' 
+        ? nicheContext.nichePatterns 
+        : JSON.stringify(nicheContext.nichePatterns, null, 2)
+      const cpm = nicheContext.accountType?.toLowerCase().includes('tech') ? '3€' : '4€'
+
+      const systemMessage = `Eres Head of Growth de CreatorOS. Tu trabajo es decir verdades que duelen y que hacen ganar dinero.
+
+CONTEXTO:
+Nicho: ${nicheContext.accountType}
+Objetivo: ${nicheContext.contentGoal}
+Audiencia: ${nicheContext.targetAudience}
+
+BENCHMARK (cuentas que facturan):
+${benchmark || 'No hay benchmark disponible para este nicho.'}
+
+ESTADO ACTUAL ALGORITMO TIKTOK 2026:
+${currentTrends}
+
+DATOS USUARIO:
+${JSON.stringify({...realStats, isMonetization}, null, 2)}
+
+REGLAS ESTRICTAS:
+1. NUNCA uses su histórico como ideal. Solo benchmark.
+2. ${isMonetization ? 'OBJETIVO MONETIZACIÓN ACTIVO: todo video <60s = 0€. Usa CPM ' + cpm + '/1k views calificadas (>60s). Para calcular pérdida: (views_mensuales_<60s / 1000) * CPM.' : 'Si monetización no es objetivo, enfócate en engagement y shares.'}
+3. Máximo 3 recomendaciones. Cada una debe caber en 3 frases.
+4. Habla en €, no en %. Usa la fórmula de pérdida proporcionada.
+5. Sé brutalmente honesto. Si los datos son malos, dilo.
+
+OUTPUT - FORMATO EXACTO:
+
+**DIAGNÓSTICO BRUTAL (1 párrafo)**
+[Qué hace mal vs quien gana dinero, con sus números]
+
+**RECOMENDACIÓN 1 - LA QUE MÁS DINERO DA**
+Dolor: [frase con su dato vs benchmark]
+Pérdida: Estás dejando ~[€X]/mes en la mesa por esto.
+Haz esto 7 días: [acción ultra concreta, con hora y formato]
+Si funciona verás: [métrica clara en 48h]
+
+**RECOMENDACIÓN 2 - LA QUE TE HACE CRECER**
+Dolor: [segundo leak]
+Pérdida: [€ o views perdidos]
+Haz esto 7 días: [acción]
+Si funciona verás: [señal]
+
+**RECOMENDACIÓN 3 - LA QUE TE PROTEGE**
+Dolor: [tercer leak, normalmente consistencia o hook]
+Pérdida: [riesgo]
+Haz esto 7 días: [acción]
+Si funciona verás: [señal]
+
+Elige 1 y hazla. Si haces las 3 a la vez, no harás ninguna.`
+
       const completion = await this.client.chat.completions.create({
         model: 'deepseek-chat',
         messages: [
           {
             role: 'system',
-            content: `Eres un analista de datos senior especializado en social media para empresas en 2026.
-            
-            Debes generar un análisis COMPLETO en formato texto plano con markdown simple.
-            La estructura DEBE ser EXACTAMENTE la siguiente:
-
-            1. KPIs PRINCIPALES (Agregados del Período)
-            * Total de Publicaciones Analizadas: [número] videos.
-            * Vistas Totales Acumuladas: [número] vistas.
-            * Promedio de Vistas por Video: [número] vistas.
-            * Engagement Total (Likes + Comentarios + Shares): [número] interacciones.
-            * Tasa de Engagement Promedio: [número]%
-            Nota: La tasa de engagement se calcula como (Total de Interacciones / Total de Vistas) * 100.
-            * Desglose Promedio de Interacciones por Video:
-              * Likes: [número]
-              * Comentarios: [número]
-              * Shares: [número]
-            * Video de Mayor Rendimiento (ID: [fecha]):
-              * Vistas: [número]
-              * Engagement: [número] interacciones ([likes] Likes, [comments] Comentarios, [shares] Shares)
-              * Tasa de Engagement: [número]%
-              * [explicación del por qué destacó]
-
-            2. ANÁLISIS DE TENDENCIAS TEMPORALES
-            * Mejor Día de Publicación: [día], [fecha], concentró [número] publicaciones con un desempeño consistentemente superior...
-            * Peor Día de Publicación: [día], [fecha], las publicaciones mostraron...
-            * Análisis de Horario:
-              * Franja de Alto Potencial: [horario]...
-              * Franja de Vistas Altas pero Engagement Variable: [horario]...
-            * Recomendación Temporal: [recomendación específica]
-
-            3. ANÁLISIS DE FORMATO (DURACIÓN ÓPTIMA)
-            * Duración Promedio de los Videos: [número] segundos.
-            * Rango de Duración: [mín] y [máx] segundos.
-            * Correlación Duración-Rendimiento:
-              * [rango de duración]: [análisis]...
-            * Conclusión sobre Duración: [conclusión]
-
-            4. PATRONES DE CONTENIDO EXITOSO
-            * Título y Enfoque Ganador (Alto Engagement/Shareability):
-              * Patrón: [descripción]...
-              * Ejemplo: "[título]"
-              * Resultado: [resultado]...
-            * Título y Enfoque Moderado (Vistas Altas, Engagement Medio):
-              * Patrón: [descripción]...
-              * Ejemplo: "[título]"
-              * Resultado: [resultado]...
-            * Título y Enfoque Débil (Bajo Rendimiento):
-              * Patrón: [descripción]...
-              * Ejemplo: "[título]"
-              * Resultado: [resultado]...
-            * Consistencia Temática: [análisis de hashtags y nicho]
-
-            5. RECOMENDACIONES ESTRATÉGICAS PARA AUMENTAR ENGAGEMENT
-            [Lista numerada de 5-7 recomendaciones con formato: N. [Recomendación]]
-
-            6. PROYECCIONES Y OPORTUNIDADES DE MEJORA
-            * Proyección de Crecimiento: [análisis]...
-            * Oportunidad de Ampliación Temática: [análisis]...
-            * Oportunidad de Comunidad: [análisis]...
-            * Riesgo Identificado: [análisis]...
-            * Siguiente Fase de Análisis: [análisis]...
-
-            CONCLUSIÓN GENERAL
-            [Párrafo conclusivo de 3-4 líneas]
-
-            IMPORTANTE: 
-            - Los números y datos deben ser REALES basados en los videos proporcionados.
-            - Resalta en NEGRITA (con **) SOLO los números, porcentajes y datos clave.
-            - NO uses hashtags, emojis ni formatos extraños.
-            - La respuesta debe ser COMPLETA y EXTENSA, con todos los puntos detallados.`
+            content: systemMessage
           },
           {
             role: 'user',
-            content: `Analiza estos datos de videos de TikTok y genera el análisis con la estructura exacta especificada:
-            
-            ${JSON.stringify(metricsData, null, 2)}`
+            // FIX 1: No enviar los 43 videos enteros
+            content: `Genera el diagnóstico. Ya tienes todos los números en DATOS USUARIO. No necesitas los vídeos individuales.`
           }
         ],
         temperature: 0.3,
-        max_tokens: 4000,
+        top_p: 0.9,
+        max_tokens: 1500,
       })
       
       const content = completion.choices[0]?.message?.content
@@ -196,158 +240,19 @@ export class DeepSeekAI {
     }
   }
 
-  // Método con integración de nicho y patrones de éxito
-  async analyzePatternsWithNiche(metricsData: any, nicheContext: {
-    accountType: string,
-    contentGoal: string,
-    targetAudience: string,
-    nichePatterns: string
-  }): Promise<string> {
-    try {
-      const currentTrends = await this.getCurrentTikTokTrends()
-      const realStats = this.calculateRealStats(metricsData)
-
-      const systemMessage = `Eres un analista de datos senior especializado en social media para empresas en 2026.
-
-      ## DATOS DEL USUARIO:
-      - Tipo de cuenta: ${nicheContext.accountType}
-      - Objetivo principal: ${nicheContext.contentGoal}
-      - Audiencia objetivo: ${nicheContext.targetAudience}
-
-      ## PATRONES DE ÉXITO PARA ESTE NICHO:
-      ${nicheContext.nichePatterns}
-
-      ## ESTADO ACTUAL DEL ALGORITMO DE TIKTOK:
-      ${currentTrends}
-
-      ## DATOS REALES DEL USUARIO (ANÁLISIS):
-      ${JSON.stringify(realStats, null, 2)}
-
-      IMPORTANTE: 
-      - Los números y datos que debes usar son EXACTAMENTE los que se te proporcionan en "DATOS REALES". NO inventes ni redondees.
-      - Compara los datos del usuario con los patrones de éxito de su nicho.
-      - Genera recomendaciones específicas para que pueda emular esos patrones adaptándolos a su contenido.
-      - Las recomendaciones deben ser prácticas, accionables y alineadas con su objetivo (${nicheContext.contentGoal}).
-      - La audiencia objetivo (${nicheContext.targetAudience}) debe influir en el tono y formato de las recomendaciones.
-
-      Debes generar un análisis con la siguiente estructura EXACTA (sin modificar títulos ni orden):
-
-      1. KPIs PRINCIPALES (Agregados del Período):
-      * Total de Publicaciones Analizadas: [número] videos.
-      * Vistas Totales Acumuladas: [número] vistas.
-      * Promedio de Vistas por Video: [número] vistas.
-      * Engagement Total (Likes + Comentarios + Shares): [número] interacciones.
-      * Tasa de Engagement Promedio: [número]%
-      Nota: La tasa de engagement se calcula como (Total de Interacciones / Total de Vistas) * 100.
-      * Desglose Promedio de Interacciones por Video:
-        * Likes: [número]
-        * Comentarios: [número]
-        * Shares: [número]
-      * Video de Mayor Rendimiento (ID: [fecha]):
-        * Vistas: [número]
-        * Engagement: [número] interacciones ([likes] Likes, [comments] Comentarios, [shares] Shares)
-        * Tasa de Engagement: [número]%
-        * [explicación breve de por qué destacó]
-
-      2. ANÁLISIS DE TENDENCIAS TEMPORALES:
-      * Mejor Día de Publicación: [día], [fecha], [explicación basada en datos]
-      * Peor Día de Publicación: [día], [fecha], [explicación basada en datos]
-      * Análisis de Horario:
-        * Franja de Alto Potencial: [horario]...
-        * Franja de Vistas Altas pero Engagement Variable: [horario]...
-      * Recomendación Temporal: [recomendación específica]
-
-      3. ANÁLISIS DE FORMATO (DURACIÓN ÓPTIMA):
-      * Duración Promedio de los Videos: [número] segundos.
-      * Rango de Duración: [mín] a [máx] segundos.
-      * Correlación Duración-Rendimiento: [análisis comparado con patrón del nicho]
-      * Conclusión sobre Duración: [conclusión]
-
-      4. PATRONES DE CONTENIDO EXITOSO:
-      * Comparativa con Nicho: [cómo se compara tu contenido con los patrones de éxito de tu nicho]
-      * Título y Enfoque Ganador (Alto Engagement/Shareability):
-        * Patrón: [descripción]
-        * Ejemplo: "[título]"
-        * Resultado: [resultado]
-      * Título y Enfoque Moderado (Vistas Altas, Engagement Medio):
-        * Patrón: [descripción]
-        * Ejemplo: "[título]"
-        * Resultado: [resultado]
-      * Título y Enfoque Débil (Bajo Rendimiento):
-        * Patrón: [descripción]
-        * Ejemplo: "[título]"
-        * Resultado: [resultado]
-      * Consistencia Temática: [análisis]
-
-      5. RECOMENDACIONES ESTRATÉGICAS PARA AUMENTAR ENGAGEMENT:
-      (Debe ser una lista numerada continua del 1 al 6 o 7, sin saltos. Basadas en los patrones de éxito de tu nicho)
-      1. [Recomendación específica alineada con el nicho]
-      2. [Recomendación específica alineada con el nicho]
-      3. [Recomendación específica alineada con el nicho]
-      ...
-
-      6. PROYECCIONES Y OPORTUNIDADES DE MEJORA:
-      * Proyección de Crecimiento: [análisis basado en comparativa con nicho]
-      * Oportunidad de Ampliación Temática: [análisis]
-      * Oportunidad de Comunidad: [análisis]
-      * Riesgo Identificado: [análisis]
-      * Siguiente Fase de Análisis: [análisis]
-
-      CONCLUSIÓN GENERAL:
-      [Párrafo de 3-4 líneas resumiendo el análisis y las acciones clave]`
-
-            const completion = await this.client.chat.completions.create({
-              model: 'deepseek-chat',
-              messages: [
-                {
-                  role: 'system',
-                  content: systemMessage
-                },
-                {
-                  role: 'user',
-                  content: `Analiza los siguientes videos y genera el informe con la estructura exacta especificada. Usa los DATOS REALES proporcionados para todos los números.
-                  
-      Videos:
-      ${JSON.stringify(metricsData, null, 2)}`
-                }
-              ],
-              temperature: 0.2,
-              max_tokens: 4000,
-            })
-            
-            const content = completion.choices[0]?.message?.content
-            if (!content) {
-              throw new Error('No content returned from DeepSeek')
-            }
-            
-            return content
-            
-          } catch (error) {
-            console.error('DeepSeek API error:', error)
-            throw error
-          }
-        }
-
   // ============================================
-  // NUEVO MÉTODO: Predicción de viralidad
+  // MÉTODO: Predicción de viralidad
   // ============================================
   async predictViral(prompt: string): Promise<any> {
-  try {
-    const completion = await this.client.chat.completions.create({
-      model: 'deepseek-chat',
-      messages: [
-        {
-          role: 'system',
-          content: `Eres un analista de datos experto en predicción de viralidad en TikTok en 2026.
+    try {
+      const completion = await this.client.chat.completions.create({
+        model: 'deepseek-chat',
+        messages: [
+          {
+            role: 'system',
+            content: `Eres un analista de datos experto en predicción de viralidad en TikTok en 2026.
           
           IMPORTANTE: Las recomendaciones deben ser PRÁCTICAS y ACCIONABLES, basadas en patrones reales del nicho del usuario.
-          
-          Ejemplos de buenas recomendaciones:
-          - "Publica los martes entre 20:00-21:00, cuando tu audiencia está más activa"
-          - "Usa un hook en los primeros 3 segundos preguntando '¿Sabías que...?' para captar atención"
-          - "Incluye un llamado a la acción específico como 'Comparte esto con alguien que le pueda servir'"
-          - "Añade texto en pantalla durante los primeros 5 segundos para reforzar el mensaje"
-          - "Usa hashtags de nicho como #tutorial y #consejos en lugar de hashtags genéricos"
           
           Debes responder SOLO con JSON válido, sin texto adicional fuera del JSON.
           Sé conservador en las predicciones, no sobreestimes.`
@@ -358,6 +263,7 @@ export class DeepSeekAI {
         }
       ],
       temperature: 0.4,
+      top_p: 0.9,
       max_tokens: 1500,
       response_format: { type: 'json_object' }
     })
@@ -373,5 +279,5 @@ export class DeepSeekAI {
     console.error('DeepSeek prediction error:', error)
     throw error
   }
-}
+  }
 }
