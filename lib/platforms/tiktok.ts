@@ -24,7 +24,7 @@ export class TikTokAPI {
     return data
   }
   
-  async getUserVideos(maxCount: number = 50) {
+  async getUserVideos(maxCount: number = 20) {
     const allVideos: any[] = []
     let cursor = 0
     let hasMore = true
@@ -57,12 +57,18 @@ export class TikTokAPI {
       })
 
       const responseText = await response.text()
+      
       if (!response.ok) {
         throw new Error(`TikTok API error: ${response.status} - ${responseText}`)
       }
 
       const data = JSON.parse(responseText)
+      
       if (data.data?.videos && Array.isArray(data.data.videos)) {
+        // Loggear el primer video para ver su estructura
+        if (allVideos.length === 0 && data.data.videos.length > 0) {
+          console.log('Sample video from TikTok:', JSON.stringify(data.data.videos[0], null, 2))
+        }
         allVideos.push(...data.data.videos)
         cursor = data.data.cursor || 0
         hasMore = data.data.has_more || false

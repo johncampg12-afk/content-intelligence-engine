@@ -54,53 +54,44 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'TikTok account not found' }, { status: 404 })
     }
     
-    // ============================================
-    // REFRESH TOKEN AUTOMÁTICO
-    // ============================================
-    let accessToken = account.access_token
-    const tokenExpiresAt = new Date(account.expires_at)
-    const now = new Date()
-    const hoursUntilExpiry = (tokenExpiresAt.getTime() - now.getTime()) / (1000 * 60 * 60)
+    console.log('TikTok account found')
     
-    if (hoursUntilExpiry < 24) {
-      console.log(`Token expires in ${hoursUntilExpiry.toFixed(1)} hours. Refreshing...`)
+    let tiktok = new TikTokAPI(account.access_token)
+    
+    // Verificar si el token está por expirar (menos de 1 día)
+    if (account.expires_at) {
+      const tokenExpiresAt = new Date(account.expires_at)
+      const now = new Date()
+      const hoursUntilExpiry = (tokenExpiresAt.getTime() - now.getTime()) / (1000 * 60 * 60)
       
-      try {
-        const refreshResponse = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: new URLSearchParams({
-            client_key: process.env.TIKTOK_CLIENT_ID!,
-            client_secret: process.env.TIKTOK_CLIENT_SECRET!,
-            grant_type: 'refresh_token',
-            refresh_token: account.refresh_token,
-          })
-        })
+      if (hoursUntilExpiry < 24) {
+        console.log(`Token expires in ${hoursUntilExpiry.toFixed(1)} hours. Refreshing...`)
         
-        const refreshData = await refreshResponse.json()
-        
-        if (refreshData.access_token) {
-          await supabase
-            .from('connected_accounts')
-            .update({
-              access_token: refreshData.access_token,
-              refresh_token: refreshData.refresh_token,
-              expires_at: new Date(Date.now() + refreshData.expires_in * 1000).toISOString(),
-            })
-            .eq('id', account.id)
+        try {
+          const refreshData = await tiktok.refreshToken(account.refresh_token)
           
-          accessToken = refreshData.access_token
-          console.log('Token refreshed successfully')
+          if (refreshData.access_token) {
+            // Actualizar token en Supabase
+            await supabase
+              .from('connected_accounts')
+              .update({
+                access_token: refreshData.access_token,
+                refresh_token: refreshData.refresh_token,
+                expires_at: new Date(Date.now() + refreshData.expires_in * 1000).toISOString(),
+              })
+              .eq('id', account.id)
+            
+            // Actualizar el token en la instancia actual
+            account.access_token = refreshData.access_token
+            tiktok = new TikTokAPI(refreshData.access_token)
+            
+            console.log('Token refreshed successfully')
+          }
+        } catch (refreshError) {
+          console.error('Failed to refresh token:', refreshError)
         }
-      } catch (refreshError) {
-        console.error('Failed to refresh token:', refreshError)
       }
     }
-    // ============================================
-    
-    const tiktok = new TikTokAPI(accessToken)
     
     // Obtener videos recientes
     const videos = await tiktok.getUserVideos(50)
@@ -115,12 +106,25 @@ export async function POST(request: NextRequest) {
       if (processedVideoIds.has(video.id)) continue
       processedVideoIds.add(video.id)
       
+      // Extraer hashtags del título
       const title = video.title || ''
       const extractedHashtags = extractHashtags(title)
       
-      console.log(`Processing video: ${video.id}`)
+      // Generar thumbnail URL desde múltiples fuentes
+      let thumbnailUrl = ''
       
-      // Guardar video con thumbnail mejorado
+      if (video.cover_image_url) {
+        thumbnailUrl = video.cover_image_url
+      } else if (video.metadata?.cover_image_url) {
+        thumbnailUrl = video.metadata.cover_image_url
+      } else if (video.id) {
+        // Formato alternativo de TikTok
+        thumbnailUrl = `https://p16-sign-va.tiktokcdn.com/tos-maliva-avt-0068/${video.id}~tplv-tiktokx.jpeg`
+      }
+      
+      console.log(`Processing video: ${video.id} - Thumbnail: ${thumbnailUrl ? 'YES' : 'NO'}`)
+      
+      // Guardar video
       const { data: videoRecord, error: videoError } = await supabase
         .from('videos')
         .upsert({
@@ -128,16 +132,17 @@ export async function POST(request: NextRequest) {
           platform: 'tiktok',
           platform_video_id: video.id,
           title: title,
-          description: '',
-          thumbnail_url: video.cover_image_url || video.cover_image_url,
+          description: video.description || '',
+          thumbnail_url: thumbnailUrl,
           duration: video.duration || 0,
           published_at: video.create_time ? new Date(video.create_time * 1000).toISOString() : new Date().toISOString(),
           hashtags: extractedHashtags,
           sound: 'Original Sound',
           metadata: {
             share_url: video.share_url,
-            cover_url: video.cover_image_url,
-            video_url: video.video_url
+            cover_image_url: video.cover_image_url,
+            video_url: video.video_url,
+            original_data: video
           }
         }, {
           onConflict: 'user_id,platform,platform_video_id'
@@ -157,6 +162,7 @@ export async function POST(request: NextRequest) {
       const newComments = video.comment_count || 0
       const newShares = video.share_count || 0
       
+      // Buscar la métrica más reciente
       const { data: existingMetric } = await supabase
         .from('video_metrics')
         .select('id')
@@ -165,6 +171,7 @@ export async function POST(request: NextRequest) {
         .limit(1)
       
       if (existingMetric && existingMetric.length > 0) {
+        // Actualizar métrica existente
         const { error: updateError } = await supabase
           .from('video_metrics')
           .update({
@@ -181,6 +188,7 @@ export async function POST(request: NextRequest) {
           console.log(`Updated metrics for ${video.id}: views=${newViews}`)
         }
       } else {
+        // Insertar primera métrica
         const { error: insertError } = await supabase
           .from('video_metrics')
           .insert({
