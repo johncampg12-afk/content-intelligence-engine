@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Zap, Calendar as CalendarIcon } from 'lucide-react'
+import { Lightbulb } from 'lucide-react'
 
 export default async function DashboardLayout({
   children,
@@ -79,6 +80,13 @@ export default async function DashboardLayout({
                 >
                   <Zap className="w-4 h-4 mr-1" />
                   Viral Predictor
+                </Link>
+                <Link
+                  href="/ideas"
+                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                >
+                  <Lightbulb className="w-4 h-4 mr-1" />
+                  Ideas
                 </Link>
                 <Link
                   href="/calendar"
