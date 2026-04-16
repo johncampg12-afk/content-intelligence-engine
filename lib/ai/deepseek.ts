@@ -2,58 +2,40 @@ import OpenAI from 'openai'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-// Goal Matrix profesional
-const goalMatrix: Record<string, any> = {
-  monetization: { 
-    kpi: 'watch_time', 
-    revenue: true, 
-    duration: '65-90s', 
-    cpm: 3
-  },
-  brand_awareness: { 
-    kpi: 'reach y shares', 
-    revenue: false, 
-    duration: '15-30s'
-  },
-  community_building: { 
-    kpi: 'comments y saves', 
-    revenue: false, 
-    duration: '30-60s'
-  },
-  viral_growth: { 
-    kpi: 'views_3h y completion', 
-    revenue: false, 
-    duration: '12-21s'
-  },
-  lead_generation: { 
-    kpi: 'CTR y saves', 
-    revenue: false, 
-    duration: '30-45s'
-  },
-  education: { 
-    kpi: 'saves y watch_time', 
-    revenue: false, 
-    duration: '45-75s'
-  },
-  entertainment: { 
-    kpi: 'shares y replays', 
-    revenue: false, 
-    duration: '15-30s'
-  },
-  influence: { 
-    kpi: 'comments_quality', 
-    revenue: false, 
-    duration: '60-90s'
-  },
-  conversion: { 
-    kpi: 'clicks y purchases', 
-    revenue: true, 
-    duration: '30-45s', 
-    cpm: 5
+// ============================================
+// TIPOS
+// ============================================
+export type FullContext = {
+  accountType: string
+  contentGoal: string
+  targetAudience: string
+  nichePatterns: string
+  userContext?: {
+    accountBio: string
+    currentPhase: 'starting' | 'growing' | 'monetizing' | 'scaling'
+    mainStruggle: string
+    lastRecommendation?: string
+    evolution?: {
+      viewsChange: number
+      engagementChange: number
+      savesChange: number
+    }
   }
 }
 
-// Mapa de tonos según audiencia
+// Goal Matrix profesional
+const goalMatrix: Record<string, any> = {
+  monetization: { kpi: 'watch_time', revenue: true, duration: '65-90s', cpm: 3 },
+  brand_awareness: { kpi: 'reach y shares', revenue: false, duration: '15-30s' },
+  community_building: { kpi: 'comments y saves', revenue: false, duration: '30-60s' },
+  viral_growth: { kpi: 'views_3h y completion', revenue: false, duration: '12-21s' },
+  lead_generation: { kpi: 'CTR y saves', revenue: false, duration: '30-45s' },
+  education: { kpi: 'saves y watch_time', revenue: false, duration: '45-75s' },
+  entertainment: { kpi: 'shares y replays', revenue: false, duration: '15-30s' },
+  influence: { kpi: 'comments_quality', revenue: false, duration: '60-90s' },
+  conversion: { kpi: 'clicks y purchases', revenue: true, duration: '30-45s', cpm: 5 }
+}
+
 const getToneByAudience = (audience: string): string => {
   if (audience.includes('teen') || audience.includes('young')) {
     return 'directo, sin rodeos, lenguaje cercano, duro pero real'
@@ -93,7 +75,9 @@ export class DeepSeekAI {
                 cookiesToSet.forEach(({ name, value, options }) =>
                   cookieStore.set(name, value, options)
                 )
-              } catch {}
+              } catch {
+                // Handle error
+              }
             },
           },
         }
@@ -119,20 +103,10 @@ export class DeepSeekAI {
     
     if (totalVideos === 0) {
       return {
-        totalVideos: 0,
-        totalViews: 0,
-        totalLikes: 0,
-        totalComments: 0,
-        totalShares: 0,
-        totalSaves: 0,
-        totalEngagement: 0,
-        avgViews: 0,
-        avgEngagementRate: 0,
-        avgSavesRate: 0,
-        avgWatchTime: 0,
-        avgDuration: 0,
-        videosOver60s: 0,
-        bestVideo: null
+        totalVideos: 0, totalViews: 0, totalLikes: 0, totalComments: 0,
+        totalShares: 0, totalSaves: 0, totalEngagement: 0, avgViews: 0,
+        avgEngagementRate: 0, avgSavesRate: 0, avgWatchTime: 0, avgDuration: 0,
+        videosOver60s: 0, bestVideo: null
       }
     }
     
@@ -144,8 +118,7 @@ export class DeepSeekAI {
     const totalWatchTime = metricsData.reduce((sum, v) => sum + (v.metrics?.watch_time || 0), 0)
     
     const avgDuration = totalVideos > 0 
-      ? metricsData.reduce((sum, v) => sum + (v.duration || 0), 0) / totalVideos 
-      : 0
+      ? metricsData.reduce((sum, v) => sum + (v.duration || 0), 0) / totalVideos : 0
     
     const totalEngagement = totalLikes + totalComments + totalShares
     const avgViews = totalVideos > 0 ? totalViews / totalVideos : 0
@@ -165,55 +138,50 @@ export class DeepSeekAI {
     }
     
     return {
-      totalVideos,
-      totalViews,
-      totalLikes,
-      totalComments,
-      totalShares,
-      totalSaves,
-      totalEngagement,
-      avgViews,
-      avgEngagementRate,
-      avgSavesRate,
-      avgWatchTime,
-      avgDuration,
-      videosOver60s,
+      totalVideos, totalViews, totalLikes, totalComments, totalShares, totalSaves,
+      totalEngagement, avgViews, avgEngagementRate, avgSavesRate, avgWatchTime,
+      avgDuration, videosOver60s,
       bestVideo: bestVideo ? {
-        title: bestVideo.title,
-        published_at: bestVideo.published_at,
-        views: bestVideo.metrics?.views || 0,
-        likes: bestVideo.metrics?.likes || 0,
-        comments: bestVideo.metrics?.comments || 0,
-        shares: bestVideo.metrics?.shares || 0,
-        saves: bestVideo.metrics?.saves || 0,
-        engagement: maxEngagement,
+        title: bestVideo.title, published_at: bestVideo.published_at,
+        views: bestVideo.metrics?.views || 0, likes: bestVideo.metrics?.likes || 0,
+        comments: bestVideo.metrics?.comments || 0, shares: bestVideo.metrics?.shares || 0,
+        saves: bestVideo.metrics?.saves || 0, engagement: maxEngagement,
         duration: bestVideo.duration,
         engagement_rate: ((maxEngagement / (bestVideo.metrics?.views || 1)) * 100).toFixed(2)
       } : null
     }
   }
   
-  async analyzePatternsWithNiche(metricsData: any, nicheContext: {
-    accountType: string,
-    contentGoal: string,
-    targetAudience: string,
-    nichePatterns: string
-  }): Promise<string> {
+  // ============================================
+  // 1. analyzePatternsWithNiche - CON MEMORIA
+  // ============================================
+  async analyzePatternsWithNiche(metricsData: any, fullContext: FullContext): Promise<string> {
     try {
       const currentTrends = await this.getCurrentTikTokTrends()
       const realStats = this.calculateRealStats(metricsData)
       
-      const goal = goalMatrix[nicheContext.contentGoal] || goalMatrix.viral_growth
-      const tone = getToneByAudience(nicheContext.targetAudience)
+      const goal = goalMatrix[fullContext.contentGoal] || goalMatrix.viral_growth
+      const tone = getToneByAudience(fullContext.targetAudience)
+
+      const userBlock = fullContext.userContext ? `
+MEMORIA DEL CREADOR:
+- Bio: ${fullContext.userContext.accountBio}
+- Fase: ${fullContext.userContext.currentPhase}
+- Dolor principal: ${fullContext.userContext.mainStruggle}
+- Última recomendación dada: ${fullContext.userContext.lastRecommendation || 'ninguna'}
+- Evolución últimos 7 días: Views ${fullContext.userContext.evolution?.viewsChange || 0}%, Engagement ${fullContext.userContext.evolution?.engagementChange || 0}%, Saves ${fullContext.userContext.evolution?.savesChange || 0}%
+
+INSTRUCCIÓN CRÍTICA: Si evolution existe, menciona en tu diagnóstico si mejoró, empeoró o se mantuvo. Si lastRecommendation existe y evolution es negativa, dile que ignoró el consejo. Personaliza el tono según currentPhase (starting = más didáctico, scaling = más directo a ROI).
+` : ''
 
       if (realStats.totalVideos === 0) {
-        return `**DIAGNÓSTICO BRUTAL**\n\nNo hay suficientes datos para analizar. Sincroniza al menos 5 videos para obtener recomendaciones precisas.\n\n**RECOMENDACIÓN 1 - LA QUE MÁS DINERO DA**\nDolor: No hay datos.\nPérdida: 0€\nHaz esto 7 días: Conecta tu TikTok y sincroniza al menos 5 videos.\nSi funciona verás: Análisis completo en 48h.\n\nElige 1 y hazla. Si haces las 3 a la vez, no harás ninguna.`
+        return `**DIAGNÓSTICO BRUTAL**\n\nNo hay suficientes datos para analizar. Sincroniza al menos 5 videos para obtener recomendaciones precisas.\n\n**RECOMENDACIÓN 1**\nHaz esto 7 días: Conecta tu TikTok y sincroniza al menos 5 videos.\n\nElige 1 y hazla. Si haces las 3 a la vez, no harás ninguna.`
       }
 
       let goalRules = ''
-      switch (nicheContext.contentGoal) {
+      switch (fullContext.contentGoal) {
         case 'monetization':
-          goalRules = `→ Si haces <60s, ganas 0€ de Creator Rewards. Calcula: (views/1000)*3€ perdidos.`
+          goalRules = `→ Si haces <60s, ganas 0€ de Creator Rewards.`
           break
         case 'viral_growth':
           goalRules = `→ Si duras >30s, matas el completion rate. El viral vive en 12-21s.`
@@ -237,26 +205,27 @@ export class DeepSeekAI {
           goalRules = `→ Si comments son vacíos ("🔥", "👏"), no influyes.`
           break
         default:
-          goalRules = `→ Alinea todo con el objetivo: ${nicheContext.contentGoal}`
+          goalRules = `→ Alinea todo con el objetivo: ${fullContext.contentGoal}`
       }
 
-      const systemMessage = `Eres Head of Growth de Content Intelligence Engine. Tu único trabajo es decirle al creador por qué no está ganando dinero o creciendo, usando SUS datos contra el BENCHMARK de su nicho.
+      const systemMessage = `Eres Head of Growth de Content Intelligence Engine. Tu trabajo es decirle al creador por qué no está ganando dinero o creciendo, usando SUS datos contra el BENCHMARK de su nicho.
 
 CONTEXTO:
-- Objetivo: ${nicheContext.contentGoal} (KPI: ${goal.kpi})
-- Duración ideal para este objetivo: ${goal.duration}
+- Objetivo: ${fullContext.contentGoal} (KPI: ${goal.kpi})
+- Duración ideal: ${goal.duration}
 - ¿Calculamos €? ${goal.revenue ? 'Sí, usa CPM ' + goal.cpm + '€' : 'No, habla de oportunidad perdida'}
-- Audiencia: ${nicheContext.targetAudience} → tono: ${tone}
+- Audiencia: ${fullContext.targetAudience} → tono: ${tone}
+
+${userBlock}
 
 BENCHMARK (lo que hacen los que ganan):
-${nicheContext.nichePatterns || 'Sin benchmark específico para este nicho.'}
+${fullContext.nichePatterns || 'Sin benchmark específico para este nicho.'}
 
 TUS DATOS REALES:
 - Videos analizados: ${realStats.totalVideos}
 - Vistas totales: ${realStats.totalViews}
 - Engagement promedio: ${realStats.avgEngagementRate.toFixed(2)}%
 - Duración promedio: ${realStats.avgDuration.toFixed(0)}s
-- Mejor video: "${realStats.bestVideo?.title}" con ${realStats.bestVideo?.engagement_rate}% engagement
 
 REGLAS POR OBJETIVO:
 ${goalRules}
@@ -266,7 +235,7 @@ PROHIBIDO: inventar métricas, usar su histórico como ideal, dar más de 3 reco
 ESCRIBE ASÍ (natural, no plantilla rígida):
 
 **DIAGNÓSTICO BRUTAL**
-[2-3 frases máximo. Compara su KPI vs benchmark. Duele.]
+[2-3 frases máximo. Compara su KPI vs benchmark. Duele. Si hay evolución, menciónala.]
 
 **1. [Título que prometa dinero o crecimiento]**
 Estás fallando en [X] porque [dato]. Eso te cuesta ${goal.revenue ? '~[€]/mes' : '[X]% de alcance'}.
@@ -284,30 +253,15 @@ Elige 1. Hazla 7 días seguidos.`
       const completion = await this.client.chat.completions.create({
         model: 'deepseek-chat',
         messages: [
-          {
-            role: 'system',
-            content: systemMessage
-          },
-          {
-            role: 'user',
-            content: `Analiza estos videos y dame el diagnóstico brutal.
-            
-DATOS:
-${JSON.stringify(realStats, null, 2)}`
-          }
+          { role: 'system', content: systemMessage },
+          { role: 'user', content: `DATOS:\n${JSON.stringify(realStats, null, 2)}` }
         ],
         temperature: 0.3,
         top_p: 0.9,
         max_tokens: 800,
       })
       
-      const content = completion.choices[0]?.message?.content
-      if (!content) {
-        throw new Error('No content returned from DeepSeek')
-      }
-      
-      return content
-      
+      return completion.choices[0]?.message?.content || 'Error generando análisis'
     } catch (error) {
       console.error('DeepSeek API error:', error)
       throw error
@@ -315,156 +269,104 @@ ${JSON.stringify(realStats, null, 2)}`
   }
 
   // ============================================
-  // VALIDADOR DE IDEAS - VERSIÓN FINAL
+  // 2. predictViral - CON MEMORIA
   // ============================================
   async predictViral(
-    ideaData: { 
-      videoIdea: string, 
-      contentType: string, 
-      duration: number, 
-      hashtags: string[], 
-      sound: string,
-      hasCTA?: boolean 
-    }, 
-    nicheContext: { 
-      accountType: string, 
-      contentGoal: string, 
-      targetAudience: string, 
-      nichePatterns: string 
-    },
-    realStats: { 
-      avgViews: number, 
-      avgEngagementRate: number, 
-      avgDuration: number, 
-      videosOver60s: number, 
-      totalVideos: number 
-    }
+    ideaData: { videoIdea: string, contentType: string, duration: number, hashtags: string[], sound: string, hasCTA?: boolean },
+    fullContext: FullContext,
+    realStats: { avgViews: number, avgEngagementRate: number, avgDuration: number, videosOver60s: number, totalVideos: number }
   ): Promise<any> {
     try {
-      const goal = goalMatrix[nicheContext.contentGoal] || goalMatrix.viral_growth
-      const tone = getToneByAudience(nicheContext.targetAudience)
+      const goal = goalMatrix[fullContext.contentGoal] || goalMatrix.viral_growth
+      const tone = getToneByAudience(fullContext.targetAudience)
       
-      // FIX 2: Detectar CTA en la idea
+      const userBlock = fullContext.userContext ? `
+MEMORIA DEL CREADOR:
+- Bio: ${fullContext.userContext.accountBio}
+- Fase: ${fullContext.userContext.currentPhase}
+- Dolor principal: ${fullContext.userContext.mainStruggle}
+- Última recomendación: ${fullContext.userContext.lastRecommendation || 'ninguna'}
+- Evolución: Views ${fullContext.userContext.evolution?.viewsChange || 0}%, Engagement ${fullContext.userContext.evolution?.engagementChange || 0}%
+
+INSTRUCCIÓN: Si evolution es negativa, sé más duro. Si es positiva, felicita pero exige más.
+` : ''
+
       const hasCTA = ideaData.hasCTA || 
         ideaData.videoIdea.toLowerCase().includes('link') || 
         ideaData.videoIdea.toLowerCase().includes('bio') ||
         ideaData.videoIdea.toLowerCase().includes('comentarios') ||
         ideaData.videoIdea.toLowerCase().includes('sígueme')
       
-      // Determinar rango de vistas basado en avgViews real
       let viewsRange = "<1k"
       if (realStats.avgViews >= 20000) viewsRange = ">20k"
       else if (realStats.avgViews >= 5000) viewsRange = "5-20k"
       else if (realStats.avgViews >= 1000) viewsRange = "1-5k"
       
-      // FIX 1: Calcular dinero potencial SOLO en TS, no en el prompt
       let dineroPotencial = "N/A"
       if (goal.revenue && ideaData.duration >= 65) {
-        const estimatedViews = realStats.avgViews
-        dineroPotencial = `~${Math.round((estimatedViews / 1000) * goal.cpm)}€`
+        dineroPotencial = `~${Math.round((realStats.avgViews / 1000) * goal.cpm)}€`
       } else if (goal.revenue && ideaData.duration < 60) {
         dineroPotencial = "0€"
       }
       
-      // Construir reglas dinámicas SIN incluir dineroPotencial en el texto
       let dynamicRules = ""
-      switch (nicheContext.contentGoal) {
+      switch (fullContext.contentGoal) {
         case 'monetization':
-          dynamicRules = `
-- REGLA MONETIZACIÓN: Si duración <60s → veredicto="NO LA GRABES", razón="Creator Rewards exige +60s para pagar."
-- Si duración >=65s y la idea es buena → veredicto="GRÁBALA YA"
-- Si duración entre 60-64s → veredicto="ARRÉGLALA", razón="Estás en tierra de nadie. Sube a 65s o baja a <60s."`
+          dynamicRules = `- Si duración <60s → veredicto="NO LA GRABES", razón="Creator Rewards exige +60s."`
           break
         case 'viral_growth':
-          dynamicRules = `
-- REGLA VIRAL: Si duración >30s → veredicto="ARRÉGLALA", razón="Matas el loop viral. Los videos virales en 2026 duran 12-21s."
-- Si duración entre 12-21s → veredicto="GRÁBALA YA"
-- Si duración <12s → veredicto="ARRÉGLALA", razón="Demasiado corto. No da tiempo a enganchar."`
+          dynamicRules = `- Si duración >30s → veredicto="ARRÉGLALA", razón="Matas el loop viral (ideal 12-21s)."`
           break
         case 'brand_awareness':
-          dynamicRules = `
-- REGLA BRANDING: Evalúa si la idea genera shares. Si no menciona un ángulo compartible → veredicto="ARRÉGLALA", razón="Esto no se va a compartir. Sin shares, no hay brand awareness."
-- Si la idea tiene gancho emocional o sorpresa → veredicto="GRÁBALA YA"`
+          dynamicRules = `- Si no genera shares → veredicto="ARRÉGLALA".`
           break
         case 'lead_generation':
-          dynamicRules = `
-- REGLA LEADS: ${hasCTA ? '✅ Detectamos CTA en tu idea.' : '❌ NO detectamos CTA en tu idea.'}
-- Si NO tiene CTA → veredicto="ARRÉGLALA", razón="Sin CTA claro (link en bio, descarga, comentarios), no generas leads."
-- Si tiene CTA claro → veredicto="GRÁBALA YA"`
+          dynamicRules = `- ${hasCTA ? '✅ Tiene CTA.' : '❌ NO tiene CTA.'} Si no tiene CTA → veredicto="ARRÉGLALA".`
           break
         case 'education':
-          dynamicRules = `
-- REGLA EDUCATIVO: Si duración <30s → veredicto="ARRÉGLALA", razón="${ideaData.duration}s no da tiempo a enseñar nada útil. Mínimo 45s para educación."
-- Si duración entre 45-75s → veredicto="GRÁBALA YA"`
+          dynamicRules = `- Si duración <30s → veredicto="ARRÉGLALA", razón="No da tiempo a enseñar."`
           break
         case 'community_building':
-          dynamicRules = `
-- REGLA COMUNIDAD: Si la idea NO incluye una pregunta o debate → veredicto="ARRÉGLALA", razón="Esto no genera conversación. Añade '¿Te ha pasado? Cuéntame' o similar."
-- Si incluye pregunta abierta → veredicto="GRÁBALA YA"`
+          dynamicRules = `- Si no incluye pregunta → veredicto="ARRÉGLALA".`
           break
         default:
-          dynamicRules = `
-- REGLA GENERAL: Evalúa si la idea se alinea con el KPI ${goal.kpi}. Si no → veredicto="ARRÉGLALA", si sí → "GRÁBALA YA"`
+          dynamicRules = `- Alinea con KPI ${goal.kpi}.`
       }
 
-      const systemMessage = `Eres un validador de ideas para TikTok. Tu trabajo es decirle al creador si su idea funciona para su OBJETIVO específico. No eres un adivino, usas reglas basadas en datos reales.
+      const systemMessage = `Eres un validador de ideas para TikTok. Di la verdad sin filtro.
 
-CONTEXTO DEL USUARIO:
-- Objetivo: ${nicheContext.contentGoal}
-- KPI a optimizar: ${goal.kpi}
+CONTEXTO:
+- Objetivo: ${fullContext.contentGoal} (KPI: ${goal.kpi})
 - Duración ideal: ${goal.duration}
-- Audiencia: ${nicheContext.targetAudience} → tono: ${tone}
-- ¿Genera ingresos directos? ${goal.revenue ? 'SÍ' : 'NO'}
+- Audiencia: ${fullContext.targetAudience} → tono: ${tone}
 
-TU HISTORIAL REAL:
+${userBlock}
+
+TU HISTORIAL:
 - Vistas promedio: ${Math.round(realStats.avgViews).toLocaleString()}
 - Engagement promedio: ${realStats.avgEngagementRate.toFixed(1)}%
-- Duración promedio: ${realStats.avgDuration.toFixed(0)}s
 
-LA IDEA A VALIDAR:
-- Idea: "${ideaData.videoIdea}"
-- Duración: ${ideaData.duration}s
-- Tipo: ${ideaData.contentType}
-- Hashtags: ${ideaData.hashtags?.join(', ') || 'ninguno'}
-- Sonido: ${ideaData.sound || 'original'}
-- ¿Tiene CTA?: ${hasCTA ? 'Sí' : 'No'}
+IDEA: "${ideaData.videoIdea}" | Duración: ${ideaData.duration}s | Tipo: ${ideaData.contentType}
 
-REGLAS DINÁMICAS (aplica SOLO la que corresponde a su objetivo):
+REGLAS:
 ${dynamicRules}
 
-REGLAS ABSOLUTAS:
-1. NUNCA predigas vistas exactas. Usa rangos basados en su historial: "${viewsRange}"
-2. La probabilidad de éxito se calcula así:
-   - Si la idea cumple TODAS las reglas de su objetivo → 65-80%
-   - Si cumple algunas pero falla en algo → 40-60%
-   - Si falla en las reglas clave → 15-30%
-3. Los cambios obligatorios son máximo 3, específicos y accionables.
-4. Sé brutalmente honesto. Si la idea no sirve para su objetivo, díselo.
-
-OUTPUT - SOLO JSON, nada más fuera del JSON:
-
+OUTPUT - SOLO JSON:
 {
   "veredicto": "GRÁBALA YA" | "ARRÉGLALA" | "NO LA GRABES",
-  "razon_brutal": "string de 1 frase que duele y usa un dato real",
+  "razon_brutal": "string 1 frase",
   "probabilidad_exito": "XX%",
   "dinero_potencial": "${dineroPotencial}",
   "rango_views_esperado": "${viewsRange}",
-  "cambios_obligatorios": ["cambio 1", "cambio 2", "cambio 3"],
+  "cambios_obligatorios": ["cambio1", "cambio2", "cambio3"],
   "kpi_a_optimizar": "${goal.kpi}"
 }`
 
-      // FIX 3: Bajar temperature a 0.2 para consistencia
       const completion = await this.client.chat.completions.create({
         model: 'deepseek-chat',
         messages: [
-          {
-            role: 'system',
-            content: systemMessage
-          },
-          {
-            role: 'user',
-            content: `Valida esta idea para el objetivo ${nicheContext.contentGoal}. Devuelve SOLO el JSON.`
-          }
+          { role: 'system', content: systemMessage },
+          { role: 'user', content: `Valida esta idea para ${fullContext.contentGoal}.` }
         ],
         temperature: 0.2,
         top_p: 0.9,
@@ -473,15 +375,73 @@ OUTPUT - SOLO JSON, nada más fuera del JSON:
       })
       
       const content = completion.choices[0]?.message?.content
-      if (!content) {
-        throw new Error('No content returned from DeepSeek')
-      }
-      
+      if (!content) throw new Error('No content returned')
       return JSON.parse(content)
-      
     } catch (error) {
       console.error('DeepSeek prediction error:', error)
       throw error
+    }
+  }
+
+  // ============================================
+  // 3. generateIdeas - CON OBJETOS COMPLETOS
+  // ============================================
+  async generateIdeas(fullContext: FullContext, realStats: any): Promise<any[]> {
+    try {
+      const goal = goalMatrix[fullContext.contentGoal] || goalMatrix.viral_growth
+      const tone = getToneByAudience(fullContext.targetAudience)
+      
+      const userBlock = fullContext.userContext ? `
+MEMORIA DEL CREADOR:
+- Bio: ${fullContext.userContext.accountBio}
+- Fase: ${fullContext.userContext.currentPhase}
+- Dolor principal: ${fullContext.userContext.mainStruggle}
+- Evolución: Views ${fullContext.userContext.evolution?.viewsChange || 0}%
+
+INSTRUCCIÓN: Prioriza ideas que resuelvan el DOLOR PRINCIPAL.
+` : ''
+
+      const systemMessage = `Genera 5 ideas de contenido para TikTok que resuelvan el dolor del creador.
+
+CONTEXTO:
+- Objetivo: ${fullContext.contentGoal}
+- KPI: ${goal.kpi}
+- Duración ideal: ${goal.duration}
+- Audiencia: ${fullContext.targetAudience} → tono: ${tone}
+
+${userBlock}
+
+BENCHMARK: ${fullContext.nichePatterns || 'Sin benchmark'}
+
+OUTPUT - SOLO JSON:
+{
+  "ideas": [
+    {
+      "title": "título corto",
+      "hook": "gancho 3s",
+      "description": "explicación",
+      "duration_suggestion": "12-21s",
+      "cta": "llamada a la acción"
+    }
+  ]
+}`
+
+      const completion = await this.client.chat.completions.create({
+        model: 'deepseek-chat',
+        messages: [
+          { role: 'system', content: systemMessage },
+          { role: 'user', content: 'Genera 5 ideas.' }
+        ],
+        temperature: 0.7,
+        max_tokens: 800,
+        response_format: { type: 'json_object' }
+      })
+      
+      const result = JSON.parse(completion.choices[0]?.message?.content || '{"ideas": []}')
+      return result.ideas || []
+    } catch (error) {
+      console.error('DeepSeek generate ideas error:', error)
+      return []
     }
   }
 }

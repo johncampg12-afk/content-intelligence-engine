@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [savingContext, setSavingContext] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [accountTypes, setAccountTypes] = useState<any[]>([])
   const [profile, setProfile] = useState<any>(null)
@@ -17,7 +18,13 @@ export default function SettingsPage() {
     content_goal: '',
     target_audience: ''
   })
+  const [contextData, setContextData] = useState({
+    account_bio: '',
+    current_phase: 'starting',
+    main_struggle: ''
+  })
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [contextMessage, setContextMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   
   const supabase = createClient()
 
@@ -74,10 +81,10 @@ export default function SettingsPage() {
       
       setAccountTypes(types || [])
       
-      // Obtener perfil
+      // Obtener perfil completo
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('account_type_id, content_goal, target_audience')
+        .select('account_type_id, content_goal, target_audience, account_bio, current_phase, main_struggle')
         .eq('id', user.id)
         .single()
       
@@ -86,6 +93,11 @@ export default function SettingsPage() {
         account_type_id: profileData?.account_type_id?.toString() || '',
         content_goal: profileData?.content_goal || '',
         target_audience: profileData?.target_audience || ''
+      })
+      setContextData({
+        account_bio: profileData?.account_bio || '',
+        current_phase: profileData?.current_phase || 'starting',
+        main_struggle: profileData?.main_struggle || ''
       })
       
       // Obtener cuentas conectadas
@@ -119,7 +131,6 @@ export default function SettingsPage() {
       
       if (data.success) {
         setMessage({ type: 'success', text: 'Profile updated successfully!' })
-        // Recargar datos
         await loadData()
       } else {
         setMessage({ type: 'error', text: data.error || 'Failed to update profile' })
@@ -128,6 +139,33 @@ export default function SettingsPage() {
       setMessage({ type: 'error', text: 'Network error. Please try again.' })
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleContextSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSavingContext(true)
+    setContextMessage(null)
+    
+    try {
+      const response = await fetch('/api/profile/update-context', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(contextData)
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setContextMessage({ type: 'success', text: 'Creator context saved successfully!' })
+        await loadData()
+      } else {
+        setContextMessage({ type: 'error', text: data.error || 'Failed to save context' })
+      }
+    } catch (error) {
+      setContextMessage({ type: 'error', text: 'Network error. Please try again.' })
+    } finally {
+      setSavingContext(false)
     }
   }
 
@@ -152,7 +190,7 @@ export default function SettingsPage() {
         </p>
       </div>
       
-      {/* Mensaje de éxito/error */}
+      {/* Mensaje de éxito/error para estrategia */}
       {message && (
         <div className={`p-4 rounded-md ${message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
           {message.text}
@@ -321,6 +359,85 @@ export default function SettingsPage() {
           </Card>
         </div>
       </div>
+
+      {/* Sección de Contexto del Creador */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            Creator Context
+          </CardTitle>
+          <CardDescription>
+            Cuéntanos sobre tu cuenta para recibir recomendaciones hiper-personalizadas
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {contextMessage && (
+            <div className={`mb-4 p-3 rounded-md ${contextMessage.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
+              {contextMessage.text}
+            </div>
+          )}
+          <form onSubmit={handleContextSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="account_bio" className="block text-sm font-medium text-gray-700 mb-1">
+                ¿De qué trata tu cuenta?
+              </label>
+              <textarea
+                id="account_bio"
+                value={contextData.account_bio}
+                onChange={(e) => setContextData({ ...contextData, account_bio: e.target.value })}
+                rows={3}
+                placeholder="Ej: Cuento chistes sobre la vida adulta. Mi audiencia son millennials que trabajan en oficina..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="text-xs text-gray-400 mt-1">Esto ayuda a la IA a entender tu estilo y nicho específico</p>
+            </div>
+            
+            <div>
+              <label htmlFor="current_phase" className="block text-sm font-medium text-gray-700 mb-1">
+                ¿En qué fase estás?
+              </label>
+              <select
+                id="current_phase"
+                value={contextData.current_phase}
+                onChange={(e) => setContextData({ ...contextData, current_phase: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="starting">🚀 Starting - Menos de 1000 seguidores</option>
+                <option value="growing">📈 Growing - 1k a 10k seguidores</option>
+                <option value="monetizing">💰 Monetizing - 10k a 50k seguidores</option>
+                <option value="scaling">🏆 Scaling - Más de 50k seguidores</option>
+              </select>
+            </div>
+            
+            <div>
+              <label htmlFor="main_struggle" className="block text-sm font-medium text-gray-700 mb-1">
+                ¿Cuál es tu mayor dificultad ahora mismo?
+              </label>
+              <select
+                id="main_struggle"
+                value={contextData.main_struggle}
+                onChange={(e) => setContextData({ ...contextData, main_struggle: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Selecciona tu principal dolor</option>
+                <option value="views">📉 Consigo pocas visitas</option>
+                <option value="engagement">💬 Tengo visitas pero no interacción</option>
+                <option value="monetization">💰 No consigo monetizar</option>
+                <option value="consistency">📅 Me cuesta ser constante</option>
+                <option value="ideas">💡 Me quedo sin ideas</option>
+                <option value="growth">📊 Mi crecimiento se ha estancado</option>
+              </select>
+            </div>
+            
+            <Button type="submit" disabled={savingContext} className="w-full md:w-auto">
+              {savingContext ? 'Saving...' : 'Save Creator Context'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }
