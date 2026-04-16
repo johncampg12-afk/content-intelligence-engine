@@ -76,7 +76,6 @@ export async function POST(request: NextRequest) {
       .eq('user_id', user.id)
       .limit(50)
     
-    // FIX 1: Usar calculateRealStats de DeepSeekAI
     const deepseek = new DeepSeekAI()
     let realStats = {
       avgViews: 0,
@@ -91,7 +90,7 @@ export async function POST(request: NextRequest) {
         duration: v.duration,
         metrics: v.video_metrics?.[0] || {}
       }))
-      const calculatedStats = (deepseek as any).calculateRealStats(metricsData)
+      const calculatedStats = deepseek.calculateRealStats(metricsData)
       realStats = {
         avgViews: calculatedStats.avgViews,
         avgEngagementRate: calculatedStats.avgEngagementRate,
@@ -101,14 +100,14 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Obtener evolución
+    // Obtener evolución (usar undefined en lugar de null)
     const { data: previousProfile } = await supabase
       .from('profiles')
       .select('last_stats, last_recommendation')
       .eq('id', user.id)
       .single()
     
-    let evolution = null
+    let evolution = undefined
     if (previousProfile?.last_stats) {
       evolution = {
         viewsChange: previousProfile.last_stats.avgViews > 0 
@@ -141,7 +140,7 @@ export async function POST(request: NextRequest) {
     // Generar ideas
     const ideas = await deepseek.generateIdeas(fullContext, realStats)
     
-    // FIX 2: Guardar last_recommendation después de generar
+    // Guardar last_recommendation después de generar
     await supabase
       .from('profiles')
       .update({
