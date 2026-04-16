@@ -4,27 +4,26 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { 
   Zap, 
-  Calendar, 
   Clock, 
   Hash, 
   Music, 
   TrendingUp, 
   Sparkles,
-  CheckCircle,
   AlertCircle,
   Loader2,
   Target,
-  BarChart3,
   Download,
   Eye,
   Heart,
   Share2,
   Users,
-  Award,
   History,
   Trash2,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  CheckCircle,
+  XCircle,
+  AlertTriangle
 } from 'lucide-react'
 
 interface Prediction {
@@ -35,32 +34,30 @@ interface Prediction {
   duration: number
   hashtags: string[]
   sound: string
-  predicted_views: number
-  predicted_engagement: number
   viral_score: number
-  optimal_day: string
-  optimal_hour: number
   confidence_score: number
   reasoning: string
   recommendations: string[]
-  benchmark?: {
-    avg_views: number
-    avg_engagement: number
-    percentile: number
-  }
-  confidence_interval?: {
-    lower: number
-    upper: number
-  }
   created_at: string
   status: string
+  veredicto?: string
+  razon_brutal?: string
+  probabilidad_exito?: string
+  dinero_potencial?: string
+  rango_views_esperado?: string
+  kpi_a_optimizar?: string
+  cambios_obligatorios?: string[]
 }
 
 const campaignGoals = [
-  { value: 'awareness', label: 'Brand Awareness', icon: Eye, description: 'Maximizar alcance y vistas' },
-  { value: 'engagement', label: 'Engagement', icon: Heart, description: 'Fomentar interacciones' },
-  { value: 'conversion', label: 'Conversion', icon: Target, description: 'Tráfico a sitio web o ventas' },
-  { value: 'community', label: 'Community Building', icon: Users, description: 'Crecimiento de seguidores' }
+  { value: 'monetization', label: '💰 Monetization', description: 'Ganar dinero con Creator Rewards' },
+  { value: 'viral_growth', label: '🚀 Viral Growth', description: 'Maximizar alcance y shares' },
+  { value: 'brand_awareness', label: '📈 Brand Awareness', description: 'Expandir reconocimiento de marca' },
+  { value: 'community_building', label: '👥 Community Building', description: 'Crear comunidad activa' },
+  { value: 'lead_generation', label: '🎯 Lead Generation', description: 'Generar leads y conversiones' },
+  { value: 'education', label: '📚 Education', description: 'Enseñar y educar' },
+  { value: 'entertainment', label: '🎬 Entertainment', description: 'Entretener y hacer reír' },
+  { value: 'influence', label: '⭐ Influence', description: 'Ser referente en el nicho' }
 ]
 
 const contentTypes = [
@@ -75,7 +72,7 @@ const contentTypes = [
 export default function ViralPredictorPage() {
   const [videoIdea, setVideoIdea] = useState('')
   const [contentType, setContentType] = useState('tutorial')
-  const [campaignGoal, setCampaignGoal] = useState('engagement')
+  const [campaignGoal, setCampaignGoal] = useState('viral_growth')
   const [duration, setDuration] = useState(15)
   const [hashtags, setHashtags] = useState('')
   const [sound, setSound] = useState('')
@@ -147,18 +144,15 @@ export default function ViralPredictorPage() {
     })
   }
 
-  const getViralScoreColor = (score: number) => {
-    if (score >= 80) return 'border-emerald-200 bg-emerald-50'
-    if (score >= 60) return 'border-blue-200 bg-blue-50'
-    if (score >= 40) return 'border-amber-200 bg-amber-50'
-    return 'border-gray-200 bg-gray-50'
-  }
-
-  const getViralScoreTextColor = (score: number) => {
-    if (score >= 80) return 'text-emerald-600'
-    if (score >= 60) return 'text-blue-600'
-    if (score >= 40) return 'text-amber-600'
-    return 'text-gray-600'
+  const getVeredictoConfig = (veredicto: string) => {
+    switch (veredicto) {
+      case 'GRÁBALA YA':
+        return { bg: 'bg-green-50', border: 'border-green-200', icon: CheckCircle, iconColor: 'text-green-600', textColor: 'text-green-800' }
+      case 'ARRÉGLALA':
+        return { bg: 'bg-amber-50', border: 'border-amber-200', icon: AlertTriangle, iconColor: 'text-amber-600', textColor: 'text-amber-800' }
+      default:
+        return { bg: 'bg-red-50', border: 'border-red-200', icon: XCircle, iconColor: 'text-red-600', textColor: 'text-red-800' }
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -223,29 +217,21 @@ Duration: ${pred.duration || 'No especificada'}s
 Hashtags: ${pred.hashtags?.join(', ') || 'Ninguno'}
 Sound: ${pred.sound || 'Original'}
 
-PREDICTIONS
+VALIDATION RESULT
 -------------------
-Viral Score: ${pred.viral_score || 0}/100
-Predicted Views: ${formatNumber(pred.predicted_views || 0)}
-Predicted Engagement: ${(pred.predicted_engagement || 0).toFixed(2)}%
-Optimal Posting: ${pred.optimal_day || 'No especificado'} at ${pred.optimal_hour || 0}:00
-Confidence: ${pred.confidence_score || 0}%
+Veredicto: ${pred.veredicto || 'N/A'}
+Razón: ${pred.razon_brutal || 'No disponible'}
+Probabilidad de éxito: ${pred.probabilidad_exito || 'N/A'}
+Rango de vistas esperado: ${pred.rango_views_esperado || 'N/A'}
+${pred.dinero_potencial && pred.dinero_potencial !== 'N/A' ? `Potencial económico: ${pred.dinero_potencial}` : ''}
 
-${pred.benchmark ? `
-BENCHMARK VS NICHO
+KPI A OPTIMIZAR
 -------------------
-Promedio del nicho: ${formatNumber(pred.benchmark.avg_views)} vistas
-Engagement promedio nicho: ${pred.benchmark.avg_engagement}%
-Tu posición: Percentil ${pred.benchmark.percentile}
-` : ''}
+${pred.kpi_a_optimizar || 'No especificado'}
 
-AI ANALYSIS
+CAMBIOS OBLIGATORIOS
 -------------------
-${pred.reasoning || 'No hay análisis disponible'}
-
-RECOMMENDATIONS
--------------------
-${pred.recommendations?.map((r: string, i: number) => `${i + 1}. ${r}`).join('\n') || 'No hay recomendaciones disponibles'}
+${pred.cambios_obligatorios?.map((r: string, i: number) => `${i + 1}. ${r}`).join('\n') || 'No hay cambios obligatorios'}
 
 ---
 Content Intelligence Engine - Professional Analytics Suite
@@ -255,10 +241,12 @@ Content Intelligence Engine - Professional Analytics Suite
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `virality_report_${new Date().toISOString().slice(0, 19)}.txt`
+    a.download = `validation_report_${new Date().toISOString().slice(0, 19)}.txt`
     a.click()
     URL.revokeObjectURL(url)
   }
+
+  const selectedGoal = campaignGoals.find(g => g.value === campaignGoal)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -272,11 +260,11 @@ Content Intelligence Engine - Professional Analytics Suite
                 <div className="p-2 bg-blue-600 rounded-xl">
                   <Zap className="w-6 h-6 text-white" />
                 </div>
-                <h1 className="text-2xl font-bold text-gray-900">Viral Predictor</h1>
-                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">BETA</span>
+                <h1 className="text-2xl font-bold text-gray-900">Idea Validator</h1>
+                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">PRO</span>
               </div>
               <p className="text-gray-500 ml-11">
-                Predicción de rendimiento basada en IA para optimizar tu estrategia de contenido
+                Valida tus ideas de contenido antes de grabarlas. Basado en tu objetivo y datos reales.
               </p>
             </div>
           </div>
@@ -287,14 +275,17 @@ Content Intelligence Engine - Professional Analytics Suite
           {/* Formulario */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-              <h2 className="text-base font-semibold text-gray-900">Nueva predicción</h2>
-              <p className="text-sm text-gray-500 mt-0.5">Completa los detalles de tu idea</p>
+              <div className="flex items-center gap-2">
+                <Target className="w-5 h-5 text-blue-600" />
+                <h2 className="text-base font-semibold text-gray-900">Valida tu idea</h2>
+              </div>
+              <p className="text-sm text-gray-500 mt-0.5">Completa los detalles de tu contenido</p>
             </div>
             
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Concepto del contenido *
+                  ¿Qué vas a grabar? *
                 </label>
                 <textarea
                   value={videoIdea}
@@ -304,6 +295,7 @@ Content Intelligence Engine - Professional Analytics Suite
                   placeholder="Ej: Tutorial sobre cómo identificar unfollowers en Instagram sin usar apps de terceros..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+                <p className="text-xs text-gray-400 mt-1">Sé específico: incluye el ángulo principal y el gancho</p>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
@@ -330,25 +322,29 @@ Content Intelligence Engine - Professional Analytics Suite
                       <option key={goal.value} value={goal.value}>{goal.label}</option>
                     ))}
                   </select>
+                  {selectedGoal && (
+                    <p className="text-xs text-gray-400 mt-1">{selectedGoal.description}</p>
+                  )}
                 </div>
               </div>
               
               <div>
                 <div className="flex justify-between mb-1">
-                  <label className="text-sm font-medium text-gray-700">Duración</label>
-                  <span className="text-sm text-gray-500">{duration} segundos</span>
+                  <label className="text-sm font-medium text-gray-700">Duración (segundos)</label>
+                  <span className="text-sm text-gray-500">{duration}s</span>
                 </div>
                 <input
                   type="range"
                   value={duration}
                   onChange={(e) => setDuration(parseInt(e.target.value))}
                   min={5}
-                  max={60}
+                  max={90}
                   className="w-full"
                 />
                 <div className="flex justify-between text-xs text-gray-400 mt-1">
-                  <span>Óptimo: 11-15s</span>
-                  <span>Máx recomendado: 30s</span>
+                  <span>Muy corto</span>
+                  <span>Ideal para monetización: 65-90s</span>
+                  <span>Muy largo</span>
                 </div>
               </div>
               
@@ -389,12 +385,12 @@ Content Intelligence Engine - Professional Analytics Suite
                 {loading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Analizando con IA...
+                    Validando idea...
                   </>
                 ) : (
                   <>
                     <Zap className="w-5 h-5" />
-                    Predecir rendimiento
+                    Validar idea
                   </>
                 )}
               </button>
@@ -415,55 +411,56 @@ Content Intelligence Engine - Professional Analytics Suite
             
             {prediction && (
               <div className="space-y-4">
-                <div className={`rounded-xl border p-5 ${getViralScoreColor(prediction.viral_score)}`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-medium">Viral Score</span>
-                    <span className="text-xs opacity-70">{prediction.confidence_score}% confianza</span>
-                  </div>
-                  <div className="text-center">
-                    <span className={`text-5xl font-bold ${getViralScoreTextColor(prediction.viral_score)}`}>
-                      {prediction.viral_score}
+                {/* Veredicto Card */}
+                <div className={`rounded-xl border p-5 ${getVeredictoConfig(prediction.veredicto).bg} ${getVeredictoConfig(prediction.veredicto).border}`}>
+                  <div className="flex items-center gap-3 mb-3">
+                    {(() => {
+                      const Icon = getVeredictoConfig(prediction.veredicto).icon
+                      return <Icon className={`w-6 h-6 ${getVeredictoConfig(prediction.veredicto).iconColor}`} />
+                    })()}
+                    <span className={`text-sm font-semibold ${getVeredictoConfig(prediction.veredicto).textColor}`}>
+                      {prediction.veredicto}
                     </span>
-                    <span className="text-xl opacity-70">/100</span>
-                    <p className="text-sm text-gray-600 mt-3 leading-relaxed">
-                      {prediction.reasoning}
-                    </p>
+                    <span className="text-xs text-gray-500 ml-auto">
+                      {prediction.probabilidad_exito} de éxito
+                    </span>
                   </div>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    {prediction.razon_brutal}
+                  </p>
                 </div>
                 
                 <div className="bg-white rounded-xl border border-gray-200 p-5">
                   <div className="grid grid-cols-3 gap-4 mb-4">
                     <div className="text-center">
-                      <p className="text-xs text-gray-400">Vistas estimadas</p>
-                      <p className="text-lg font-bold text-gray-900">{formatNumber(prediction.predicted_views)}</p>
+                      <p className="text-xs text-gray-400">Rango de vistas</p>
+                      <p className="text-lg font-bold text-gray-900">{prediction.rango_views_esperado}</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-xs text-gray-400">Engagement</p>
-                      <p className="text-lg font-bold text-gray-900">{prediction.predicted_engagement}%</p>
+                      <p className="text-xs text-gray-400">KPI a optimizar</p>
+                      <p className="text-sm font-semibold text-gray-900">{prediction.kpi_a_optimizar}</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-xs text-gray-400">Momento óptimo</p>
-                      <p className="text-sm font-semibold text-gray-900">{prediction.optimal_day} {prediction.optimal_hour}:00</p>
+                      <p className="text-xs text-gray-400">Viral Score</p>
+                      <p className="text-lg font-bold text-gray-900">{prediction.viral_score}</p>
                     </div>
                   </div>
                   
-                  {prediction.benchmark && (
-                    <div className="bg-gray-50 rounded-lg p-3 mb-4">
-                      <p className="text-xs text-gray-500 text-center">
-                        Benchmark nicho: {formatNumber(prediction.benchmark.avg_views)} vistas · 
-                        Engagement {prediction.benchmark.avg_engagement}% · 
-                        Percentil {prediction.benchmark.percentile}
+                  {prediction.dinero_potencial && prediction.dinero_potencial !== 'N/A' && (
+                    <div className="bg-green-50 rounded-lg p-3 mb-4 text-center border border-green-200">
+                      <p className="text-sm text-green-800 font-medium">
+                        💰 Potencial de ingresos: {prediction.dinero_potencial}
                       </p>
                     </div>
                   )}
                   
-                  {prediction.recommendations && prediction.recommendations.length > 0 && (
+                  {prediction.cambios_obligatorios && prediction.cambios_obligatorios.length > 0 && (
                     <div className="mt-4 pt-4 border-t border-gray-100">
-                      <p className="text-sm font-semibold text-gray-700 mb-3">Recomendaciones estratégicas</p>
+                      <p className="text-sm font-semibold text-gray-700 mb-3">✏️ Cambios necesarios:</p>
                       <ul className="space-y-2">
-                        {prediction.recommendations.map((rec: string, idx: number) => (
+                        {prediction.cambios_obligatorios.map((rec: string, idx: number) => (
                           <li key={idx} className="flex items-start gap-2 text-sm text-gray-600">
-                            <span className="text-blue-500 font-bold min-w-[20px]">{idx + 1}.</span>
+                            <span className="text-amber-500 font-bold min-w-[20px]">{idx + 1}.</span>
                             <span className="leading-relaxed">{rec}</span>
                           </li>
                         ))}
@@ -487,16 +484,16 @@ Content Intelligence Engine - Professional Analytics Suite
                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Zap className="w-8 h-8 text-gray-300" />
                 </div>
-                <h3 className="text-gray-500 font-medium">Sin análisis generado</h3>
+                <h3 className="text-gray-500 font-medium">Sin validación generada</h3>
                 <p className="text-sm text-gray-400 mt-1">
-                  Completa el formulario para obtener una predicción basada en IA
+                  Completa el formulario para validar tu idea con IA
                 </p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Historial de predicciones */}
+        {/* Historial de validaciones */}
         <div className="mt-12">
           <button
             onClick={() => setShowHistory(!showHistory)}
@@ -507,7 +504,7 @@ Content Intelligence Engine - Professional Analytics Suite
                 <History className="w-5 h-5 text-gray-600" />
               </div>
               <div className="text-left">
-                <h3 className="text-base font-semibold text-gray-900">Historial de predicciones</h3>
+                <h3 className="text-base font-semibold text-gray-900">Historial de validaciones</h3>
                 <p className="text-sm text-gray-500">{history.length} ideas analizadas</p>
               </div>
             </div>
@@ -520,100 +517,103 @@ Content Intelligence Engine - Professional Analytics Suite
                 <div className="text-center py-8 text-gray-400">Cargando historial...</div>
               ) : history.length === 0 ? (
                 <div className="text-center py-8 text-gray-400 bg-white rounded-xl border border-gray-200">
-                  No hay predicciones guardadas aún. Crea tu primera predicción arriba.
+                  No hay validaciones guardadas aún. Valida tu primera idea arriba.
                 </div>
               ) : (
-                history.map((item) => (
-                  <div key={item.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                    <div 
-                      className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
-                      onClick={() => toggleExpand(item.id)}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${getViralScoreColor(item.viral_score)} ${getViralScoreTextColor(item.viral_score)}`}>
-                            Score: {item.viral_score}
+                history.map((item) => {
+                  const veredictoConfig = getVeredictoConfig(item.veredicto || 'NO LA GRABES')
+                  const VeredictoIcon = veredictoConfig.icon
+                  
+                  return (
+                    <div key={item.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                      <div 
+                        className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
+                        onClick={() => toggleExpand(item.id)}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <div className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${veredictoConfig.bg} ${veredictoConfig.textColor}`}>
+                              <VeredictoIcon className="w-3 h-3" />
+                              {item.veredicto || 'Validado'}
+                            </div>
+                            <span className="text-xs text-gray-400">{formatDate(item.created_at)}</span>
                           </div>
-                          <span className="text-xs text-gray-400">{formatDate(item.created_at)}</span>
+                          <p className="text-sm font-medium text-gray-900 mt-1 line-clamp-2">
+                            {item.video_idea}
+                          </p>
+                          <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
+                            <span>{contentTypes.find(c => c.value === item.content_type)?.label || item.content_type}</span>
+                            <span>{item.duration}s</span>
+                            <span>{item.hashtags?.length || 0} hashtags</span>
+                            <span>Score: {item.viral_score}</span>
+                          </div>
                         </div>
-                        <p className="text-sm font-medium text-gray-900 mt-1 line-clamp-2">
-                          {item.video_idea}
-                        </p>
-                        <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
-                          <span>{contentTypes.find(c => c.value === item.content_type)?.label || item.content_type}</span>
-                          <span>{item.duration}s</span>
-                          <span>{item.hashtags?.length || 0} hashtags</span>
+                        <div className="flex items-center gap-2 ml-4">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleExportReport(item); }}
+                            className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg"
+                            title="Exportar informe"
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); deletePrediction(item.id); }}
+                            className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg"
+                            title="Eliminar"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                          {expandedItems.has(item.id) ? (
+                            <ChevronUp className="w-4 h-4 text-gray-400" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-gray-400" />
+                          )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 ml-4">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleExportReport(item); }}
-                          className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg"
-                          title="Exportar informe"
-                        >
-                          <Download className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); deletePrediction(item.id); }}
-                          className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg"
-                          title="Eliminar"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                        {expandedItems.has(item.id) ? (
-                          <ChevronUp className="w-4 h-4 text-gray-400" />
-                        ) : (
-                          <ChevronDown className="w-4 h-4 text-gray-400" />
-                        )}
-                      </div>
+                      
+                      {expandedItems.has(item.id) && (
+                        <div className="px-5 pb-5 pt-3 border-t border-gray-100 bg-gray-50">
+                          <div className="grid grid-cols-2 gap-3 mb-4">
+                            <div className="bg-white rounded-lg p-2 text-center border border-gray-100">
+                              <p className="text-xs text-gray-400">Probabilidad de éxito</p>
+                              <p className="text-base font-bold text-gray-900">{item.probabilidad_exito || 'N/A'}</p>
+                            </div>
+                            <div className="bg-white rounded-lg p-2 text-center border border-gray-100">
+                              <p className="text-xs text-gray-400">Rango de vistas</p>
+                              <p className="text-base font-bold text-gray-900">{item.rango_views_esperado || 'N/A'}</p>
+                            </div>
+                          </div>
+                          
+                          <p className="text-sm text-gray-700 leading-relaxed mb-4">
+                            {item.razon_brutal || item.reasoning}
+                          </p>
+                          
+                          {item.cambios_obligatorios && item.cambios_obligatorios.length > 0 && (
+                            <div className="mb-4">
+                              <p className="text-sm font-semibold text-gray-700 mb-2">Cambios necesarios:</p>
+                              <ul className="space-y-2">
+                                {item.cambios_obligatorios.map((rec: string, idx: number) => (
+                                  <li key={idx} className="flex items-start gap-2 text-sm text-gray-600">
+                                    <span className="text-amber-500 font-bold min-w-[20px]">{idx + 1}.</span>
+                                    <span className="leading-relaxed">{rec}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          
+                          <button
+                            onClick={() => handleExportReport(item)}
+                            className="w-full py-2 text-sm text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
+                          >
+                            <Download className="w-4 h-4" />
+                            Exportar informe completo
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    
-                    {expandedItems.has(item.id) && (
-                      <div className="px-5 pb-5 pt-3 border-t border-gray-100 bg-gray-50">
-                        <div className="grid grid-cols-3 gap-3 mb-4">
-                          <div className="bg-white rounded-lg p-2 text-center border border-gray-100">
-                            <p className="text-xs text-gray-400">Vistas estimadas</p>
-                            <p className="text-base font-bold text-gray-900">{formatNumber(item.predicted_views)}</p>
-                          </div>
-                          <div className="bg-white rounded-lg p-2 text-center border border-gray-100">
-                            <p className="text-xs text-gray-400">Engagement</p>
-                            <p className="text-base font-bold text-gray-900">{item.predicted_engagement}%</p>
-                          </div>
-                          <div className="bg-white rounded-lg p-2 text-center border border-gray-100">
-                            <p className="text-xs text-gray-400">Mejor momento</p>
-                            <p className="text-sm font-semibold text-gray-900">{item.optimal_day} {item.optimal_hour}:00</p>
-                          </div>
-                        </div>
-                        
-                        <p className="text-sm text-gray-700 leading-relaxed mb-4">
-                          {item.reasoning}
-                        </p>
-                        
-                        {item.recommendations && item.recommendations.length > 0 && (
-                          <div className="mb-4">
-                            <p className="text-sm font-semibold text-gray-700 mb-2">Recomendaciones:</p>
-                            <ul className="space-y-2">
-                              {item.recommendations.map((rec: string, idx: number) => (
-                                <li key={idx} className="flex items-start gap-2 text-sm text-gray-600">
-                                  <span className="text-blue-500 font-bold min-w-[20px]">{idx + 1}.</span>
-                                  <span className="leading-relaxed">{rec}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        
-                        <button
-                          onClick={() => handleExportReport(item)}
-                          className="w-full py-2 text-sm text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
-                        >
-                          <Download className="w-4 h-4" />
-                          Exportar informe completo
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))
+                  )
+                })
               )}
             </div>
           )}

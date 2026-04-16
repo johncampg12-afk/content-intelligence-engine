@@ -83,114 +83,79 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Obtener historial de videos del usuario
+    // Obtener estadísticas reales del usuario
     const { data: videos } = await supabase
       .from('videos')
-      .select(`
-        title,
-        duration,
-        hashtags,
-        sound,
-        video_metrics (views, likes, comments, shares, engagement_rate)
-      `)
+      .select('duration, video_metrics(views, likes, comments, shares)')
       .eq('user_id', user.id)
-      .order('published_at', { ascending: false })
       .limit(50)
     
-    const historicalData = videos?.map(v => ({
-      title: v.title,
-      duration: v.duration,
-      hashtags: v.hashtags,
-      sound: v.sound,
-      views: v.video_metrics?.[0]?.views || 0,
-      engagement: v.video_metrics?.[0]?.engagement_rate || 0
-    })) || []
-    
-    // Llamar a DeepSeek para predecir
-    const deepseek = new DeepSeekAI()
-    
-    const prompt = `
-Eres un analista de datos senior especializado en predicción de viralidad en TikTok.
-
-## Perfil del usuario:
-- Nicho: ${accountTypeName}
-- Objetivo: ${profile?.content_goal || 'No especificado'}
-- Audiencia: ${profile?.target_audience || 'No especificada'}
-
-## Patrones de éxito identificados en este nicho:
-${nichePatterns || 'No hay patrones específicos para este nicho.'}
-
-## Datos históricos del usuario (últimos 50 videos):
-${JSON.stringify(historicalData.slice(0, 20), null, 2)}
-
-## Nueva idea de contenido:
-- Idea: "${videoIdea}"
-- Tipo: ${contentType}
-- Objetivo: ${campaignGoal}
-- Duración: ${duration} segundos
-- Hashtags: ${hashtags?.join(', ') || 'ninguno'}
-- Sonido: ${sound || 'original'}
-
-## Analiza y responde EXACTAMENTE en formato JSON. Sé REALISTA y usa los datos históricos como referencia.
-NO inventes números que no estén basados en los datos proporcionados.
-
-{
-  "predicted_views": número (basado en el promedio de vistas históricas del usuario, ajustado por el tipo de contenido),
-  "predicted_engagement": número (basado en el engagement histórico, ajustado por el tipo de contenido),
-  "viral_score": número (0-100, basado en qué tan bien se alinea esta idea con los patrones exitosos del nicho),
-  "optimal_day": "Lunes|Martes|Miércoles|Jueves|Viernes|Sábado|Domingo",
-  "optimal_hour": número (0-23),
-  "confidence_score": número (0-100),
-  "reasoning": "explicación breve y realista",
-  "recommendations": ["recomendación1", "recomendación2", "recomendación3", "recomendación4", "recomendación5"],
-  "benchmark": {
-    "avg_views": número (promedio del nicho, basado en patrones),
-    "avg_engagement": número,
-    "percentile": número
-  },
-  "confidence_interval": {
-    "lower": número,
-    "upper": número
-  }
-}`
-    
-    const prediction = await deepseek.predictViral(prompt)
-    
-    // Asegurar valores por defecto si faltan
-    const finalPrediction = {
-      predicted_views: prediction.predicted_views || 0,
-      predicted_engagement: prediction.predicted_engagement || 0,
-      viral_score: prediction.viral_score || 0,
-      optimal_day: prediction.optimal_day || 'Miércoles',
-      optimal_hour: prediction.optimal_hour || 17,
-      confidence_score: prediction.confidence_score || 50,
-      reasoning: prediction.reasoning || 'Análisis basado en datos históricos',
-      recommendations: prediction.recommendations || ['Revisa la estrategia de contenido', 'Optimiza los hashtags'],
-      benchmark: prediction.benchmark || { avg_views: 0, avg_engagement: 0, percentile: 50 },
-      confidence_interval: prediction.confidence_interval || { lower: 0, upper: 0 }
+    let realStats = {
+      avgViews: 0,
+      avgEngagementRate: 0,
+      avgDuration: 0,
+      videosOver60s: 0,
+      totalVideos: 0
     }
     
-    // Guardar predicción completa en la base de datos
+    if (videos && videos.length > 0) {
+      const totalViews = videos.reduce((sum, v) => sum + (v.video_metrics?.[0]?.views || 0), 0)
+      const totalEngagement = videos.reduce((sum, v) => {
+        const metrics = v.video_metrics?.[0] || {}
+        return sum + (metrics.likes || 0) + (metrics.comments || 0) + (metrics.shares || 0)
+      }, 0)
+      const totalDuration = videos.reduce((sum, v) => sum + (v.duration || 0), 0)
+      const videosOver60s = videos.filter(v => (v.duration || 0) >= 60).length
+      
+      realStats = {
+        avgViews: totalViews / videos.length,
+        avgEngagementRate: totalViews > 0 ? (totalEngagement / totalViews) * 100 : 0,
+        avgDuration: totalDuration / videos.length,
+        videosOver60s,
+        totalVideos: videos.length
+      }
+    }
+    
+    // Detectar si la idea tiene CTA
+    const hasCTA = videoIdea.toLowerCase().includes('link') || 
+                   videoIdea.toLowerCase().includes('bio') ||
+                   videoIdea.toLowerCase().includes('comentarios') ||
+                   videoIdea.toLowerCase().includes('sígueme')
+    
+    // Llamar a DeepSeek para validar la idea
+    const deepseek = new DeepSeekAI()
+    const prediction = await deepseek.predictViral(
+      { videoIdea, contentType, duration, hashtags, sound, hasCTA },
+      {
+        accountType: accountTypeName,
+        contentGoal: profile?.content_goal || 'viral_growth',
+        targetAudience: profile?.target_audience || 'general',
+        nichePatterns
+      },
+      realStats
+    )
+    
+    // Guardar predicción en la base de datos
     const { data: savedPrediction, error: saveError } = await supabase
       .from('predictions')
       .insert({
         user_id: user.id,
         video_idea: videoIdea,
         content_type: contentType,
-        campaign_goal: campaignGoal,
+        campaign_goal: profile?.content_goal,
         duration: duration,
-        hashtags: hashtags || [],
+        hashtags: hashtags,
         sound: sound || 'Original',
-        predicted_views: finalPrediction.predicted_views,
-        predicted_engagement: finalPrediction.predicted_engagement,
-        viral_score: finalPrediction.viral_score,
-        optimal_day: finalPrediction.optimal_day,
-        optimal_hour: finalPrediction.optimal_hour,
-        confidence_score: finalPrediction.confidence_score,
-        reasoning: finalPrediction.reasoning,
-        recommendations: finalPrediction.recommendations,
-        benchmark: finalPrediction.benchmark,
-        confidence_interval: finalPrediction.confidence_interval,
+        predicted_views: 0,
+        predicted_engagement: 0,
+        viral_score: prediction.veredicto === 'GRÁBALA YA' ? 80 : prediction.veredicto === 'ARRÉGLALA' ? 50 : 20,
+        optimal_day: '',
+        optimal_hour: 0,
+        confidence_score: parseInt(prediction.probabilidad_exito),
+        reasoning: prediction.razon_brutal,
+        recommendations: prediction.cambios_obligatorios,
+        benchmark: null,
+        confidence_interval: null,
         status: 'active'
       })
       .select()
@@ -203,11 +168,10 @@ NO inventes números que no estén basados en los datos proporcionados.
     return NextResponse.json({ 
       success: true, 
       prediction: {
-        ...finalPrediction,
+        ...prediction,
         id: savedPrediction?.id,
         video_idea: videoIdea,
         content_type: contentType,
-        campaign_goal: campaignGoal,
         duration: duration,
         hashtags: hashtags,
         sound: sound

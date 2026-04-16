@@ -2,7 +2,7 @@ import OpenAI from 'openai'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-// Goal Matrix profesional (sin benchmarks falsos)
+// Goal Matrix profesional
 const goalMatrix: Record<string, any> = {
   monetization: { 
     kpi: 'watch_time', 
@@ -203,7 +203,6 @@ export class DeepSeekAI {
       const currentTrends = await this.getCurrentTikTokTrends()
       const realStats = this.calculateRealStats(metricsData)
       
-      // Obtener la matriz de objetivo
       const goal = goalMatrix[nicheContext.contentGoal] || goalMatrix.viral_growth
       const tone = getToneByAudience(nicheContext.targetAudience)
 
@@ -211,7 +210,6 @@ export class DeepSeekAI {
         return `**DIAGNÓSTICO BRUTAL**\n\nNo hay suficientes datos para analizar. Sincroniza al menos 5 videos para obtener recomendaciones precisas.\n\n**RECOMENDACIÓN 1 - LA QUE MÁS DINERO DA**\nDolor: No hay datos.\nPérdida: 0€\nHaz esto 7 días: Conecta tu TikTok y sincroniza al menos 5 videos.\nSi funciona verás: Análisis completo en 48h.\n\nElige 1 y hazla. Si haces las 3 a la vez, no harás ninguna.`
       }
 
-      // Construir reglas dinámicas según objetivo
       let goalRules = ''
       switch (nicheContext.contentGoal) {
         case 'monetization':
@@ -316,41 +314,174 @@ ${JSON.stringify(realStats, null, 2)}`
     }
   }
 
-  async predictViral(prompt: string): Promise<any> {
+  // ============================================
+  // VALIDADOR DE IDEAS - VERSIÓN FINAL
+  // ============================================
+  async predictViral(
+    ideaData: { 
+      videoIdea: string, 
+      contentType: string, 
+      duration: number, 
+      hashtags: string[], 
+      sound: string,
+      hasCTA?: boolean 
+    }, 
+    nicheContext: { 
+      accountType: string, 
+      contentGoal: string, 
+      targetAudience: string, 
+      nichePatterns: string 
+    },
+    realStats: { 
+      avgViews: number, 
+      avgEngagementRate: number, 
+      avgDuration: number, 
+      videosOver60s: number, 
+      totalVideos: number 
+    }
+  ): Promise<any> {
     try {
+      const goal = goalMatrix[nicheContext.contentGoal] || goalMatrix.viral_growth
+      const tone = getToneByAudience(nicheContext.targetAudience)
+      
+      // FIX 2: Detectar CTA en la idea
+      const hasCTA = ideaData.hasCTA || 
+        ideaData.videoIdea.toLowerCase().includes('link') || 
+        ideaData.videoIdea.toLowerCase().includes('bio') ||
+        ideaData.videoIdea.toLowerCase().includes('comentarios') ||
+        ideaData.videoIdea.toLowerCase().includes('sígueme')
+      
+      // Determinar rango de vistas basado en avgViews real
+      let viewsRange = "<1k"
+      if (realStats.avgViews >= 20000) viewsRange = ">20k"
+      else if (realStats.avgViews >= 5000) viewsRange = "5-20k"
+      else if (realStats.avgViews >= 1000) viewsRange = "1-5k"
+      
+      // FIX 1: Calcular dinero potencial SOLO en TS, no en el prompt
+      let dineroPotencial = "N/A"
+      if (goal.revenue && ideaData.duration >= 65) {
+        const estimatedViews = realStats.avgViews
+        dineroPotencial = `~${Math.round((estimatedViews / 1000) * goal.cpm)}€`
+      } else if (goal.revenue && ideaData.duration < 60) {
+        dineroPotencial = "0€"
+      }
+      
+      // Construir reglas dinámicas SIN incluir dineroPotencial en el texto
+      let dynamicRules = ""
+      switch (nicheContext.contentGoal) {
+        case 'monetization':
+          dynamicRules = `
+- REGLA MONETIZACIÓN: Si duración <60s → veredicto="NO LA GRABES", razón="Creator Rewards exige +60s para pagar."
+- Si duración >=65s y la idea es buena → veredicto="GRÁBALA YA"
+- Si duración entre 60-64s → veredicto="ARRÉGLALA", razón="Estás en tierra de nadie. Sube a 65s o baja a <60s."`
+          break
+        case 'viral_growth':
+          dynamicRules = `
+- REGLA VIRAL: Si duración >30s → veredicto="ARRÉGLALA", razón="Matas el loop viral. Los videos virales en 2026 duran 12-21s."
+- Si duración entre 12-21s → veredicto="GRÁBALA YA"
+- Si duración <12s → veredicto="ARRÉGLALA", razón="Demasiado corto. No da tiempo a enganchar."`
+          break
+        case 'brand_awareness':
+          dynamicRules = `
+- REGLA BRANDING: Evalúa si la idea genera shares. Si no menciona un ángulo compartible → veredicto="ARRÉGLALA", razón="Esto no se va a compartir. Sin shares, no hay brand awareness."
+- Si la idea tiene gancho emocional o sorpresa → veredicto="GRÁBALA YA"`
+          break
+        case 'lead_generation':
+          dynamicRules = `
+- REGLA LEADS: ${hasCTA ? '✅ Detectamos CTA en tu idea.' : '❌ NO detectamos CTA en tu idea.'}
+- Si NO tiene CTA → veredicto="ARRÉGLALA", razón="Sin CTA claro (link en bio, descarga, comentarios), no generas leads."
+- Si tiene CTA claro → veredicto="GRÁBALA YA"`
+          break
+        case 'education':
+          dynamicRules = `
+- REGLA EDUCATIVO: Si duración <30s → veredicto="ARRÉGLALA", razón="${ideaData.duration}s no da tiempo a enseñar nada útil. Mínimo 45s para educación."
+- Si duración entre 45-75s → veredicto="GRÁBALA YA"`
+          break
+        case 'community_building':
+          dynamicRules = `
+- REGLA COMUNIDAD: Si la idea NO incluye una pregunta o debate → veredicto="ARRÉGLALA", razón="Esto no genera conversación. Añade '¿Te ha pasado? Cuéntame' o similar."
+- Si incluye pregunta abierta → veredicto="GRÁBALA YA"`
+          break
+        default:
+          dynamicRules = `
+- REGLA GENERAL: Evalúa si la idea se alinea con el KPI ${goal.kpi}. Si no → veredicto="ARRÉGLALA", si sí → "GRÁBALA YA"`
+      }
+
+      const systemMessage = `Eres un validador de ideas para TikTok. Tu trabajo es decirle al creador si su idea funciona para su OBJETIVO específico. No eres un adivino, usas reglas basadas en datos reales.
+
+CONTEXTO DEL USUARIO:
+- Objetivo: ${nicheContext.contentGoal}
+- KPI a optimizar: ${goal.kpi}
+- Duración ideal: ${goal.duration}
+- Audiencia: ${nicheContext.targetAudience} → tono: ${tone}
+- ¿Genera ingresos directos? ${goal.revenue ? 'SÍ' : 'NO'}
+
+TU HISTORIAL REAL:
+- Vistas promedio: ${Math.round(realStats.avgViews).toLocaleString()}
+- Engagement promedio: ${realStats.avgEngagementRate.toFixed(1)}%
+- Duración promedio: ${realStats.avgDuration.toFixed(0)}s
+
+LA IDEA A VALIDAR:
+- Idea: "${ideaData.videoIdea}"
+- Duración: ${ideaData.duration}s
+- Tipo: ${ideaData.contentType}
+- Hashtags: ${ideaData.hashtags?.join(', ') || 'ninguno'}
+- Sonido: ${ideaData.sound || 'original'}
+- ¿Tiene CTA?: ${hasCTA ? 'Sí' : 'No'}
+
+REGLAS DINÁMICAS (aplica SOLO la que corresponde a su objetivo):
+${dynamicRules}
+
+REGLAS ABSOLUTAS:
+1. NUNCA predigas vistas exactas. Usa rangos basados en su historial: "${viewsRange}"
+2. La probabilidad de éxito se calcula así:
+   - Si la idea cumple TODAS las reglas de su objetivo → 65-80%
+   - Si cumple algunas pero falla en algo → 40-60%
+   - Si falla en las reglas clave → 15-30%
+3. Los cambios obligatorios son máximo 3, específicos y accionables.
+4. Sé brutalmente honesto. Si la idea no sirve para su objetivo, díselo.
+
+OUTPUT - SOLO JSON, nada más fuera del JSON:
+
+{
+  "veredicto": "GRÁBALA YA" | "ARRÉGLALA" | "NO LA GRABES",
+  "razon_brutal": "string de 1 frase que duele y usa un dato real",
+  "probabilidad_exito": "XX%",
+  "dinero_potencial": "${dineroPotencial}",
+  "rango_views_esperado": "${viewsRange}",
+  "cambios_obligatorios": ["cambio 1", "cambio 2", "cambio 3"],
+  "kpi_a_optimizar": "${goal.kpi}"
+}`
+
+      // FIX 3: Bajar temperature a 0.2 para consistencia
       const completion = await this.client.chat.completions.create({
         model: 'deepseek-chat',
         messages: [
           {
             role: 'system',
-            content: `Eres un analista de datos experto en predicción de viralidad en TikTok en 2026.
-          
-          IMPORTANTE: Las recomendaciones deben ser PRÁCTICAS y ACCIONABLES, basadas en patrones reales del nicho del usuario.
-          
-          Debes responder SOLO con JSON válido, sin texto adicional fuera del JSON.
-          Sé conservador en las predicciones, no sobreestimes.`
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      temperature: 0.4,
-      top_p: 0.9,
-      max_tokens: 1500,
-      response_format: { type: 'json_object' }
-    })
-    
-    const content = completion.choices[0]?.message?.content
-    if (!content) {
-      throw new Error('No content returned')
+            content: systemMessage
+          },
+          {
+            role: 'user',
+            content: `Valida esta idea para el objetivo ${nicheContext.contentGoal}. Devuelve SOLO el JSON.`
+          }
+        ],
+        temperature: 0.2,
+        top_p: 0.9,
+        max_tokens: 600,
+        response_format: { type: 'json_object' }
+      })
+      
+      const content = completion.choices[0]?.message?.content
+      if (!content) {
+        throw new Error('No content returned from DeepSeek')
+      }
+      
+      return JSON.parse(content)
+      
+    } catch (error) {
+      console.error('DeepSeek prediction error:', error)
+      throw error
     }
-    
-    return JSON.parse(content)
-    
-  } catch (error) {
-    console.error('DeepSeek prediction error:', error)
-    throw error
-  }
   }
 }

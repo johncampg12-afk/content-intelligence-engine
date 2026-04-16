@@ -180,7 +180,7 @@ export default function RecommendationsPage() {
               
               <div className="border-t border-gray-100 px-6 py-3 bg-gray-50 flex justify-between items-center">
                 <span className="text-xs text-gray-400">
-                  Análisis generado por DeepSeek AI
+                  Análisis generado por Meta AI
                 </span>
                 <button
                   onClick={() => setExpanded(!expanded)}
