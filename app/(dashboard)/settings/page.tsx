@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { User, Info, Target, TrendingUp, Users, Eye, Heart, Share2 } from 'lucide-react'
 
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
@@ -24,7 +25,6 @@ export default function SettingsPage() {
     main_struggle: ''
   })
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
-  const [contextMessage, setContextMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   
   const supabase = createClient()
 
@@ -60,6 +60,22 @@ export default function SettingsPage() {
     { value: 'artists', label: '🎨 Artists & Creative Professionals' }
   ]
 
+  const currentPhases = [
+    { value: 'starting', label: '🚀 Starting - Less than 1,000 followers', icon: '🚀' },
+    { value: 'growing', label: '📈 Growing - 1K to 10K followers', icon: '📈' },
+    { value: 'monetizing', label: '💰 Monetizing - 10K to 50K followers', icon: '💰' },
+    { value: 'scaling', label: '🏆 Scaling - More than 50K followers', icon: '🏆' }
+  ]
+
+  const mainStruggles = [
+    { value: 'views', label: '📉 Low views - I get few views', icon: '📉' },
+    { value: 'engagement', label: '💬 Low engagement - Views but no interaction', icon: '💬' },
+    { value: 'monetization', label: '💰 No monetization - I can\'t make money', icon: '💰' },
+    { value: 'consistency', label: '📅 Consistency - I struggle to post regularly', icon: '📅' },
+    { value: 'ideas', label: '💡 Ideas - I run out of content ideas', icon: '💡' },
+    { value: 'growth', label: '📊 Stagnation - My growth has stalled', icon: '📊' }
+  ]
+
   useEffect(() => {
     loadData()
   }, [])
@@ -84,7 +100,7 @@ export default function SettingsPage() {
       // Obtener perfil completo
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('account_type_id, content_goal, target_audience, account_bio, current_phase, main_struggle')
+        .select('*')
         .eq('id', user.id)
         .single()
       
@@ -145,7 +161,7 @@ export default function SettingsPage() {
   const handleContextSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSavingContext(true)
-    setContextMessage(null)
+    setMessage(null)
     
     try {
       const response = await fetch('/api/profile/update-context', {
@@ -157,13 +173,13 @@ export default function SettingsPage() {
       const data = await response.json()
       
       if (data.success) {
-        setContextMessage({ type: 'success', text: 'Creator context saved successfully!' })
+        setMessage({ type: 'success', text: 'Creator context saved! AI will personalize recommendations.' })
         await loadData()
       } else {
-        setContextMessage({ type: 'error', text: data.error || 'Failed to save context' })
+        setMessage({ type: 'error', text: data.error || 'Failed to save context' })
       }
     } catch (error) {
-      setContextMessage({ type: 'error', text: 'Network error. Please try again.' })
+      setMessage({ type: 'error', text: 'Network error. Please try again.' })
     } finally {
       setSavingContext(false)
     }
@@ -190,29 +206,107 @@ export default function SettingsPage() {
         </p>
       </div>
       
-      {/* Mensaje de éxito/error para estrategia */}
+      {/* Mensaje de éxito/error */}
       {message && (
         <div className={`p-4 rounded-md ${message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
           {message.text}
         </div>
       )}
       
-      {/* Sección de Nicho y Configuración */}
+      {/* ============================================ */}
+      {/* SECCIÓN 1: CREATOR CONTEXT (ARRIBA) */}
+      {/* ============================================ */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-            </svg>
+            <User className="w-5 h-5" />
+            Creator Context
+          </CardTitle>
+          <CardDescription>
+            Tell us about your account for hyper-personalized AI recommendations
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleContextSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="account_bio" className="block text-sm font-medium text-gray-700 mb-1">
+                What is your account about?
+              </label>
+              <textarea
+                id="account_bio"
+                value={contextData.account_bio}
+                onChange={(e) => setContextData({...contextData, account_bio: e.target.value})}
+                rows={3}
+                placeholder="Ej: I create comedy skits about adult life. My audience is millennials working in offices..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                This helps AI understand your style and specific niche
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="current_phase" className="block text-sm font-medium text-gray-700 mb-1">
+                  What phase are you in?
+                </label>
+                <select
+                  id="current_phase"
+                  value={contextData.current_phase}
+                  onChange={(e) => setContextData({...contextData, current_phase: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {currentPhases.map(phase => (
+                    <option key={phase.value} value={phase.value}>{phase.label}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label htmlFor="main_struggle" className="block text-sm font-medium text-gray-700 mb-1">
+                  What is your biggest struggle right now?
+                </label>
+                <select
+                  id="main_struggle"
+                  value={contextData.main_struggle}
+                  onChange={(e) => setContextData({...contextData, main_struggle: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select your main struggle</option>
+                  {mainStruggles.map(struggle => (
+                    <option key={struggle.value} value={struggle.value}>{struggle.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            
+            <div className="bg-blue-50 rounded-lg p-3 text-sm text-blue-800 flex items-start gap-2">
+              <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <p>This information helps AI personalize recommendations based on your specific situation. The more you share, the better the insights.</p>
+            </div>
+            
+            <Button type="submit" disabled={savingContext} className="w-full md:w-auto">
+              {savingContext ? 'Saving...' : 'Save Creator Context'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+      
+      {/* ============================================ */}
+      {/* SECCIÓN 2: CONTENT STRATEGY CONFIGURATION */}
+      {/* ============================================ */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Target className="w-5 h-5" />
             Content Strategy Configuration
           </CardTitle>
           <CardDescription>
-            Define your content niche, goals, and target audience to receive personalized AI recommendations
+            Define your content niche, goals, and target audience for AI recommendations
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Tipo de cuenta */}
             <div>
               <label htmlFor="account_type" className="block text-sm font-medium text-gray-700 mb-1">
                 Content Niche *
@@ -222,7 +316,7 @@ export default function SettingsPage() {
                 value={formData.account_type_id}
                 onChange={(e) => setFormData({ ...formData, account_type_id: e.target.value })}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Select your content niche</option>
                 {accountTypes?.map((type: any) => (
@@ -233,7 +327,6 @@ export default function SettingsPage() {
               </select>
             </div>
             
-            {/* Objetivo principal */}
             <div>
               <label htmlFor="content_goal" className="block text-sm font-medium text-gray-700 mb-1">
                 Main Goal *
@@ -243,7 +336,7 @@ export default function SettingsPage() {
                 value={formData.content_goal}
                 onChange={(e) => setFormData({ ...formData, content_goal: e.target.value })}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Select your main goal</option>
                 {contentGoals.map((goal) => (
@@ -254,7 +347,6 @@ export default function SettingsPage() {
               </select>
             </div>
             
-            {/* Audiencia objetivo */}
             <div>
               <label htmlFor="target_audience" className="block text-sm font-medium text-gray-700 mb-1">
                 Target Audience *
@@ -264,7 +356,7 @@ export default function SettingsPage() {
                 value={formData.target_audience}
                 onChange={(e) => setFormData({ ...formData, target_audience: e.target.value })}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Select your target audience</option>
                 {targetAudiences.map((audience) => (
@@ -276,13 +368,15 @@ export default function SettingsPage() {
             </div>
             
             <Button type="submit" disabled={saving} className="w-full md:w-auto">
-              {saving ? 'Saving...' : 'Save Configuration'}
+              {saving ? 'Saving...' : 'Save Strategy'}
             </Button>
           </form>
         </CardContent>
       </Card>
       
-      {/* Sección de Cuentas Conectadas */}
+      {/* ============================================ */}
+      {/* SECCIÓN 3: CONNECTED ACCOUNTS (ABAJO) */}
+      {/* ============================================ */}
       <div>
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Connected Accounts</h2>
         <div className="grid gap-6 md:grid-cols-2">
@@ -330,8 +424,7 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 1.366.062 2.633.336 3.608 1.311.975.975 1.249 2.242 1.311 3.608.058 1.266.07 1.646.07 4.85s-.012 3.584-.07 4.85c-.062 1.366-.336 2.633-1.311 3.608-.975.975-2.242 1.249-3.608 1.311-1.266.058-1.646.07-4.85.07s-3.584-.012-4.85-.07c-1.366-.062-2.633-.336-3.608-1.311-.975-.975-1.249-2.242-1.311-3.608-.058-1.266-.07-1.646-.07-4.85s.012-3.584.07-4.85c.062-1.366.336-2.633 1.311-3.608.975-.975 2.242-1.249 3.608-1.311 1.266-.058 1.646-.07 4.85-.07zM12 0C8.741 0 8.332.014 7.052.072 5.775.13 4.788.302 3.926.79c-.885.507-1.637 1.259-2.144 2.144-.488.862-.66 1.849-.718 3.126C.014 8.332 0 8.741 0 12c0 3.259.014 3.668.072 4.948.058 1.277.23 2.264.718 3.126.507.885 1.259 1.637 2.144 2.144.862.488 1.849.66 3.126.718 1.28.058 1.689.072 4.948.072s3.668-.014 4.948-.072c1.277-.058 2.264-.23 3.126-.718.885-.507 1.637-1.259 2.144-2.144.488-.862.66-1.849.718-3.126.058-1.28.072-1.689.072-4.948s-.014-3.668-.072-4.948c-.058-1.277-.23-2.264-.718-3.126-.507-.885-1.259-1.637-2.144-2.144-.862-.488-1.849-.66-3.126-.718C15.668.014 15.259 0 12 0z"/>
-                  <path d="M12 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/>
+                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 1.366.062 2.633.336 3.608 1.311.975.975 1.249 2.242 1.311 3.608.058 1.266.07 1.646.07 4.85s-.012 3.584-.07 4.85c-.062 1.366-.336 2.633-1.311 3.608-.975.975-2.242 1.249-3.608 1.311-1.266.058-1.646.07-4.85.07s-3.584-.012-4.85-.07c-1.366-.062-2.633-.336-3.608-1.311-.975-.975-1.249-2.242-1.311-3.608-.058-1.266-.07-1.646-.07-4.85s.012-3.584.07-4.85c.062-1.366.336-2.633 1.311-3.608.975-.975 2.242-1.249 3.608-1.311 1.266-.058 1.646-.07 4.85-.07z"/>
                 </svg>
                 Instagram
               </CardTitle>
@@ -359,85 +452,6 @@ export default function SettingsPage() {
           </Card>
         </div>
       </div>
-
-      {/* Sección de Contexto del Creador */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-            Creator Context
-          </CardTitle>
-          <CardDescription>
-            Cuéntanos sobre tu cuenta para recibir recomendaciones hiper-personalizadas
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {contextMessage && (
-            <div className={`mb-4 p-3 rounded-md ${contextMessage.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
-              {contextMessage.text}
-            </div>
-          )}
-          <form onSubmit={handleContextSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="account_bio" className="block text-sm font-medium text-gray-700 mb-1">
-                ¿De qué trata tu cuenta?
-              </label>
-              <textarea
-                id="account_bio"
-                value={contextData.account_bio}
-                onChange={(e) => setContextData({ ...contextData, account_bio: e.target.value })}
-                rows={3}
-                placeholder="Ej: Cuento chistes sobre la vida adulta. Mi audiencia son millennials que trabajan en oficina..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <p className="text-xs text-gray-400 mt-1">Esto ayuda a la IA a entender tu estilo y nicho específico</p>
-            </div>
-            
-            <div>
-              <label htmlFor="current_phase" className="block text-sm font-medium text-gray-700 mb-1">
-                ¿En qué fase estás?
-              </label>
-              <select
-                id="current_phase"
-                value={contextData.current_phase}
-                onChange={(e) => setContextData({ ...contextData, current_phase: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="starting">🚀 Starting - Menos de 1000 seguidores</option>
-                <option value="growing">📈 Growing - 1k a 10k seguidores</option>
-                <option value="monetizing">💰 Monetizing - 10k a 50k seguidores</option>
-                <option value="scaling">🏆 Scaling - Más de 50k seguidores</option>
-              </select>
-            </div>
-            
-            <div>
-              <label htmlFor="main_struggle" className="block text-sm font-medium text-gray-700 mb-1">
-                ¿Cuál es tu mayor dificultad ahora mismo?
-              </label>
-              <select
-                id="main_struggle"
-                value={contextData.main_struggle}
-                onChange={(e) => setContextData({ ...contextData, main_struggle: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Selecciona tu principal dolor</option>
-                <option value="views">📉 Consigo pocas visitas</option>
-                <option value="engagement">💬 Tengo visitas pero no interacción</option>
-                <option value="monetization">💰 No consigo monetizar</option>
-                <option value="consistency">📅 Me cuesta ser constante</option>
-                <option value="ideas">💡 Me quedo sin ideas</option>
-                <option value="growth">📊 Mi crecimiento se ha estancado</option>
-              </select>
-            </div>
-            
-            <Button type="submit" disabled={savingContext} className="w-full md:w-auto">
-              {savingContext ? 'Saving...' : 'Save Creator Context'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
     </div>
   )
 }
