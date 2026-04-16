@@ -8,7 +8,6 @@ export async function POST(request: NextRequest) {
     const { 
       videoIdea, 
       contentType, 
-      campaignGoal, 
       duration, 
       hashtags, 
       sound 

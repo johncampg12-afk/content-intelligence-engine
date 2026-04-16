@@ -13,17 +13,15 @@ import {
   Loader2,
   Target,
   Download,
-  Eye,
-  Heart,
-  Share2,
-  Users,
   History,
   Trash2,
   ChevronDown,
   ChevronUp,
   CheckCircle,
   XCircle,
-  AlertTriangle
+  AlertTriangle,
+  User,
+  Info
 } from 'lucide-react'
 
 interface Prediction {
@@ -49,17 +47,6 @@ interface Prediction {
   cambios_obligatorios?: string[]
 }
 
-const campaignGoals = [
-  { value: 'monetization', label: '💰 Monetization', description: 'Ganar dinero con Creator Rewards' },
-  { value: 'viral_growth', label: '🚀 Viral Growth', description: 'Maximizar alcance y shares' },
-  { value: 'brand_awareness', label: '📈 Brand Awareness', description: 'Expandir reconocimiento de marca' },
-  { value: 'community_building', label: '👥 Community Building', description: 'Crear comunidad activa' },
-  { value: 'lead_generation', label: '🎯 Lead Generation', description: 'Generar leads y conversiones' },
-  { value: 'education', label: '📚 Education', description: 'Enseñar y educar' },
-  { value: 'entertainment', label: '🎬 Entertainment', description: 'Entretener y hacer reír' },
-  { value: 'influence', label: '⭐ Influence', description: 'Ser referente en el nicho' }
-]
-
 const contentTypes = [
   { value: 'tutorial', label: 'Tutorial / How-to', icon: '📚' },
   { value: 'entertainment', label: 'Entretenimiento / Humor', icon: '🎬' },
@@ -72,23 +59,68 @@ const contentTypes = [
 export default function ViralPredictorPage() {
   const [videoIdea, setVideoIdea] = useState('')
   const [contentType, setContentType] = useState('tutorial')
-  const [campaignGoal, setCampaignGoal] = useState('viral_growth')
   const [duration, setDuration] = useState(15)
   const [hashtags, setHashtags] = useState('')
   const [sound, setSound] = useState('')
   const [loading, setLoading] = useState(false)
+  const [loadingProfile, setLoadingProfile] = useState(true)
   const [prediction, setPrediction] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [history, setHistory] = useState<Prediction[]>([])
   const [loadingHistory, setLoadingHistory] = useState(true)
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [showHistory, setShowHistory] = useState(true)
+  const [userProfile, setUserProfile] = useState<{
+    content_goal: string
+    target_audience: string
+    account_type: string
+  } | null>(null)
   
   const supabase = createClient()
 
   useEffect(() => {
+    loadUserProfile()
     loadHistory()
   }, [])
+
+  const loadUserProfile = async () => {
+    try {
+      setLoadingProfile(true)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      
+      // Obtener perfil
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('content_goal, target_audience, account_type_id')
+        .eq('id', user.id)
+        .single()
+      
+      // Obtener nombre del tipo de cuenta
+      let accountTypeName = 'No especificado'
+      if (profile?.account_type_id) {
+        const { data: accountType } = await supabase
+          .from('account_types')
+          .select('name')
+          .eq('id', profile.account_type_id)
+          .single()
+        if (accountType) {
+          accountTypeName = accountType.name
+        }
+      }
+      
+      setUserProfile({
+        content_goal: profile?.content_goal || 'viral_growth',
+        target_audience: profile?.target_audience || 'general',
+        account_type: accountTypeName
+      })
+      
+    } catch (error) {
+      console.error('Error loading profile:', error)
+    } finally {
+      setLoadingProfile(false)
+    }
+  }
 
   const loadHistory = async () => {
     try {
@@ -106,7 +138,7 @@ export default function ViralPredictorPage() {
   }
 
   const deletePrediction = async (id: string) => {
-    if (!confirm('¿Eliminar esta predicción del historial?')) return
+    if (!confirm('¿Eliminar esta validación del historial?')) return
     
     try {
       const response = await fetch(`/api/predict/delete?id=${id}`, { method: 'DELETE' })
@@ -174,7 +206,6 @@ export default function ViralPredictorPage() {
         body: JSON.stringify({
           videoIdea,
           contentType,
-          campaignGoal,
           duration,
           hashtags: hashtags.split(',').map(h => h.trim().replace('#', '')).filter(h => h),
           sound: sound || 'Original'
@@ -190,7 +221,7 @@ export default function ViralPredictorPage() {
         setHashtags('')
         setSound('')
       } else {
-        setError(data.error || 'No se pudo generar la predicción')
+        setError(data.error || 'No se pudo validar la idea')
       }
       
     } catch (err) {
@@ -202,17 +233,21 @@ export default function ViralPredictorPage() {
 
   const handleExportReport = (pred: any) => {
     const contentTypeLabel = contentTypes.find(c => c.value === pred.content_type)?.label || pred.content_type || 'No especificado'
-    const campaignGoalLabel = campaignGoals.find(g => g.value === pred.campaign_goal)?.label || pred.campaign_goal || 'No especificado'
     
     const report = `
-CONTENT VIRALITY REPORT
+CONTENT VALIDATION REPORT
 Generated: ${new Date().toLocaleString()}
+
+USER PROFILE
+-------------------
+Objective: ${userProfile?.content_goal || 'No especificado'}
+Target Audience: ${userProfile?.target_audience || 'No especificada'}
+Content Niche: ${userProfile?.account_type || 'No especificado'}
 
 IDEA ANALYSIS
 -------------------
 Content Idea: ${pred.video_idea || 'No especificada'}
 Content Type: ${contentTypeLabel}
-Campaign Goal: ${campaignGoalLabel}
 Duration: ${pred.duration || 'No especificada'}s
 Hashtags: ${pred.hashtags?.join(', ') || 'Ninguno'}
 Sound: ${pred.sound || 'Original'}
@@ -246,7 +281,16 @@ Content Intelligence Engine - Professional Analytics Suite
     URL.revokeObjectURL(url)
   }
 
-  const selectedGoal = campaignGoals.find(g => g.value === campaignGoal)
+  if (loadingProfile) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-500">Cargando tu perfil...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -270,16 +314,44 @@ Content Intelligence Engine - Professional Analytics Suite
           </div>
         </div>
 
+        {/* Perfil del usuario (info contextual) */}
+        {userProfile && (
+          <div className="mb-6 bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <User className="w-4 h-4 text-gray-400" />
+              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Tu configuración actual</span>
+            </div>
+            <div className="flex flex-wrap gap-4 text-sm">
+              <div className="flex items-center gap-1">
+                <span className="text-gray-500">Objetivo:</span>
+                <span className="font-medium text-gray-900">{userProfile.content_goal}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-gray-500">Audiencia:</span>
+                <span className="font-medium text-gray-900">{userProfile.target_audience}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-gray-500">Nicho:</span>
+                <span className="font-medium text-gray-900">{userProfile.account_type}</span>
+              </div>
+            </div>
+            <p className="text-xs text-gray-400 mt-2 flex items-center gap-1">
+              <Info className="w-3 h-3" />
+              Puedes cambiar estos valores en Configuración
+            </p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
-          {/* Formulario */}
+          {/* Formulario simplificado */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
               <div className="flex items-center gap-2">
                 <Target className="w-5 h-5 text-blue-600" />
-                <h2 className="text-base font-semibold text-gray-900">Valida tu idea</h2>
+                <h2 className="text-base font-semibold text-gray-900">Describe tu idea</h2>
               </div>
-              <p className="text-sm text-gray-500 mt-0.5">Completa los detalles de tu contenido</p>
+              <p className="text-sm text-gray-500 mt-0.5">La IA validará si funciona para tu objetivo</p>
             </div>
             
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
@@ -312,39 +384,23 @@ Content Intelligence Engine - Professional Analytics Suite
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Objetivo principal</label>
-                  <select
-                    value={campaignGoal}
-                    onChange={(e) => setCampaignGoal(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {campaignGoals.map(goal => (
-                      <option key={goal.value} value={goal.value}>{goal.label}</option>
-                    ))}
-                  </select>
-                  {selectedGoal && (
-                    <p className="text-xs text-gray-400 mt-1">{selectedGoal.description}</p>
-                  )}
-                </div>
-              </div>
-              
-              <div>
-                <div className="flex justify-between mb-1">
-                  <label className="text-sm font-medium text-gray-700">Duración (segundos)</label>
-                  <span className="text-sm text-gray-500">{duration}s</span>
-                </div>
-                <input
-                  type="range"
-                  value={duration}
-                  onChange={(e) => setDuration(parseInt(e.target.value))}
-                  min={5}
-                  max={90}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-xs text-gray-400 mt-1">
-                  <span>Muy corto</span>
-                  <span>Ideal para monetización: 65-90s</span>
-                  <span>Muy largo</span>
+                  <div className="flex justify-between mb-1">
+                    <label className="text-sm font-medium text-gray-700">Duración</label>
+                    <span className="text-sm text-gray-500">{duration}s</span>
+                  </div>
+                  <input
+                    type="range"
+                    value={duration}
+                    onChange={(e) => setDuration(parseInt(e.target.value))}
+                    min={5}
+                    max={90}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                    <span>Muy corto</span>
+                    <span>Ideal</span>
+                    <span>Muy largo</span>
+                  </div>
                 </div>
               </div>
               
