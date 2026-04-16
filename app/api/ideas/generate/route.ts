@@ -140,6 +140,21 @@ export async function POST(request: NextRequest) {
     // Generar ideas
     const ideas = await deepseek.generateIdeas(fullContext, realStats)
     
+    // ============================================
+    // GUARDAR IDEAS EN LA TABLA generated_ideas
+    // ============================================
+    if (ideas && ideas.length > 0) {
+      for (const idea of ideas) {
+        await supabase
+          .from('generated_ideas')
+          .insert({
+            user_id: user.id,
+            idea_data: idea,
+            status: 'active'
+          })
+      }
+    }
+    
     // Guardar last_recommendation después de generar
     await supabase
       .from('profiles')
