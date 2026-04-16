@@ -396,11 +396,6 @@ Content Intelligence Engine - Professional Analytics Suite
                     max={90}
                     className="w-full"
                   />
-                  <div className="flex justify-between text-xs text-gray-400 mt-1">
-                    <span>Muy corto</span>
-                    <span>Ideal</span>
-                    <span>Muy largo</span>
-                  </div>
                 </div>
               </div>
               
