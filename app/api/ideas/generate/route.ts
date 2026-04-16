@@ -69,40 +69,42 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Obtener estadísticas reales
+    // Obtener videos para calcular stats
     const { data: videos } = await supabase
       .from('videos')
-      .select('duration, video_metrics(views, likes, comments, shares)')
+      .select('duration, video_metrics(views, likes, comments, shares, saves, engagement_rate, recorded_at)')
       .eq('user_id', user.id)
       .limit(50)
     
+    // FIX 1: Usar calculateRealStats de DeepSeekAI
+    const deepseek = new DeepSeekAI()
     let realStats = {
       avgViews: 0,
       avgEngagementRate: 0,
       avgDuration: 0,
-      totalVideos: 0
+      totalVideos: 0,
+      avgSavesRate: 0
     }
     
     if (videos && videos.length > 0) {
-      const totalViews = videos.reduce((sum, v) => sum + (v.video_metrics?.[0]?.views || 0), 0)
-      const totalEngagement = videos.reduce((sum, v) => {
-        const metrics = v.video_metrics?.[0] || {}
-        return sum + (metrics.likes || 0) + (metrics.comments || 0) + (metrics.shares || 0)
-      }, 0)
-      const totalDuration = videos.reduce((sum, v) => sum + (v.duration || 0), 0)
-      
+      const metricsData = videos.map(v => ({
+        duration: v.duration,
+        metrics: v.video_metrics?.[0] || {}
+      }))
+      const calculatedStats = (deepseek as any).calculateRealStats(metricsData)
       realStats = {
-        avgViews: totalViews / videos.length,
-        avgEngagementRate: totalViews > 0 ? (totalEngagement / totalViews) * 100 : 0,
-        avgDuration: totalDuration / videos.length,
-        totalVideos: videos.length
+        avgViews: calculatedStats.avgViews,
+        avgEngagementRate: calculatedStats.avgEngagementRate,
+        avgDuration: calculatedStats.avgDuration,
+        totalVideos: calculatedStats.totalVideos,
+        avgSavesRate: calculatedStats.avgSavesRate || 0
       }
     }
     
     // Obtener evolución
     const { data: previousProfile } = await supabase
       .from('profiles')
-      .select('last_stats')
+      .select('last_stats, last_recommendation')
       .eq('id', user.id)
       .single()
     
@@ -114,6 +116,9 @@ export async function POST(request: NextRequest) {
           : 0,
         engagementChange: previousProfile.last_stats.avgEngagementRate > 0 
           ? ((realStats.avgEngagementRate - previousProfile.last_stats.avgEngagementRate) / previousProfile.last_stats.avgEngagementRate) * 100 
+          : 0,
+        savesChange: previousProfile.last_stats.avgSavesRate > 0 
+          ? ((realStats.avgSavesRate - previousProfile.last_stats.avgSavesRate) / previousProfile.last_stats.avgSavesRate) * 100 
           : 0,
       }
     }
@@ -134,8 +139,23 @@ export async function POST(request: NextRequest) {
     }
     
     // Generar ideas
-    const deepseek = new DeepSeekAI()
     const ideas = await deepseek.generateIdeas(fullContext, realStats)
+    
+    // FIX 2: Guardar last_recommendation después de generar
+    await supabase
+      .from('profiles')
+      .update({
+        last_recommendation: `Generadas ${ideas.length} ideas para ${profile?.content_goal || 'contenido'}`,
+        last_analysis_at: new Date().toISOString(),
+        last_stats: {
+          avgViews: realStats.avgViews,
+          avgEngagementRate: realStats.avgEngagementRate,
+          avgSavesRate: realStats.avgSavesRate,
+          totalVideos: realStats.totalVideos,
+          analyzedAt: new Date().toISOString()
+        }
+      })
+      .eq('id', user.id)
     
     return NextResponse.json({ success: true, ideas })
     

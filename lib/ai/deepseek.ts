@@ -98,7 +98,7 @@ export class DeepSeekAI {
     }
   }
 
-  private calculateRealStats(metricsData: any[]) {
+  public calculateRealStats(metricsData: any[]) {
     const totalVideos = metricsData.length
     
     if (totalVideos === 0) {
