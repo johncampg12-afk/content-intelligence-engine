@@ -23,6 +23,76 @@ export type FullContext = {
   }
 }
 
+// ============================================
+// PLANTILLAS DE HOOK (36 estructuras probadas)
+// ============================================
+const hookTemplates = [
+  // COMPARACIÓN / DILEMA (1-9)
+  "¿Qué es mejor {X} o {Y}?",
+  "Si tu {X} se ve así, {Y} esto",
+  "Probablemente has escuchado muchas veces sobre {X}",
+  "Nunca {X}, si no quieres {Y}",
+  "Estos son los mejores y peores {X} para {Y}",
+  "No te {X} después de {Y}",
+  "¿Sabías que {X} está {Y}?",
+  "Esto es {X} y esto también es {X}",
+  "{X} vs {Y}",
+  // ERROR / ADVERTENCIA (10-18)
+  "El error #1 que comete todo el mundo con {X}",
+  "Deja de hacer {X} inmediatamente",
+  "Si haces {X}, estás perdiendo {Y}",
+  "3 señales de que tu {X} está roto",
+  "Esto te está costando {Y} cada vez que {X}",
+  "La razón por la que tu {X} no funciona",
+  "Advertencia: nunca {X} sin hacer {Y} primero",
+  "El mito de {X} que te está frenando",
+  "Lo que nadie te dice sobre {X}",
+  // CURIOSIDAD / SECRETO (19-27)
+  "El truco de {X} que usan los pros",
+  "Cómo conseguí {Y} sin {X}",
+  "El secreto detrás de {X}",
+  "Esto cambió mi {X} para siempre",
+  "La forma más rápida de {Y}",
+  "¿Por qué nadie habla de {X}?",
+  "Descubrí esto sobre {X} y me sorprendió",
+  "El atajo para {Y} que no conocías",
+  "Así es como {X} realmente funciona",
+  // LISTA / PASO A PASO (28-36)
+  "3 formas de {X} sin {Y}",
+  "Paso 1 para {Y}: {X}",
+  "Los 5 {X} que necesitas para {Y}",
+  "De 0 a {Y} con solo {X}",
+  "Mi rutina de {X} en 3 pasos",
+  "Copia esto para {Y}",
+  "Guarda esto si quieres {Y}",
+  "El checklist definitivo de {X}",
+  "En 30 segundos: cómo {X}"
+]
+
+// ============================================
+// UTILITY: Encontrar plantilla que matchea un hook
+// ============================================
+function findMatchingTemplate(hook: string): { template: string; id: number } | null {
+  for (let i = 0; i < hookTemplates.length; i++) {
+    const template = hookTemplates[i];
+    // Quitamos {X} e {Y} de la plantilla
+    const templateClean = template.replace(/\{X\}|\{Y\}/g, '').toLowerCase();
+    // Tomamos primeros 15 caracteres
+    const templateSignature = templateClean.substring(0, 15);
+    
+    // Limpiamos el hook: reemplazamos palabras largas (posibles variables) por comodín
+    // Esto ayuda a comparar estructura, no valores concretos
+    const hookClean = hook
+      .replace(/\b[a-záéíóú]{8,}\b/gi, '{X}')
+      .toLowerCase();
+    
+    if (hookClean.includes(templateSignature)) {
+      return { template, id: i + 1 };
+    }
+  }
+  return null;
+}
+
 // Goal Matrix profesional
 const goalMatrix: Record<string, any> = {
   monetization: { kpi: 'watch_time', revenue: true, duration: '65-90s', cpm: 3 },
@@ -384,44 +454,64 @@ OUTPUT - SOLO JSON:
   }
 
   // ============================================
-  // 3. generateIdeas - CON OBJETOS COMPLETOS
+  // 3. generateIdeas - CON 36 HOOKS + VALIDACIÓN + templateId
   // ============================================
   async generateIdeas(fullContext: FullContext, realStats: any): Promise<any[]> {
     try {
       const goal = goalMatrix[fullContext.contentGoal] || goalMatrix.viral_growth
       const tone = getToneByAudience(fullContext.targetAudience)
       
+      // Fallback para mainStruggle
+      const mainStruggle = fullContext.userContext?.mainStruggle || 'crecer en TikTok'
+      
       const userBlock = fullContext.userContext ? `
 MEMORIA DEL CREADOR:
 - Bio: ${fullContext.userContext.accountBio}
 - Fase: ${fullContext.userContext.currentPhase}
-- Dolor principal: ${fullContext.userContext.mainStruggle}
+- Dolor principal: ${mainStruggle}
 - Evolución: Views ${fullContext.userContext.evolution?.viewsChange || 0}%
-
-INSTRUCCIÓN: Prioriza ideas que resuelvan el DOLOR PRINCIPAL.
 ` : ''
 
-      const systemMessage = `Genera 5 ideas de contenido para TikTok que resuelvan el dolor del creador.
+      const systemMessage = `Genera 5 ideas de contenido para TikTok usando estructuras de hook probadas.
 
 CONTEXTO:
-- Objetivo: ${fullContext.contentGoal}
-- KPI: ${goal.kpi}
-- Duración ideal: ${goal.duration}
+- Objetivo: ${fullContext.contentGoal} (KPI: ${goal.kpi})
+- Duración ideal base: ${goal.duration}
 - Audiencia: ${fullContext.targetAudience} → tono: ${tone}
+- Nicho: ${fullContext.accountType}
+- Dolor principal: ${mainStruggle}
 
 ${userBlock}
 
-BENCHMARK: ${fullContext.nichePatterns || 'Sin benchmark'}
+REGLAS OBLIGATORIAS:
+1. Usa 5 estructuras DIFERENTES de esta lista de 36:
+${hookTemplates.map((h, i) => `${i+1}. ${h}`).join('\n')}
+
+2. Reemplaza {X} e {Y} con elementos MUY CONCRETOS del nicho "${fullContext.accountType}".
+   EJEMPLO para nicho "privacidad IG": X="revisar seguidores manualmente", Y="perder 2 horas al día".
+   NUNCA uses X o Y genéricos como "cosas", "esto", "algo".
+
+3. DIVERSIDAD OBLIGATORIA: Las 5 ideas deben atacar el dolor "${mainStruggle}" desde ángulos diferentes: tutorial, error común, mito, secreto, lista.
+
+4. Duración dinámica por tipo de contenido:
+   - tutorial → 15-20s
+   - error común → 12-18s
+   - mito → 10-15s
+   - lista → 20-25s
+   - secreto → 15-20s
+
+5. CTA variada (no repetir en las 5 ideas):
+   Usa: "guarda este video", "comenta X", "etiqueta a alguien", "sígueme para parte 2", "link en bio", etc.
 
 OUTPUT - SOLO JSON:
 {
   "ideas": [
     {
-      "title": "título corto",
-      "hook": "gancho 3s",
-      "description": "explicación",
-      "duration_suggestion": "12-21s",
-      "cta": "llamada a la acción"
+      "title": "título corto max 4 palabras",
+      "hook": "hook completo con X e Y concretos",
+      "description": "qué mostrar en el video en 1 frase",
+      "duration_suggestion": "duración según regla 4",
+      "cta": "acción específica (variada)"
     }
   ]
 }`
@@ -430,15 +520,49 @@ OUTPUT - SOLO JSON:
         model: 'deepseek-chat',
         messages: [
           { role: 'system', content: systemMessage },
-          { role: 'user', content: 'Genera 5 ideas.' }
+          { role: 'user', content: 'Genera 5 ideas siguiendo todas las reglas.' }
         ],
         temperature: 0.7,
-        max_tokens: 800,
+        max_tokens: 1000,
         response_format: { type: 'json_object' }
       })
       
       const result = JSON.parse(completion.choices[0]?.message?.content || '{"ideas": []}')
-      return result.ideas || []
+      let ideas = result.ideas || []
+      
+      // ============================================
+      // VALIDACIÓN POST-GENERACIÓN CON templateId
+      // ============================================
+      const usedTemplateIds = new Set<number>()
+      const validatedIdeas: any[] = []
+      
+      for (const idea of ideas) {
+        const match = findMatchingTemplate(idea.hook)
+        
+        if (!match) {
+          console.warn(`[DeepSeek] No se pudo identificar plantilla para hook: ${idea.hook.substring(0, 50)}...`)
+          continue
+        }
+        
+        if (usedTemplateIds.has(match.id)) {
+          console.warn(`[DeepSeek] Plantilla repetida ID ${match.id}: ${match.template}`)
+          continue
+        }
+        
+        usedTemplateIds.add(match.id)
+        validatedIdeas.push({
+          ...idea,
+          hook_template_id: match.id
+        })
+      }
+      
+      // Si después de validar tenemos menos de 3, devolvemos las que hay
+      if (validatedIdeas.length < 3) {
+        console.warn(`[DeepSeek] Solo se validaron ${validatedIdeas.length} ideas. Se devuelven las originales sin template_id.`)
+        return ideas.slice(0, 5)
+      }
+      
+      return validatedIdeas.slice(0, 5)
     } catch (error) {
       console.error('DeepSeek generate ideas error:', error)
       return []
