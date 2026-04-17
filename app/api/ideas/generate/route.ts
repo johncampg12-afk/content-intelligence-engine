@@ -141,19 +141,24 @@ export async function POST(request: NextRequest) {
     const ideas = await deepseek.generateIdeas(fullContext, realStats)
     
     // ============================================
-    // GUARDAR IDEAS CON hook_template_id
+    // GUARDAR IDEAS EN ideas_history (BULK INSERT)
     // ============================================
     if (ideas && ideas.length > 0) {
-      for (const idea of ideas) {
-        await supabase
-          .from('generated_ideas')
-          .insert({
+      await supabase
+        .from('ideas_history')
+        .insert(
+          ideas.map(idea => ({
             user_id: user.id,
-            idea_data: idea,
+            title: idea.title,
+            hook: idea.hook,
             hook_template_id: idea.hook_template_id || null,
-            status: 'active'
-          })
-      }
+            description: idea.description,
+            duration_suggestion: idea.duration_suggestion,
+            cta: idea.cta,
+            content_goal: fullContext.contentGoal,
+            generated_at: new Date().toISOString()
+          }))
+        )
     }
     
     // Guardar last_recommendation

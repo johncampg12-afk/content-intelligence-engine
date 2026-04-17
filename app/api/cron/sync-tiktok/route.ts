@@ -212,6 +212,80 @@ export async function POST(request: NextRequest) {
     }
     
     console.log(`Sync complete: ${videosSaved} videos, ${metricsUpdated} metrics updated`)
+    
+    // ============================================
+    // MATCHEAR IDEAS PENDIENTES CON VIDEOS NUEVOS
+    // ============================================
+    try {
+      const { data: pendingIdeas } = await supabase
+        .from('ideas_history')
+        .select('*')
+        .eq('user_id', userId)
+        .is('used_at', null)
+        .gte('generated_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+        .order('generated_at', { ascending: false })
+        .limit(50)
+
+      if (pendingIdeas && pendingIdeas.length > 0 && videos && videos.length > 0) {
+        console.log(`[Matcher] Checking ${pendingIdeas.length} pending ideas against ${videos.length} videos`)
+        
+        for (const video of videos) {
+          const videoTitle = video.title || ''
+          const videoDesc = video.description || ''
+          const videoText = `${videoTitle} ${videoDesc}`.toLowerCase()
+
+          for (const idea of pendingIdeas) {
+            // Si ya tiene matched_video_id, saltar
+            if (idea.matched_video_id) continue
+            
+            // Extraer palabras clave del hook (mínimo 4 letras, excluyendo palabras comunes)
+            const stopWords = ['sobre', 'para', 'como', 'esto', 'que', 'una', 'unas', 'unos', 'con', 'sin', 'por', 'los', 'las', 'esa', 'ese', 'esa', 'del', 'al', 'lo', 'le', 'la', 'el', 'en']
+            const hookWords = idea.hook.toLowerCase()
+              .split(' ')
+              .filter((w: string) => w.length > 4 && !stopWords.includes(w))
+
+            // Contar cuántas de esas palabras aparecen en el título/descripción del video
+            const matches = hookWords.filter((word: string) => videoText.includes(word)).length
+
+            // Si coinciden al menos 3 palabras, consideramos que la idea fue usada
+            if (matches >= 3) {
+              // Calcular engagement rate
+              const views = video.view_count || 0
+              const likes = video.like_count || 0
+              const comments = video.comment_count || 0
+              const shares = video.share_count || 0
+              const saves = video.download_count || 0
+              const engagementRate = views > 0 
+                ? (((likes + comments + shares) / views) * 100).toFixed(2)
+                : '0'
+
+              await supabase
+                .from('ideas_history')
+                .update({
+                  used_at: video.create_time ? new Date(video.create_time * 1000).toISOString() : new Date().toISOString(),
+                  matched_video_id: video.id,
+                  performance: {
+                    views,
+                    likes,
+                    comments,
+                    shares,
+                    saves,
+                    engagement_rate: parseFloat(engagementRate)
+                  }
+                })
+                .eq('id', idea.id)
+
+              console.log(`[Matcher] ✅ Idea "${idea.title}" matched with video ${video.id} (${matches} keywords)`)
+              break // Una idea solo se matchea con un video
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('[Matcher] Error matching ideas:', error)
+      // No romper el sync si falla el matcher
+    }
+    
     console.log('=== SYNC TIKTOK END ===')
     
     return NextResponse.json({ 
