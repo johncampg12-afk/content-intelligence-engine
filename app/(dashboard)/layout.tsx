@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Zap, Calendar as CalendarIcon } from 'lucide-react'
 import { Lightbulb } from 'lucide-react'
+import { LogoutButton } from '@/components/layout/logout-button'
 
 export default async function DashboardLayout({
   children,
@@ -104,14 +105,9 @@ export default async function DashboardLayout({
               </div>
             </div>
             <div className="flex items-center">
-              <form action="/auth/signout" method="post">
-                <button
-                  type="submit"
-                  className="text-gray-500 hover:text-gray-700 text-sm font-medium"
-                >
-                  Sign Out
-                </button>
-              </form>
+              <div className="flex items-center">
+                 <LogoutButton />
+              </div>
             </div>
           </div>
         </div>
