@@ -483,9 +483,10 @@ OUTPUT - SOLO JSON:
             .not('hook_template_id', 'is', null)
             .limit(100)
       
-          if (history && history.length >= 5) {
-            const used = history.filter(h => h.used_at && h.performance)
-            usedTemplateIds = [...new Set(history.map(h => h.hook_template_id))]
+          // AJUSTE 1: Cambiado de >=5 a >0
+          if (history && history.length > 0) {
+            const used = history.filter((h: any) => h.used_at && h.performance)
+            usedTemplateIds = [...new Set(history.map((h: any) => h.hook_template_id))]
       
             if (used.length >= 3) {
               const stats: Record<number, { count: number; totalEng: number }> = {}
@@ -503,14 +504,14 @@ OUTPUT - SOLO JSON:
                   avgEng: s.totalEng / s.count,
                   uses: s.count
                 }))
-                .filter(t => t.uses >= 2)
-                .sort((a, b) => b.avgEng - a.avgEng)
+                .filter((t: any) => t.uses >= 2)
+                .sort((a: any, b: any) => b.avgEng - a.avgEng)
       
-              topTemplateIds = ranked.slice(0, 3).map(t => t.id)
+              topTemplateIds = ranked.slice(0, 3).map((t: any) => t.id)
       
               personalizationBlock = `\nTU HISTORIAL (últimos ${used.length} videos):
 TOP 3 plantillas que mejor te funcionan:
-${ranked.slice(0,3).map(t => `- #${t.id} "${hookTemplates[t.id-1].substring(0,35)}...": ${t.avgEng.toFixed(1)}% engagement (${t.uses}x)`).join('\n')}
+${ranked.slice(0,3).map((t: any) => `- #${t.id} "${hookTemplates[t.id-1].substring(0,35)}...": ${t.avgEng.toFixed(1)}% engagement (${t.uses}x)`).join('\n')}
       
 Plantillas ya exploradas: ${usedTemplateIds.length}/36
       
@@ -567,7 +568,7 @@ ${hookTemplates.map((h, i) => `${i+1}. ${h}`).join('\n')}
 5. CTA variada (no repetir en las 5 ideas):
    Usa: "guarda este video", "comenta X", "etiqueta a alguien", "sígueme para parte 2", "link en bio", etc.
 
-6. VARIEDAD OBLIGATORIA: ${topTemplateIds.length > 0 ? `Tienes top plantillas [${topTemplateIds.join(',')}]. Usa MÁXIMO 3 de ellas en total, y NUNCA repitas una. Las otras 2 ideas DEBEN ser plantillas que no estén en [${usedTemplateIds.join(',')}]` : 'Usa 5 plantillas completamente diferentes, sin repetir estructura.'}
+6. VARIEDAD OBLIGATORIA: ${topTemplateIds.length > 0 ? `Usa exactamente 3 ideas con plantillas de tu TOP [${topTemplateIds.join(',')}] (sin repetir), y 2 ideas con plantillas NUEVAS que no hayas usado antes.` : 'Usa 5 plantillas completamente diferentes.'}
 
 OUTPUT - SOLO JSON:
 {
