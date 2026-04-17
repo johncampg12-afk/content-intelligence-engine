@@ -9,7 +9,7 @@ import {
   Sparkles, 
   Settings, 
   Zap, 
-  Calendar as CalendarIcon,
+  Calendar,
   Lightbulb,
   LogOut
 } from 'lucide-react'
@@ -55,7 +55,7 @@ export default async function DashboardLayout({
     { href: '/recommendations', label: 'Recommendations', icon: Sparkles },
     { href: '/viral-predictor', label: 'Viral Predictor', icon: Zap },
     { href: '/ideas', label: 'Ideas', icon: Lightbulb },
-    { href: '/calendar', label: 'Calendar', icon: CalendarIcon },
+    { href: '/calendar', label: 'Calendar', icon: Calendar },
     { href: '/settings', label: 'Settings', icon: Settings },
   ]
 
@@ -65,14 +65,13 @@ export default async function DashboardLayout({
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
         <div className="flex flex-col flex-grow bg-white border-r border-gray-200 pt-5 pb-4 overflow-y-auto">
           <div className="flex items-center flex-shrink-0 px-4 mb-8">
-            <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-sm">
+            <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg">
               <Sparkles className="w-6 h-6 text-white" />
             </div>
-            <span className="ml-3 text-lg font-semibold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-              CIE
+            <span className="ml-3 text-lg font-semibold text-gray-900">
+              Content<span className="gradient-text">Intel</span>
             </span>
           </div>
-          
           <nav className="flex-1 px-2 space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon
@@ -80,16 +79,15 @@ export default async function DashboardLayout({
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200"
+                  className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200"
                 >
-                  <Icon className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500 transition-colors" />
+                  <Icon className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
                   {item.label}
                 </Link>
               )
             })}
           </nav>
-          
-          <div className="px-2 mt-auto pt-4 border-t border-gray-100">
+          <div className="px-2 mt-auto pt-4 border-t border-gray-200">
             <LogoutButton />
           </div>
         </div>
@@ -97,15 +95,13 @@ export default async function DashboardLayout({
 
       {/* Header móvil */}
       <div className="lg:pl-64">
-        <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-100 lg:bg-transparent lg:backdrop-blur-none">
+        <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-200 lg:bg-transparent lg:backdrop-blur-none">
           <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3 lg:hidden">
-              <div className="p-1.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg shadow-sm">
+              <div className="p-1.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg shadow-md">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
-              <span className="text-sm font-semibold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-                CIE
-              </span>
+              <span className="text-sm font-semibold text-gray-900">Content<span className="gradient-text">Intel</span></span>
             </div>
             <div className="flex items-center gap-3 lg:hidden">
               <LogoutButton />
@@ -114,7 +110,7 @@ export default async function DashboardLayout({
         </div>
 
         <main className="py-6 px-4 sm:px-6 lg:px-8">
-          <div className="animate-fade-in">
+          <div className="animate-slide-up">
             {children}
           </div>
         </main>

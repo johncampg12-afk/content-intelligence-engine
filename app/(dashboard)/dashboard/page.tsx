@@ -28,11 +28,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend
+  ResponsiveContainer
 } from 'recharts'
 import Link from 'next/link'
 import { OnboardingBanner } from '@/components/dashboard/onboarding-banner'
@@ -148,7 +144,6 @@ export default function DashboardPage() {
         ? ((totalLikes + totalComments + totalShares) / totalViews) * 100 
         : 0
       
-      // Calcular cambios (simulados con datos de ejemplo - luego se puede hacer con datos históricos)
       setKpi({
         total_views: totalViews,
         total_likes: totalLikes,
@@ -271,276 +266,247 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="p-8">
-        
-        {/* Onboarding Banner - NUEVO */}
-        <OnboardingBanner />
-        
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-500 mt-1">Welcome back, {userName}</p>
+    <div className="space-y-8">
+      
+      {/* Onboarding Banner */}
+      <OnboardingBanner />
+      
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-500 mt-1">Welcome back, {userName}</p>
+        </div>
+        <div className="flex items-center gap-3 mt-4 md:mt-0">
+          {lastSync && (
+            <span className="text-xs text-gray-400 flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              Last sync: {lastSync}
+            </span>
+          )}
+          <button
+            onClick={handleSync}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Sync now
+          </button>
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm card-hover">
+          <div className="flex items-center justify-between mb-3">
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <Eye className="w-5 h-5 text-blue-600" />
+            </div>
+            <span className={`text-sm flex items-center gap-1 ${kpi.views_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {kpi.views_change >= 0 ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+              {Math.abs(kpi.views_change)}%
+            </span>
           </div>
-          <div className="flex items-center gap-3 mt-4 md:mt-0">
-            {lastSync && (
-              <span className="text-xs text-gray-400 flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                Last sync: {lastSync}
-              </span>
-            )}
-            <button
-              onClick={handleSync}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Sync now
-            </button>
-          </div>
+          <p className="text-2xl font-bold text-gray-900">{formatNumber(kpi.total_views)}</p>
+          <p className="text-sm text-gray-500 mt-1">Total Views</p>
         </div>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-2 bg-blue-50 rounded-lg">
-                <Eye className="w-5 h-5 text-blue-600" />
-              </div>
-              <div className={`flex items-center gap-1 text-sm ${kpi.views_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {kpi.views_change >= 0 ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
-                {Math.abs(kpi.views_change)}%
-              </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm card-hover">
+          <div className="flex items-center justify-between mb-3">
+            <div className="p-2 bg-red-50 rounded-lg">
+              <Heart className="w-5 h-5 text-red-600" />
             </div>
-            <p className="text-2xl font-bold text-gray-900">{formatNumber(kpi.total_views)}</p>
-            <p className="text-sm text-gray-500 mt-1">Total Views</p>
+            <span className={`text-sm flex items-center gap-1 ${kpi.likes_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {kpi.likes_change >= 0 ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+              {Math.abs(kpi.likes_change)}%
+            </span>
           </div>
-
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-2 bg-green-50 rounded-lg">
-                <Heart className="w-5 h-5 text-green-600" />
-              </div>
-              <div className={`flex items-center gap-1 text-sm ${kpi.likes_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {kpi.likes_change >= 0 ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
-                {Math.abs(kpi.likes_change)}%
-              </div>
-            </div>
-            <p className="text-2xl font-bold text-gray-900">{formatNumber(kpi.total_likes)}</p>
-            <p className="text-sm text-gray-500 mt-1">Total Likes</p>
-          </div>
-
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-2 bg-purple-50 rounded-lg">
-                <Share2 className="w-5 h-5 text-purple-600" />
-              </div>
-              <div className={`flex items-center gap-1 text-sm ${kpi.shares_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {kpi.shares_change >= 0 ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
-                {Math.abs(kpi.shares_change)}%
-              </div>
-            </div>
-            <p className="text-2xl font-bold text-gray-900">{formatNumber(kpi.total_shares)}</p>
-            <p className="text-sm text-gray-500 mt-1">Total Shares</p>
-          </div>
-
-          <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-6 shadow-sm text-white">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-2 bg-white/20 rounded-lg">
-                <TrendingUp className="w-5 h-5" />
-              </div>
-              <div className="flex items-center gap-1 text-sm text-green-300">
-                <ArrowUp className="w-3 h-3" />
-                {kpi.engagement_change}%
-              </div>
-            </div>
-            <p className="text-2xl font-bold">{kpi.avg_engagement.toFixed(1)}%</p>
-            <p className="text-sm text-blue-100 mt-1">Engagement Rate</p>
-          </div>
+          <p className="text-2xl font-bold text-gray-900">{formatNumber(kpi.total_likes)}</p>
+          <p className="text-sm text-gray-500 mt-1">Total Likes</p>
         </div>
 
-        {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-base font-semibold text-gray-900">Views Evolution</h3>
-              <BarChart3 className="w-4 h-4 text-gray-400" />
+        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm card-hover">
+          <div className="flex items-center justify-between mb-3">
+            <div className="p-2 bg-purple-50 rounded-lg">
+              <Share2 className="w-5 h-5 text-purple-600" />
             </div>
-            <ResponsiveContainer width="100%" height={280}>
-              <AreaChart data={trendData}>
-                <defs>
-                  <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#2563EB" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#2563EB" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                <XAxis dataKey="date" stroke="#9CA3AF" fontSize={12} tickLine={false} />
-                <YAxis stroke="#9CA3AF" fontSize={12} tickLine={false} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }}
-                  formatter={(value: any) => [formatNumber(value), 'Views']}
-                />
-                <Area type="monotone" dataKey="views" stroke="#2563EB" fill="url(#viewsGradient)" strokeWidth={2} />
-              </AreaChart>
-            </ResponsiveContainer>
+            <span className={`text-sm flex items-center gap-1 ${kpi.shares_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {kpi.shares_change >= 0 ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+              {Math.abs(kpi.shares_change)}%
+            </span>
           </div>
-
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-base font-semibold text-gray-900">Engagement Evolution</h3>
-              <Target className="w-4 h-4 text-gray-400" />
-            </div>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={trendData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                <XAxis dataKey="date" stroke="#9CA3AF" fontSize={12} tickLine={false} />
-                <YAxis stroke="#9CA3AF" fontSize={12} tickLine={false} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }}
-                  formatter={(value: any) => [`${value}%`, 'Engagement Rate']}
-                />
-                <Bar dataKey="engagement" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <p className="text-2xl font-bold text-gray-900">{formatNumber(kpi.total_shares)}</p>
+          <p className="text-sm text-gray-500 mt-1">Total Shares</p>
         </div>
 
-        {/* Bottom Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Top Videos */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-base font-semibold text-gray-900">Top Performing Videos</h3>
-              <Zap className="w-4 h-4 text-yellow-500" />
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-5 shadow-sm text-white">
+          <div className="flex items-center justify-between mb-3">
+            <div className="p-2 bg-white/20 rounded-lg">
+              <TrendingUp className="w-5 h-5" />
             </div>
-            <div className="space-y-4">
-              {topVideos.map((video, idx) => (
-                <Link 
-                  key={video.id} 
-                  href={`/content/${video.id}`}
-                  className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors group cursor-pointer"
-                >
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                    {video.thumbnail_url ? (
-                      <img src={video.thumbnail_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400">
-                        <Video className="w-5 h-5" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{video.title || 'Untitled'}</p>
-                    <div className="flex items-center gap-4 mt-1">
-                      <span className="text-xs text-gray-500 flex items-center gap-1">
-                        <Eye className="w-3 h-3" /> {formatNumber(video.views)}
-                      </span>
-                      <span className="text-xs text-gray-500 flex items-center gap-1">
-                        <Heart className="w-3 h-3" /> {formatNumber(video.likes)}
-                      </span>
-                      <span className="text-xs font-medium text-green-600">
-                        {(video.engagement_rate * 100).toFixed(1)}% eng.
-                      </span>
+            <span className="text-sm text-green-300 flex items-center gap-1">
+              <ArrowUp className="w-3 h-3" />
+              {kpi.engagement_change}%
+            </span>
+          </div>
+          <p className="text-2xl font-bold">{kpi.avg_engagement.toFixed(1)}%</p>
+          <p className="text-sm text-blue-100 mt-1">Engagement Rate</p>
+        </div>
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-gray-900">Views Evolution</h3>
+            <BarChart3 className="w-4 h-4 text-gray-400" />
+          </div>
+          <ResponsiveContainer width="100%" height={280}>
+            <AreaChart data={trendData}>
+              <defs>
+                <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#2563EB" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#2563EB" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+              <XAxis dataKey="date" stroke="#9CA3AF" fontSize={12} />
+              <YAxis stroke="#9CA3AF" fontSize={12} tickFormatter={(v) => formatNumber(v)} />
+              <Tooltip formatter={(value: any) => formatNumber(value)} />
+              <Area type="monotone" dataKey="views" stroke="#2563EB" fill="url(#viewsGradient)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-gray-900">Engagement Evolution</h3>
+            <Target className="w-4 h-4 text-gray-400" />
+          </div>
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={trendData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+              <XAxis dataKey="date" stroke="#9CA3AF" fontSize={12} />
+              <YAxis stroke="#9CA3AF" fontSize={12} unit="%" />
+              <Tooltip formatter={(value: any) => `${value}%`} />
+              <Bar dataKey="engagement" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Top Videos & AI Insight */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Top Videos */}
+        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-gray-900">Top Performing Videos</h3>
+            <Zap className="w-4 h-4 text-yellow-500" />
+          </div>
+          <div className="space-y-3">
+            {topVideos.map((video, idx) => (
+              <Link 
+                key={video.id} 
+                href={`/content/${video.id}`}
+                className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors group"
+              >
+                <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                  {video.thumbnail_url ? (
+                    <img src={video.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                      <Video className="w-4 h-4" />
                     </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{video.title || 'Untitled'}</p>
+                  <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
+                    <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{formatNumber(video.views)}</span>
+                    <span className="flex items-center gap-1"><Heart className="w-3 h-3" />{formatNumber(video.likes)}</span>
+                    <span className="text-green-600">{(video.engagement_rate * 100).toFixed(1)}% eng.</span>
                   </div>
-                  <div className="text-lg font-bold text-gray-300 group-hover:text-gray-400 transition-colors">#{idx + 1}</div>
-                </Link>
-              ))}
-            </div>
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <Link href="/content" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                View all videos →
+                </div>
+                <div className="text-lg font-bold text-gray-300">#{idx + 1}</div>
               </Link>
-            </div>
+            ))}
           </div>
-
-          {/* AI Insight */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 shadow-sm text-white">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="p-1.5 bg-white/10 rounded-lg">
-                <Sparkles className="w-4 h-4" />
-              </div>
-              <h3 className="text-base font-semibold">Strategic AI Insight</h3>
-            </div>
-            {latestRecommendation ? (
-              <>
-                <p className="text-slate-300 leading-relaxed text-sm">
-                  {latestRecommendation}
-                </p>
-                <Link 
-                  href="/recommendations" 
-                  className="inline-flex items-center gap-2 mt-5 text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors"
-                >
-                  View full analysis →
-                </Link>
-              </>
-            ) : (
-              <>
-                <p className="text-slate-300 leading-relaxed text-sm">
-                  Generate your first AI-powered analysis to receive personalized strategic recommendations based on your content performance and niche patterns.
-                </p>
-                <Link 
-                  href="/recommendations" 
-                  className="inline-flex items-center gap-2 mt-5 text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors"
-                >
-                  Generate analysis →
-                </Link>
-              </>
-            )}
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <Link href="/content" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+              View all videos →
+            </Link>
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Link 
-            href="/recommendations"
-            className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200 hover:border-blue-200 hover:shadow-sm transition-all group"
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
-                <Sparkles className="w-4 h-4 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">AI Recommendations</p>
-                <p className="text-xs text-gray-500">Get content strategy insights</p>
-              </div>
+        {/* AI Insight */}
+        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-5 shadow-sm text-white">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="p-1.5 bg-white/10 rounded-lg">
+              <Sparkles className="w-4 h-4" />
             </div>
-            <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
-          </Link>
-
-          <Link 
-            href="/content"
-            className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200 hover:border-blue-200 hover:shadow-sm transition-all group"
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-50 rounded-lg group-hover:bg-green-100 transition-colors">
-                <Video className="w-4 h-4 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">Content Library</p>
-                <p className="text-xs text-gray-500">Manage your videos</p>
-              </div>
-            </div>
-            <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-green-600 transition-colors" />
-          </Link>
-
-          <Link 
-            href="/settings"
-            className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200 hover:border-blue-200 hover:shadow-sm transition-all group"
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-50 rounded-lg group-hover:bg-purple-100 transition-colors">
-                <Target className="w-4 h-4 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">Content Strategy</p>
-                <p className="text-xs text-gray-500">Configure your niche</p>
-              </div>
-            </div>
-            <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-purple-600 transition-colors" />
-          </Link>
+            <h3 className="text-base font-semibold">Strategic AI Insight</h3>
+          </div>
+          {latestRecommendation ? (
+            <>
+              <p className="text-slate-300 leading-relaxed text-sm">
+                {latestRecommendation}
+              </p>
+              <Link href="/recommendations" className="inline-flex items-center gap-2 mt-4 text-sm font-medium text-blue-400 hover:text-blue-300">
+                View full analysis →
+              </Link>
+            </>
+          ) : (
+            <>
+              <p className="text-slate-300 leading-relaxed text-sm">
+                Generate your first AI-powered analysis to receive personalized strategic recommendations.
+              </p>
+              <Link href="/recommendations" className="inline-flex items-center gap-2 mt-4 text-sm font-medium text-blue-400 hover:text-blue-300">
+                Generate analysis →
+              </Link>
+            </>
+          )}
         </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Link href="/recommendations" className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200 hover:border-blue-200 hover:shadow-sm transition-all group">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100">
+              <Sparkles className="w-4 h-4 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-900">AI Recommendations</p>
+              <p className="text-xs text-gray-500">Get content strategy insights</p>
+            </div>
+          </div>
+          <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
+        </Link>
+
+        <Link href="/content" className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200 hover:border-blue-200 hover:shadow-sm transition-all group">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-green-50 rounded-lg group-hover:bg-green-100">
+              <Video className="w-4 h-4 text-green-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-900">Content Library</p>
+              <p className="text-xs text-gray-500">Manage your videos</p>
+            </div>
+          </div>
+          <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-green-600" />
+        </Link>
+
+        <Link href="/settings" className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200 hover:border-blue-200 hover:shadow-sm transition-all group">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-purple-50 rounded-lg group-hover:bg-purple-100">
+              <Target className="w-4 h-4 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-900">Content Strategy</p>
+              <p className="text-xs text-gray-500">Configure your niche</p>
+            </div>
+          </div>
+          <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-purple-600" />
+        </Link>
       </div>
     </div>
   )
