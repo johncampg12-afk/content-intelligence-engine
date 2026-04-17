@@ -51,10 +51,10 @@
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-gray-200; /* Cambiado de border-border a border-gray-200 */
   }
   body {
-    @apply bg-gradient-to-br from-gray-50 to-gray-100 text-foreground;
+    @apply bg-gradient-to-br from-gray-50 to-gray-100 text-gray-900;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 }
@@ -115,7 +115,7 @@
   box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.2);
 }
 
-/* Sidebar navigation */
+/* Sidebar navigation active state */
 .nav-item-active {
   background-color: #f1f5f9;
   color: #1e293b;
