@@ -124,6 +124,7 @@ export async function POST(request: NextRequest) {
     
     // Construir FullContext
     const fullContext = {
+      userId: user.id,
       accountType: accountTypeName,
       contentGoal: profile?.content_goal || 'viral_growth',
       targetAudience: profile?.target_audience || 'general',

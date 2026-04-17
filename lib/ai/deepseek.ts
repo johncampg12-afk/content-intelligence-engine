@@ -1,11 +1,13 @@
 import OpenAI from 'openai'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { createClient } from '@supabase/supabase-js'
 
 // ============================================
 // TIPOS
 // ============================================
 export type FullContext = {
+  userId?: string
   accountType: string
   contentGoal: string
   targetAudience: string
@@ -75,13 +77,9 @@ const hookTemplates = [
 function findMatchingTemplate(hook: string): { template: string; id: number } | null {
   for (let i = 0; i < hookTemplates.length; i++) {
     const template = hookTemplates[i];
-    // Quitamos {X} e {Y} de la plantilla
     const templateClean = template.replace(/\{X\}|\{Y\}/g, '').toLowerCase();
-    // Tomamos primeros 15 caracteres
     const templateSignature = templateClean.substring(0, 15);
     
-    // Limpiamos el hook: reemplazamos palabras largas (posibles variables) por comodín
-    // Esto ayuda a comparar estructura, no valores concretos
     const hookClean = hook
       .replace(/\b[a-záéíóú]{8,}\b/gi, '{X}')
       .toLowerCase();
@@ -121,12 +119,18 @@ const getToneByAudience = (audience: string): string => {
 
 export class DeepSeekAI {
   private client: OpenAI
+  private supabase: any
   
   constructor() {
     this.client = new OpenAI({
       apiKey: process.env.DEEPSEEK_API_KEY,
       baseURL: 'https://api.deepseek.com/v1',
     })
+
+    this.supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
   }
 
   async getCurrentTikTokTrends(): Promise<string> {
@@ -454,15 +458,74 @@ OUTPUT - SOLO JSON:
   }
 
   // ============================================
-  // 3. generateIdeas - CON 36 HOOKS + VALIDACIÓN + templateId
+  // 3. generateIdeas - CON 60/40 EXPLOTACIÓN/EXPLORACIÓN
   // ============================================
   async generateIdeas(fullContext: FullContext, realStats: any): Promise<any[]> {
     try {
       const goal = goalMatrix[fullContext.contentGoal] || goalMatrix.viral_growth
       const tone = getToneByAudience(fullContext.targetAudience)
       
-      // Fallback para mainStruggle
       const mainStruggle = fullContext.userContext?.mainStruggle || 'crecer en TikTok'
+      
+      // ============================================
+      // OBTENER ESTADÍSTICAS DE PLANTILLAS PARA BALANCE (60/40)
+      // ============================================
+      let personalizationBlock = ''
+      let topTemplateIds: number[] = []
+      let usedTemplateIds: number[] = []
+      
+      if (fullContext.userId) {
+        try {
+          const { data: history } = await this.supabase
+            .from('ideas_history')
+            .select('hook_template_id, performance, used_at')
+            .eq('user_id', fullContext.userId)
+            .not('hook_template_id', 'is', null)
+            .limit(100)
+      
+          if (history && history.length >= 5) {
+            const used = history.filter(h => h.used_at && h.performance)
+            usedTemplateIds = [...new Set(history.map(h => h.hook_template_id))]
+      
+            if (used.length >= 3) {
+              const stats: Record<number, { count: number; totalEng: number }> = {}
+              for (const item of used) {
+                const id = item.hook_template_id
+                const eng = parseFloat(item.performance?.engagement_rate || 0)
+                if (!stats[id]) stats[id] = { count: 0, totalEng: 0 }
+                stats[id].count += 1
+                stats[id].totalEng += eng
+              }
+      
+              const ranked = Object.entries(stats)
+                .map(([id, s]) => ({
+                  id: parseInt(id),
+                  avgEng: s.totalEng / s.count,
+                  uses: s.count
+                }))
+                .filter(t => t.uses >= 2)
+                .sort((a, b) => b.avgEng - a.avgEng)
+      
+              topTemplateIds = ranked.slice(0, 3).map(t => t.id)
+      
+              personalizationBlock = `\nTU HISTORIAL (últimos ${used.length} videos):
+TOP 3 plantillas que mejor te funcionan:
+${ranked.slice(0,3).map(t => `- #${t.id} "${hookTemplates[t.id-1].substring(0,35)}...": ${t.avgEng.toFixed(1)}% engagement (${t.uses}x)`).join('\n')}
+      
+Plantillas ya exploradas: ${usedTemplateIds.length}/36
+      
+ESTRATEGIA PARA ESTAS 5 IDEAS:
+- 3 ideas (60%): usa variaciones de tus TOP 3, pero NUNCA repitas la misma plantilla
+- 2 ideas (40%): usa plantillas que NUNCA has probado de la lista de 36 (exploración pura)
+- Si no tienes TOP 3 aún, usa 5 plantillas completamente diferentes entre sí\n`
+            } else {
+              personalizationBlock = `\nTienes ${history.length} ideas generadas pero pocas usadas. Estrategia: genera 5 plantillas DIFERENTES para explorar rápido qué funciona.\n`
+            }
+          }
+        } catch (e) {
+          console.error('Error fetching template stats:', e)
+        }
+      }
       
       const userBlock = fullContext.userContext ? `
 MEMORIA DEL CREADOR:
@@ -480,6 +543,7 @@ CONTEXTO:
 - Audiencia: ${fullContext.targetAudience} → tono: ${tone}
 - Nicho: ${fullContext.accountType}
 - Dolor principal: ${mainStruggle}
+${personalizationBlock}
 
 ${userBlock}
 
@@ -502,6 +566,8 @@ ${hookTemplates.map((h, i) => `${i+1}. ${h}`).join('\n')}
 
 5. CTA variada (no repetir en las 5 ideas):
    Usa: "guarda este video", "comenta X", "etiqueta a alguien", "sígueme para parte 2", "link en bio", etc.
+
+6. VARIEDAD OBLIGATORIA: ${topTemplateIds.length > 0 ? `Tienes top plantillas [${topTemplateIds.join(',')}]. Usa MÁXIMO 3 de ellas en total, y NUNCA repitas una. Las otras 2 ideas DEBEN ser plantillas que no estén en [${usedTemplateIds.join(',')}]` : 'Usa 5 plantillas completamente diferentes, sin repetir estructura.'}
 
 OUTPUT - SOLO JSON:
 {
@@ -533,7 +599,7 @@ OUTPUT - SOLO JSON:
       // ============================================
       // VALIDACIÓN POST-GENERACIÓN CON templateId
       // ============================================
-      const usedTemplateIds = new Set<number>()
+      const usedTemplateIdsSet = new Set<number>()
       const validatedIdeas: any[] = []
       
       for (const idea of ideas) {
@@ -544,19 +610,18 @@ OUTPUT - SOLO JSON:
           continue
         }
         
-        if (usedTemplateIds.has(match.id)) {
+        if (usedTemplateIdsSet.has(match.id)) {
           console.warn(`[DeepSeek] Plantilla repetida ID ${match.id}: ${match.template}`)
           continue
         }
         
-        usedTemplateIds.add(match.id)
+        usedTemplateIdsSet.add(match.id)
         validatedIdeas.push({
           ...idea,
           hook_template_id: match.id
         })
       }
       
-      // Si después de validar tenemos menos de 3, devolvemos las que hay
       if (validatedIdeas.length < 3) {
         console.warn(`[DeepSeek] Solo se validaron ${validatedIdeas.length} ideas. Se devuelven las originales sin template_id.`)
         return ideas.slice(0, 5)
