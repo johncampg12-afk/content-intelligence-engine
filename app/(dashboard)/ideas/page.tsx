@@ -16,7 +16,7 @@ import {
   Trash2,
   ChevronDown,
   ChevronUp,
-  Download
+  Hash
 } from 'lucide-react'
 
 interface Idea {
@@ -25,6 +25,7 @@ interface Idea {
   description: string
   duration_suggestion: string
   cta: string
+  hook_template_id?: number
 }
 
 interface SavedIdea {
@@ -32,6 +33,7 @@ interface SavedIdea {
   idea_data: Idea
   created_at: string
   status: string
+  hook_template_id?: number
 }
 
 export default function IdeasPage() {
@@ -123,7 +125,7 @@ export default function IdeasPage() {
       
       if (data.success) {
         setIdeas(data.ideas)
-        await loadHistory() // Recargar historial
+        await loadHistory()
       } else {
         setError(data.error || 'Failed to generate ideas')
       }
@@ -280,7 +282,13 @@ export default function IdeasPage() {
                       <p className="text-sm text-gray-600 mt-1">{idea.description}</p>
                     </div>
                     
-                    <div className="flex flex-wrap gap-3 mb-3">
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {idea.hook_template_id && (
+                        <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-700">
+                          <Hash className="w-3 h-3" />
+                          Plantilla #{idea.hook_template_id}
+                        </div>
+                      )}
                       <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs ${getDurationColor(idea.duration_suggestion)}`}>
                         <Clock className="w-3 h-3" />
                         {idea.duration_suggestion}
@@ -354,6 +362,11 @@ export default function IdeasPage() {
                             <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${getDurationColor(idea.duration_suggestion)}`}>
                               {idea.duration_suggestion}
                             </div>
+                            {saved.hook_template_id && (
+                              <div className="px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-700">
+                                Plantilla #{saved.hook_template_id}
+                              </div>
+                            )}
                             <span className="text-xs text-gray-400">{formatDate(saved.created_at)}</span>
                           </div>
                           <p className="text-sm font-medium text-gray-900 mt-1 line-clamp-1">

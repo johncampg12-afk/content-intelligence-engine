@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Obtener evolución (usar undefined en lugar de null)
+    // Obtener evolución
     const { data: previousProfile } = await supabase
       .from('profiles')
       .select('last_stats, last_recommendation')
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
     const ideas = await deepseek.generateIdeas(fullContext, realStats)
     
     // ============================================
-    // GUARDAR IDEAS EN LA TABLA generated_ideas
+    // GUARDAR IDEAS CON hook_template_id
     // ============================================
     if (ideas && ideas.length > 0) {
       for (const idea of ideas) {
@@ -150,12 +150,13 @@ export async function POST(request: NextRequest) {
           .insert({
             user_id: user.id,
             idea_data: idea,
+            hook_template_id: idea.hook_template_id || null,
             status: 'active'
           })
       }
     }
     
-    // Guardar last_recommendation después de generar
+    // Guardar last_recommendation
     await supabase
       .from('profiles')
       .update({
