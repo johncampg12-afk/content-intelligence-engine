@@ -486,7 +486,7 @@ OUTPUT - SOLO JSON:
           // AJUSTE 1: Cambiado de >=5 a >0
           if (history && history.length > 0) {
             const used = history.filter((h: any) => h.used_at && h.performance)
-            usedTemplateIds = [...new Set(history.map((h: any) => h.hook_template_id))]
+            usedTemplateIds = [...new Set(history.map((h: any) => h.hook_template_id))].filter((id): id is number => typeof id === 'number')
       
             if (used.length >= 3) {
               const stats: Record<number, { count: number; totalEng: number }> = {}
