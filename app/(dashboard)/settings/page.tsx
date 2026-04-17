@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { User, Info, Target, TrendingUp, Users, Eye, Heart, Share2 } from 'lucide-react'
+import { User, Info, Target, TrendingUp, Users, Eye, Heart, Share2, CheckCircle } from 'lucide-react'
 
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
@@ -185,6 +185,19 @@ export default function SettingsPage() {
     }
   }
 
+  // Calcular progreso de configuración
+  const completionSteps = [
+    { name: 'Content Niche', completed: !!profile?.account_type_id },
+    { name: 'Main Goal', completed: !!profile?.content_goal },
+    { name: 'Target Audience', completed: !!profile?.target_audience },
+    { name: 'Creator Bio', completed: !!profile?.account_bio },
+    { name: 'Current Phase', completed: !!profile?.current_phase },
+    { name: 'Main Struggle', completed: !!profile?.main_struggle }
+  ]
+
+  const completedCount = completionSteps.filter(s => s.completed).length
+  const completionPercentage = (completedCount / completionSteps.length) * 100
+
   const hasTikTok = connectedAccounts?.some(a => a.platform === 'tiktok')
   const hasInstagram = connectedAccounts?.some(a => a.platform === 'instagram')
   const hasYouTube = connectedAccounts?.some(a => a.platform === 'youtube')
@@ -203,6 +216,28 @@ export default function SettingsPage() {
         <h1 className="text-2xl font-semibold text-gray-900">Settings</h1>
         <p className="text-gray-600 mt-1">
           Configure your account and connect social media platforms
+        </p>
+      </div>
+      
+      {/* Barra de progreso de configuración */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 text-blue-500" />
+            <span className="text-sm font-medium text-gray-700">Configuración del perfil</span>
+          </div>
+          <span className="text-sm font-medium text-blue-600">{completedCount}/{completionSteps.length} completados</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div 
+            className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+            style={{ width: `${completionPercentage}%` }}
+          />
+        </div>
+        <p className="text-xs text-gray-500 mt-2">
+          {completionPercentage === 100 
+            ? '✅ ¡Perfil completo! La IA usará todos estos datos para personalizar tus recomendaciones.' 
+            : '📝 Completa todos los campos para recibir recomendaciones hiper-personalizadas de IA.'}
         </p>
       </div>
       

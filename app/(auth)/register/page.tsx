@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
+import { CheckCircle, Mail } from 'lucide-react'
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('')
@@ -42,23 +43,47 @@ export default function RegisterPage() {
     }
   }
 
+  const handleGoogleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/api/auth/callback`,
+      },
+    })
+    if (error) {
+      setError(error.message)
+    }
+  }
+
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold">Check your email</CardTitle>
+        <Card className="w-full max-w-md text-center">
+          <CardHeader>
+            <div className="flex justify-center mb-4">
+              <div className="p-3 bg-green-100 rounded-full">
+                <CheckCircle className="w-12 h-12 text-green-600" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl font-bold">¡Cuenta creada!</CardTitle>
             <CardDescription>
-              We've sent you a confirmation link to {email}
+              Te hemos enviado un correo de confirmación a {email}
             </CardDescription>
           </CardHeader>
-          <CardContent className="text-center">
-            <p className="text-sm text-muted-foreground mb-4">
-              Please confirm your email address to continue.
-            </p>
+          <CardContent className="space-y-4">
+            <div className="bg-blue-50 rounded-lg p-4 text-left">
+              <p className="text-sm text-blue-800 font-medium mb-2">📝 ¿Qué sigue?</p>
+              <ol className="text-sm text-blue-700 space-y-2 list-decimal list-inside">
+                <li>Revisa tu correo y confirma tu cuenta</li>
+                <li>Inicia sesión con tus credenciales</li>
+                <li>Completa tu perfil (nicho, objetivo, audiencia)</li>
+                <li>Conecta tu cuenta de TikTok</li>
+                <li>¡Recibe recomendaciones personalizadas!</li>
+              </ol>
+            </div>
             <Link href="/login">
-              <Button variant="outline" className="w-full">
-                Back to login
+              <Button className="w-full">
+                Ir al inicio de sesión
               </Button>
             </Link>
           </CardContent>
@@ -71,9 +96,9 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
+          <CardTitle className="text-2xl font-bold">Crear cuenta</CardTitle>
           <CardDescription>
-            Start using Content Intelligence Engine for free
+            Comienza a usar Content Intelligence Engine gratis
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -81,7 +106,7 @@ export default function RegisterPage() {
             <div className="space-y-2">
               <Input
                 type="text"
-                placeholder="Full name"
+                placeholder="Nombre completo"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
@@ -101,7 +126,7 @@ export default function RegisterPage() {
             <div className="space-y-2">
               <Input
                 type="password"
-                placeholder="Password (min. 6 characters)"
+                placeholder="Contraseña (mínimo 6 caracteres)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -113,7 +138,7 @@ export default function RegisterPage() {
               <p className="text-sm text-red-500 text-center">{error}</p>
             )}
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Creating account...' : 'Sign Up'}
+              {loading ? 'Creando cuenta...' : 'Registrarse'}
             </Button>
           </form>
 
@@ -122,7 +147,7 @@ export default function RegisterPage() {
               <div className="w-full border-t border-gray-300" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+              <span className="bg-background px-2 text-muted-foreground">O continuar con</span>
             </div>
           </div>
 
@@ -130,15 +155,7 @@ export default function RegisterPage() {
             type="button"
             variant="outline"
             className="w-full"
-            onClick={() => {
-              const supabase = createClient()
-              supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                  redirectTo: `${window.location.origin}/api/auth/callback`,
-                },
-              })
-            }}
+            onClick={handleGoogleLogin}
             disabled={loading}
           >
             <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -159,13 +176,13 @@ export default function RegisterPage() {
                 fill="#EA4335"
               />
             </svg>
-            Sign up with Google
+            Google
           </Button>
 
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Already have an account?{' '}
+            ¿Ya tienes cuenta?{' '}
             <Link href="/login" className="text-primary hover:underline">
-              Sign in
+              Iniciar sesión
             </Link>
           </p>
         </CardContent>

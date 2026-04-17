@@ -35,6 +35,7 @@ import {
   Legend
 } from 'recharts'
 import Link from 'next/link'
+import { OnboardingBanner } from '@/components/dashboard/onboarding-banner'
 
 interface Video {
   id: string
@@ -272,6 +273,9 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="p-8">
+        
+        {/* Onboarding Banner - NUEVO */}
+        <OnboardingBanner />
         
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
