@@ -96,7 +96,7 @@ export default function DashboardLayout({
                   href={item.href}
                   className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
                     isActive 
-                      ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' 
+                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400' 
                       : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
                   }`}
                 >
