@@ -547,7 +547,6 @@ export default function AnalyticsPage() {
   }
 
   const handleExportPDF = () => {
-    // Simular exportación - en producción se usaría una librería como jsPDF
     alert('Funcionalidad de exportación a PDF - Próximamente disponible en plan Pro')
   }
 
@@ -587,7 +586,7 @@ export default function AnalyticsPage() {
 
   if (videos.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
+      <div className="min-h-screen bg-gray-50 p-6 lg:p-10">
         <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
           <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <BarChart3 className="w-10 h-10 text-gray-400" />
@@ -609,25 +608,32 @@ export default function AnalyticsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="p-8">
+      <div className="p-6 lg:p-10">
         
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-10">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Advanced Analytics</h1>
-            <p className="text-gray-500 mt-1">Deep dive into your content performance metrics</p>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-blue-600 rounded-xl">
+                <BarChart3 className="w-6 h-6 text-white" />
+              </div>
+              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Advanced Analytics</h1>
+            </div>
+            <p className="text-gray-500 ml-11">
+              Deep dive into your content performance metrics
+            </p>
           </div>
           <div className="flex items-center gap-3 mt-4 md:mt-0">
             <button
               onClick={handleExportPDF}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <FileText className="w-4 h-4" />
               Export PDF
             </button>
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <Filter className="w-4 h-4" />
               Filters
@@ -638,14 +644,14 @@ export default function AnalyticsPage() {
 
         {/* Filters Panel */}
         {showFilters && (
-          <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6 shadow-sm">
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8 shadow-sm">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Time Period</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Time Period</label>
                 <select
                   value={period}
                   onChange={(e) => setPeriod(e.target.value as any)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="week">Last 7 days</option>
                   <option value="month">Last 30 days</option>
@@ -655,11 +661,11 @@ export default function AnalyticsPage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Compare with</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Compare with</label>
                 <select
                   value={comparePeriod}
                   onChange={(e) => setComparePeriod(e.target.value as any)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="previous">Previous period</option>
                   <option value="last_week">Same week last month</option>
@@ -670,34 +676,34 @@ export default function AnalyticsPage() {
               {period === 'custom' && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Start Date</label>
                     <input
                       type="date"
                       value={customStartDate}
                       onChange={(e) => setCustomStartDate(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">End Date</label>
                     <input
                       type="date"
                       value={customEndDate}
                       onChange={(e) => setCustomEndDate(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </>
               )}
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Search</label>
                 <input
                   type="text"
                   placeholder="Search by title, hashtag..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -705,17 +711,19 @@ export default function AnalyticsPage() {
         )}
 
         {/* KPI Cards with Comparison */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm card-hover">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Eye className="w-4 h-4 text-blue-500" />
+                <div className="p-2 bg-blue-50 rounded-lg">
+                  <Eye className="w-4 h-4 text-blue-600" />
+                </div>
                 <span className="text-xs text-gray-500">Total Views</span>
               </div>
               {getTrendIcon(comparisonData.views.change)}
             </div>
             <p className="text-2xl font-bold text-gray-900">{formatNumber(comparisonData.views.current)}</p>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-2">
               <span className={`text-xs ${getTrendColor(comparisonData.views.change)}`}>
                 {comparisonData.views.change > 0 ? '+' : ''}{comparisonData.views.change.toFixed(1)}%
               </span>
@@ -723,16 +731,18 @@ export default function AnalyticsPage() {
             </div>
           </div>
           
-          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm card-hover">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Heart className="w-4 h-4 text-red-500" />
+                <div className="p-2 bg-red-50 rounded-lg">
+                  <Heart className="w-4 h-4 text-red-600" />
+                </div>
                 <span className="text-xs text-gray-500">Total Likes</span>
               </div>
               {getTrendIcon(comparisonData.likes.change)}
             </div>
             <p className="text-2xl font-bold text-gray-900">{formatNumber(comparisonData.likes.current)}</p>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-2">
               <span className={`text-xs ${getTrendColor(comparisonData.likes.change)}`}>
                 {comparisonData.likes.change > 0 ? '+' : ''}{comparisonData.likes.change.toFixed(1)}%
               </span>
@@ -740,16 +750,18 @@ export default function AnalyticsPage() {
             </div>
           </div>
           
-          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm card-hover">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Share2 className="w-4 h-4 text-purple-500" />
+                <div className="p-2 bg-purple-50 rounded-lg">
+                  <Share2 className="w-4 h-4 text-purple-600" />
+                </div>
                 <span className="text-xs text-gray-500">Total Shares</span>
               </div>
               {getTrendIcon(comparisonData.shares.change)}
             </div>
             <p className="text-2xl font-bold text-gray-900">{formatNumber(comparisonData.shares.current)}</p>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-2">
               <span className={`text-xs ${getTrendColor(comparisonData.shares.change)}`}>
                 {comparisonData.shares.change > 0 ? '+' : ''}{comparisonData.shares.change.toFixed(1)}%
               </span>
@@ -757,16 +769,18 @@ export default function AnalyticsPage() {
             </div>
           </div>
           
-          <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-4 shadow-sm text-white">
-            <div className="flex items-center justify-between mb-2">
+          <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-6 shadow-sm text-white">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" />
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <TrendingUp className="w-4 h-4" />
+                </div>
                 <span className="text-xs text-blue-100">Engagement Rate</span>
               </div>
               {comparisonData.engagement.change > 0 ? <ArrowUp className="w-4 h-4 text-green-300" /> : <ArrowDown className="w-4 h-4 text-red-300" />}
             </div>
             <p className="text-2xl font-bold">{comparisonData.engagement.current.toFixed(1)}%</p>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-2">
               <span className={`text-xs ${comparisonData.engagement.change > 0 ? 'text-green-300' : 'text-red-300'}`}>
                 {comparisonData.engagement.change > 0 ? '+' : ''}{comparisonData.engagement.change.toFixed(1)}%
               </span>
@@ -776,17 +790,17 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
           {/* Views Trend */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-5">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
               <h3 className="text-base font-semibold text-gray-900">Views Trend</h3>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-400">Proyección 30d:</span>
                 <span className="text-sm font-semibold text-blue-600">{formatNumber(chartData.predictions.views30d)}</span>
               </div>
             </div>
-            <ResponsiveContainer width="100%" height={280}>
+            <ResponsiveContainer width="100%" height={300}>
               <ComposedChart data={chartData.viewsTrend}>
                 <defs>
                   <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
@@ -808,12 +822,12 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Engagement Trend */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-5">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
               <h3 className="text-base font-semibold text-gray-900">Engagement Trend</h3>
               <Target className="w-4 h-4 text-gray-400" />
             </div>
-            <ResponsiveContainer width="100%" height={280}>
+            <ResponsiveContainer width="100%" height={300}>
               <ReLineChart data={chartData.engagementTrend}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                 <XAxis dataKey="date" stroke="#9CA3AF" fontSize={12} />
@@ -825,12 +839,12 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Engagement by Type (Doughnut) */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-5">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
               <h3 className="text-base font-semibold text-gray-900">Engagement by Type</h3>
               <PieChart className="w-4 h-4 text-gray-400" />
             </div>
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={280}>
               <RePieChart>
                 <Pie
                   data={[
@@ -841,7 +855,7 @@ export default function AnalyticsPage() {
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
-                  outerRadius={90}
+                  outerRadius={100}
                   paddingAngle={2}
                   dataKey="value"
                   label={({ name, percent }) => {
@@ -863,12 +877,12 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Top Hashtags */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-5">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
               <h3 className="text-base font-semibold text-gray-900">Top Hashtags</h3>
               <Hash className="w-4 h-4 text-gray-400" />
             </div>
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={280}>
               <ReBarChart data={chartData.hashtagsTop} layout="vertical" margin={{ left: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                 <XAxis type="number" stroke="#9CA3AF" fontSize={12} />
@@ -881,14 +895,14 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Second row of charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
           {/* Weekday Performance */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-5">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
               <h3 className="text-base font-semibold text-gray-900">Performance by Day</h3>
               <CalendarIcon className="w-4 h-4 text-gray-400" />
             </div>
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={280}>
               <ReBarChart data={chartData.weekdayPerformance}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                 <XAxis dataKey="day" stroke="#9CA3AF" fontSize={12} />
@@ -908,19 +922,19 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Duration Distribution */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-5">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
               <h3 className="text-base font-semibold text-gray-900">Duration Distribution</h3>
               <Clock className="w-4 h-4 text-gray-400" />
             </div>
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={280}>
               <RePieChart>
                 <Pie
                   data={chartData.durationDistribution}
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
-                  outerRadius={90}
+                  outerRadius={100}
                   paddingAngle={2}
                   dataKey="value"
                   label={({ name, percent }) => {
@@ -940,10 +954,10 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Heatmap Section (toggle) */}
-        <div className="mb-8">
+        <div className="mb-10">
           <button
             onClick={() => setShowHeatmap(!showHeatmap)}
-            className="flex items-center justify-between w-full bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:bg-gray-50 transition-colors"
+            className="flex items-center justify-between w-full bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:bg-gray-50 transition-colors"
           >
             <div className="flex items-center gap-3">
               <div className="p-2 bg-purple-100 rounded-lg">
@@ -958,10 +972,10 @@ export default function AnalyticsPage() {
           </button>
           
           {showHeatmap && (
-            <div className="bg-white rounded-xl border border-gray-200 p-5 mt-2 shadow-sm">
+            <div className="bg-white rounded-xl border border-gray-200 p-6 mt-3 shadow-sm">
               <div className="overflow-x-auto">
                 <div className="min-w-[800px]">
-                  <div className="grid grid-cols-8 gap-1 mb-2">
+                  <div className="grid grid-cols-8 gap-1 mb-3">
                     <div className="text-xs text-gray-400 font-medium">Hora\Día</div>
                     {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(day => (
                       <div key={day} className="text-xs text-gray-400 font-medium text-center">{day}</div>
@@ -1003,10 +1017,10 @@ export default function AnalyticsPage() {
 
         {/* Alerts Section */}
         {chartData.alerts.length > 0 && (
-          <div className="mb-8">
+          <div className="mb-10">
             <button
               onClick={() => setShowAlerts(!showAlerts)}
-              className="flex items-center justify-between w-full bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:bg-gray-50 transition-colors"
+              className="flex items-center justify-between w-full bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:bg-gray-50 transition-colors"
             >
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-amber-100 rounded-lg">
@@ -1021,7 +1035,7 @@ export default function AnalyticsPage() {
             </button>
             
             {showAlerts && (
-              <div className="bg-white rounded-xl border border-gray-200 p-5 mt-2 shadow-sm">
+              <div className="bg-white rounded-xl border border-gray-200 p-6 mt-3 shadow-sm">
                 <div className="space-y-3">
                   {chartData.alerts.map((alert, idx) => (
                     <div key={idx} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
@@ -1037,10 +1051,10 @@ export default function AnalyticsPage() {
 
         {/* Cohorts Section */}
         {chartData.cohorts.length > 0 && (
-          <div className="mb-8">
+          <div className="mb-10">
             <button
               onClick={() => setShowCohorts(!showCohorts)}
-              className="flex items-center justify-between w-full bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:bg-gray-50 transition-colors"
+              className="flex items-center justify-between w-full bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:bg-gray-50 transition-colors"
             >
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-indigo-100 rounded-lg">
@@ -1055,7 +1069,7 @@ export default function AnalyticsPage() {
             </button>
             
             {showCohorts && (
-              <div className="bg-white rounded-xl border border-gray-200 p-5 mt-2 shadow-sm overflow-x-auto">
+              <div className="bg-white rounded-xl border border-gray-200 p-6 mt-3 shadow-sm overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200">
@@ -1096,7 +1110,7 @@ export default function AnalyticsPage() {
 
         {/* Video Performance Table */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <div className="px-8 py-5 border-b border-gray-200 flex items-center justify-between">
             <div>
               <h3 className="text-base font-semibold text-gray-900">Video Performance</h3>
               <p className="text-sm text-gray-500 mt-0.5">{filteredVideos.length} videos in this period</p>
@@ -1105,7 +1119,7 @@ export default function AnalyticsPage() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
-                className="text-sm border border-gray-300 rounded-lg px-2 py-1"
+                className="text-sm border border-gray-300 rounded-lg px-3 py-1.5"
               >
                 <option value="engagement">Sort by Engagement</option>
                 <option value="views">Sort by Views</option>
@@ -1125,21 +1139,21 @@ export default function AnalyticsPage() {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Video</th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Duration</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hashtags</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sound</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Views</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Likes</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Shares</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Engagement</th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Date</th>
+                  <th className="px-8 py-4 text-left text-xs font-medium text-gray-500 uppercase">Video</th>
+                  <th className="px-8 py-4 text-center text-xs font-medium text-gray-500 uppercase">Duration</th>
+                  <th className="px-8 py-4 text-left text-xs font-medium text-gray-500 uppercase">Hashtags</th>
+                  <th className="px-8 py-4 text-left text-xs font-medium text-gray-500 uppercase">Sound</th>
+                  <th className="px-8 py-4 text-right text-xs font-medium text-gray-500 uppercase">Views</th>
+                  <th className="px-8 py-4 text-right text-xs font-medium text-gray-500 uppercase">Likes</th>
+                  <th className="px-8 py-4 text-right text-xs font-medium text-gray-500 uppercase">Shares</th>
+                  <th className="px-8 py-4 text-right text-xs font-medium text-gray-500 uppercase">Engagement</th>
+                  <th className="px-8 py-4 text-center text-xs font-medium text-gray-500 uppercase">Date</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredVideos.slice(0, 20).map((video) => (
                   <tr key={video.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
+                    <td className="px-8 py-5">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                           {video.thumbnail_url ? (
@@ -1155,13 +1169,13 @@ export default function AnalyticsPage() {
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-center">
+                    <td className="px-8 py-5 text-center">
                       <div className="flex items-center justify-center gap-1 text-sm text-gray-600">
                         <Clock className="w-3 h-3" />
                         {formatDuration(video.duration)}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-8 py-5">
                       <div className="flex flex-wrap gap-1 max-w-[200px]">
                         {video.hashtags?.slice(0, 3).map((tag, idx) => (
                           <span key={idx} className="text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full">
@@ -1173,21 +1187,21 @@ export default function AnalyticsPage() {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-8 py-5">
                       <div className="flex items-center gap-1 max-w-[180px]">
                         <Music className="w-3 h-3 text-gray-400 flex-shrink-0" />
                         <span className="text-sm text-gray-600 truncate">{video.sound || 'Original'}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-right text-sm text-gray-900">{formatNumber(video.views)}</td>
-                    <td className="px-6 py-4 text-right text-sm text-gray-900">{formatNumber(video.likes)}</td>
-                    <td className="px-6 py-4 text-right text-sm text-gray-900">{formatNumber(video.shares)}</td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-8 py-5 text-right text-sm text-gray-900">{formatNumber(video.views)}</td>
+                    <td className="px-8 py-5 text-right text-sm text-gray-900">{formatNumber(video.likes)}</td>
+                    <td className="px-8 py-5 text-right text-sm text-gray-900">{formatNumber(video.shares)}</td>
+                    <td className="px-8 py-5 text-right">
                       <span className={`text-sm font-medium ${video.engagement_rate > 0.05 ? 'text-green-600' : 'text-gray-600'}`}>
                         {(video.engagement_rate * 100).toFixed(2)}%
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-center text-sm text-gray-500">
+                    <td className="px-8 py-5 text-center text-sm text-gray-500">
                       {format(new Date(video.published_at), 'dd/MM/yyyy')}
                     </td>
                   </tr>
@@ -1197,7 +1211,7 @@ export default function AnalyticsPage() {
           </div>
           
           {filteredVideos.length > 20 && (
-            <div className="px-6 py-4 border-t border-gray-200 text-center text-sm text-gray-500">
+            <div className="px-8 py-4 border-t border-gray-200 text-center text-sm text-gray-500">
               Showing 20 of {filteredVideos.length} videos
             </div>
           )}
