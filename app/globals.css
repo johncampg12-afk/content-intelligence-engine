@@ -19,10 +19,12 @@ body {
   --card-bg: #ffffff;
   --card-border: #e5e7eb;
   --text-primary: #111827;
-  --text-secondary: #6b7280;
+  --text-secondary: #4b5563;
+  --text-tertiary: #6b7280;
   --sidebar-bg: #ffffff;
   --sidebar-border: #e5e7eb;
-  --nav-hover: #f9fafb;
+  --nav-hover: #f3f4f6;
+  --nav-active: #e5e7eb;
   --input-bg: #ffffff;
   --input-border: #d1d5db;
 }
@@ -34,10 +36,12 @@ body {
   --card-bg: #1e293b;
   --card-border: #334155;
   --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #94a3b8;
   --sidebar-bg: #0f172a;
   --sidebar-border: #1e293b;
   --nav-hover: #1e293b;
+  --nav-active: #334155;
   --input-bg: #1e293b;
   --input-border: #334155;
 }
@@ -46,31 +50,51 @@ body {
   background: linear-gradient(135deg, var(--bg-gradient-from) 0%, var(--bg-gradient-to) 100%);
 }
 
-/* Aplicar variables a componentes específicos */
-.bg-white {
-  background-color: var(--card-bg) !important;
+/* Sidebar */
+aside {
+  background-color: var(--sidebar-bg) !important;
+  border-color: var(--sidebar-border) !important;
 }
 
-.border-gray-200 {
-  border-color: var(--card-border) !important;
+/* Navegación - hover y active */
+nav a {
+  transition: all 0.2s ease;
 }
 
-.text-gray-900 {
+nav a:hover {
+  background-color: var(--nav-hover) !important;
   color: var(--text-primary) !important;
 }
 
-.text-gray-500, .text-gray-600, .text-gray-700 {
+nav a.active {
+  background-color: var(--nav-active) !important;
+  color: var(--text-primary) !important;
+}
+
+nav a.active svg {
+  color: #3b82f6 !important;
+}
+
+/* Textos */
+.text-gray-900, .text-gray-800 {
+  color: var(--text-primary) !important;
+}
+
+.text-gray-500, .text-gray-600, .text-gray-700, .text-gray-400 {
   color: var(--text-secondary) !important;
 }
 
-.bg-gray-50 {
-  background-color: var(--nav-hover) !important;
+.text-gray-300 {
+  color: var(--text-tertiary) !important;
 }
 
-/* Sidebar */
-.bg-white.border-r {
-  background-color: var(--sidebar-bg) !important;
-  border-color: var(--sidebar-border) !important;
+/* Cards y contenedores */
+.bg-white, .bg-gray-50 {
+  background-color: var(--card-bg) !important;
+}
+
+.border-gray-200, .border-gray-100 {
+  border-color: var(--card-border) !important;
 }
 
 /* Inputs */
@@ -80,10 +104,9 @@ input, select, textarea {
   color: var(--text-primary) !important;
 }
 
-/* Cards */
-.rounded-xl.border {
-  background-color: var(--card-bg) !important;
-  border-color: var(--card-border) !important;
+/* Botón de logout */
+.logout-btn:hover {
+  background-color: var(--nav-hover) !important;
 }
 
 /* Custom scrollbar */

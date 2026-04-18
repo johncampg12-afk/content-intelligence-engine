@@ -96,8 +96,8 @@ export default function DashboardLayout({
                   href={item.href}
                   className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
                     isActive 
-                      ? 'bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-white' 
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white'
+                      ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' 
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
                   }`}
                 >
                   <Icon className={`mr-3 h-5 w-5 ${
