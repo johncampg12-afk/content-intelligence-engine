@@ -64,11 +64,11 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen flex">
-      {/* Sidebar Desktop */}
-      <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-white border-r border-gray-200">
-        <div className="flex flex-col flex-1 pt-5 pb-4 overflow-y-auto">
-          {/* Logo */}
-          <div className="flex items-center px-4 mb-8">
+      {/* Sidebar Desktop - Padding mejorado */}
+      <aside className="hidden lg:flex lg:flex-col lg:w-72 lg:fixed lg:inset-y-0 bg-white border-r border-gray-200">
+        <div className="flex flex-col flex-1 pt-6 pb-6 overflow-y-auto">
+          {/* Logo - más padding horizontal */}
+          <div className="flex items-center px-6 mb-8">
             <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg">
               <Zap className="w-6 h-6 text-white" />
             </div>
@@ -77,8 +77,8 @@ export default function DashboardLayout({
             </span>
           </div>
           
-          {/* Navigation */}
-          <nav className="flex-1 px-2 space-y-1">
+          {/* Navigation - ítems con más padding */}
+          <nav className="flex-1 px-4 space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon
               const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
@@ -86,7 +86,7 @@ export default function DashboardLayout({
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                  className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
                     isActive 
                       ? 'bg-gray-100 text-gray-900' 
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
@@ -101,11 +101,11 @@ export default function DashboardLayout({
             })}
           </nav>
           
-          {/* Logout button */}
-          <div className="px-2 mt-auto pt-4 border-t border-gray-200">
+          {/* Logout button - mismo padding que los ítems */}
+          <div className="px-4 mt-auto pt-6 border-t border-gray-200">
             <button
               onClick={handleLogout}
-              className="group flex w-full items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200"
+              className="group flex w-full items-center px-3 py-2.5 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200"
             >
               <LogOut className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
               Sign Out
@@ -115,10 +115,10 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 lg:ml-64">
-        {/* Mobile header */}
+      <main className="flex-1 lg:ml-72">
+        {/* Mobile header - padding más amplio */}
         <header className="sticky top-0 z-10 glass lg:hidden">
-          <div className="flex h-16 items-center justify-between px-4 sm:px-6">
+          <div className="flex h-16 items-center justify-between px-5 sm:px-8">
             <div className="flex items-center gap-3">
               <div className="p-1.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg shadow-md">
                 <Zap className="w-5 h-5 text-white" />
@@ -133,7 +133,7 @@ export default function DashboardLayout({
           </div>
         </header>
 
-        {/* Children content */}
+        {/* Children content - la animación se mantiene */}
         <div className="animate-slide-up">
           {children}
         </div>

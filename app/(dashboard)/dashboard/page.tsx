@@ -245,7 +245,7 @@ export default function DashboardPage() {
 
   if (!kpi || kpi.total_videos === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
+      <div className="min-h-screen bg-gray-50 p-6 lg:p-10">
         <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
           <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Video className="w-10 h-10 text-gray-400" />
@@ -266,7 +266,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="p-6 lg:p-10 space-y-8">
       
       {/* Onboarding Banner */}
       <OnboardingBanner />
@@ -274,7 +274,7 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-gray-500 mt-1">Welcome back, {userName}</p>
         </div>
         <div className="flex items-center gap-3 mt-4 md:mt-0">
@@ -295,8 +295,8 @@ export default function DashboardPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm card-hover">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm card-hover">
           <div className="flex items-center justify-between mb-3">
             <div className="p-2 bg-blue-50 rounded-lg">
               <Eye className="w-5 h-5 text-blue-600" />
@@ -310,7 +310,7 @@ export default function DashboardPage() {
           <p className="text-sm text-gray-500 mt-1">Total Views</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm card-hover">
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm card-hover">
           <div className="flex items-center justify-between mb-3">
             <div className="p-2 bg-red-50 rounded-lg">
               <Heart className="w-5 h-5 text-red-600" />
@@ -324,7 +324,7 @@ export default function DashboardPage() {
           <p className="text-sm text-gray-500 mt-1">Total Likes</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm card-hover">
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm card-hover">
           <div className="flex items-center justify-between mb-3">
             <div className="p-2 bg-purple-50 rounded-lg">
               <Share2 className="w-5 h-5 text-purple-600" />
@@ -338,7 +338,7 @@ export default function DashboardPage() {
           <p className="text-sm text-gray-500 mt-1">Total Shares</p>
         </div>
 
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-5 shadow-sm text-white">
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 shadow-sm text-white">
           <div className="flex items-center justify-between mb-3">
             <div className="p-2 bg-white/20 rounded-lg">
               <TrendingUp className="w-5 h-5" />
@@ -354,9 +354,9 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-5">
             <h3 className="text-base font-semibold text-gray-900">Views Evolution</h3>
             <BarChart3 className="w-4 h-4 text-gray-400" />
           </div>
@@ -377,8 +377,8 @@ export default function DashboardPage() {
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-5">
             <h3 className="text-base font-semibold text-gray-900">Engagement Evolution</h3>
             <Target className="w-4 h-4 text-gray-400" />
           </div>
@@ -395,32 +395,32 @@ export default function DashboardPage() {
       </div>
 
       {/* Top Videos & AI Insight */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Top Videos */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-5">
             <h3 className="text-base font-semibold text-gray-900">Top Performing Videos</h3>
             <Zap className="w-4 h-4 text-yellow-500" />
           </div>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {topVideos.map((video, idx) => (
               <Link 
                 key={video.id} 
                 href={`/content/${video.id}`}
                 className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors group"
               >
-                <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                   {video.thumbnail_url ? (
                     <img src={video.thumbnail_url} alt="" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-400">
-                      <Video className="w-4 h-4" />
+                      <Video className="w-5 h-5" />
                     </div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">{video.title || 'Untitled'}</p>
-                  <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
+                  <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
                     <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{formatNumber(video.views)}</span>
                     <span className="flex items-center gap-1"><Heart className="w-3 h-3" />{formatNumber(video.likes)}</span>
                     <span className="text-green-600">{(video.engagement_rate * 100).toFixed(1)}% eng.</span>
@@ -430,7 +430,7 @@ export default function DashboardPage() {
               </Link>
             ))}
           </div>
-          <div className="mt-3 pt-3 border-t border-gray-100">
+          <div className="mt-4 pt-4 border-t border-gray-100">
             <Link href="/content" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
               View all videos →
             </Link>
@@ -438,8 +438,8 @@ export default function DashboardPage() {
         </div>
 
         {/* AI Insight */}
-        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-5 shadow-sm text-white">
-          <div className="flex items-center gap-2 mb-3">
+        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 shadow-sm text-white">
+          <div className="flex items-center gap-2 mb-4">
             <div className="p-1.5 bg-white/10 rounded-lg">
               <Sparkles className="w-4 h-4" />
             </div>
@@ -468,10 +468,10 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Link href="/recommendations" className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200 hover:border-blue-200 hover:shadow-sm transition-all group">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <Link href="/recommendations" className="flex items-center justify-between p-5 bg-white rounded-xl border border-gray-200 hover:border-blue-200 hover:shadow-md transition-all group">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100">
+            <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
               <Sparkles className="w-4 h-4 text-blue-600" />
             </div>
             <div>
@@ -479,12 +479,12 @@ export default function DashboardPage() {
               <p className="text-xs text-gray-500">Get content strategy insights</p>
             </div>
           </div>
-          <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
+          <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
         </Link>
 
-        <Link href="/content" className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200 hover:border-blue-200 hover:shadow-sm transition-all group">
+        <Link href="/content" className="flex items-center justify-between p-5 bg-white rounded-xl border border-gray-200 hover:border-blue-200 hover:shadow-md transition-all group">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-50 rounded-lg group-hover:bg-green-100">
+            <div className="p-2 bg-green-50 rounded-lg group-hover:bg-green-100 transition-colors">
               <Video className="w-4 h-4 text-green-600" />
             </div>
             <div>
@@ -492,12 +492,12 @@ export default function DashboardPage() {
               <p className="text-xs text-gray-500">Manage your videos</p>
             </div>
           </div>
-          <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-green-600" />
+          <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-green-600 transition-colors" />
         </Link>
 
-        <Link href="/settings" className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200 hover:border-blue-200 hover:shadow-sm transition-all group">
+        <Link href="/settings" className="flex items-center justify-between p-5 bg-white rounded-xl border border-gray-200 hover:border-blue-200 hover:shadow-md transition-all group">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-50 rounded-lg group-hover:bg-purple-100">
+            <div className="p-2 bg-purple-50 rounded-lg group-hover:bg-purple-100 transition-colors">
               <Target className="w-4 h-4 text-purple-600" />
             </div>
             <div>
@@ -505,7 +505,7 @@ export default function DashboardPage() {
               <p className="text-xs text-gray-500">Configure your niche</p>
             </div>
           </div>
-          <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-purple-600" />
+          <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-purple-600 transition-colors" />
         </Link>
       </div>
     </div>
