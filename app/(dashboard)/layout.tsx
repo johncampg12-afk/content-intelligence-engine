@@ -1,6 +1,8 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { 
   Zap, 
@@ -13,39 +15,32 @@ import {
   Settings,
   LogOut
 } from 'lucide-react'
-import { LogoutButton } from '@/components/layout/logout-button'
 
-export default async function DashboardLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          } catch {
-            // Handle error
-          }
-        },
-      },
-    }
-  )
-  
-  const { data: { session } } = await supabase.auth.getSession()
+  const [loading, setLoading] = useState(true)
+  const router = useRouter()
+  const pathname = usePathname()
+  const supabase = createClient()
 
-  if (!session) {
-    redirect('/login')
+  useEffect(() => {
+    checkUser()
+  }, [])
+
+  const checkUser = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      router.push('/login')
+    }
+    setLoading(false)
+  }
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
   }
 
   const navItems = [
@@ -58,6 +53,14 @@ export default async function DashboardLayout({
     { href: '/calendar', icon: CalendarIcon, label: 'Calendar' },
     { href: '/settings', icon: Settings, label: 'Settings' },
   ]
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen flex">
@@ -78,13 +81,20 @@ export default async function DashboardLayout({
           <nav className="flex-1 px-2 space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon
+              const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200"
+                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                    isActive 
+                      ? 'bg-gray-100 text-gray-900' 
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
                 >
-                  <Icon className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+                  <Icon className={`mr-3 h-5 w-5 ${
+                    isActive ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-500'
+                  }`} />
                   {item.label}
                 </Link>
               )
@@ -93,7 +103,13 @@ export default async function DashboardLayout({
           
           {/* Logout button */}
           <div className="px-2 mt-auto pt-4 border-t border-gray-200">
-            <LogoutButton />
+            <button
+              onClick={handleLogout}
+              className="group flex w-full items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200"
+            >
+              <LogOut className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+              Sign Out
+            </button>
           </div>
         </div>
       </aside>
@@ -111,13 +127,13 @@ export default async function DashboardLayout({
                 Content<span className="gradient-text">Intel</span>
               </span>
             </div>
-            <button className="p-2 text-gray-500 hover:text-gray-700">
+            <button onClick={handleLogout} className="p-2 text-gray-500 hover:text-gray-700">
               <LogOut className="w-5 h-5" />
             </button>
           </div>
         </header>
 
-        {/* Children content with animation */}
+        {/* Children content */}
         <div className="animate-slide-up">
           {children}
         </div>
