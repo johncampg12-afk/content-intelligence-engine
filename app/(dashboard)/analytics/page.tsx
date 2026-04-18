@@ -586,7 +586,7 @@ export default function AnalyticsPage() {
 
   if (videos.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6 lg:p-10">
+      <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
           <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <BarChart3 className="w-10 h-10 text-gray-400" />
@@ -608,32 +608,32 @@ export default function AnalyticsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="p-6 lg:p-10">
+      <div className="p-4 md:p-6 lg:p-8">
         
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-10">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
           <div>
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-blue-600 rounded-xl">
-                <BarChart3 className="w-6 h-6 text-white" />
+                <BarChart3 className="w-5 h-5 text-white" />
               </div>
-              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Advanced Analytics</h1>
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900">Advanced Analytics</h1>
             </div>
-            <p className="text-gray-500 ml-11">
+            <p className="text-gray-500 text-sm ml-11">
               Deep dive into your content performance metrics
             </p>
           </div>
           <div className="flex items-center gap-3 mt-4 md:mt-0">
             <button
               onClick={handleExportPDF}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <FileText className="w-4 h-4" />
-              Export PDF
+              <span className="hidden sm:inline">Export PDF</span>
             </button>
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <Filter className="w-4 h-4" />
               Filters
@@ -644,14 +644,14 @@ export default function AnalyticsPage() {
 
         {/* Filters Panel */}
         {showFilters && (
-          <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8 shadow-sm">
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6 shadow-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Time Period</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Time Period</label>
                 <select
                   value={period}
                   onChange={(e) => setPeriod(e.target.value as any)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 >
                   <option value="week">Last 7 days</option>
                   <option value="month">Last 30 days</option>
@@ -661,11 +661,11 @@ export default function AnalyticsPage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Compare with</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Compare with</label>
                 <select
                   value={comparePeriod}
                   onChange={(e) => setComparePeriod(e.target.value as any)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 >
                   <option value="previous">Previous period</option>
                   <option value="last_week">Same week last month</option>
@@ -676,34 +676,34 @@ export default function AnalyticsPage() {
               {period === 'custom' && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Start Date</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
                     <input
                       type="date"
                       value={customStartDate}
                       onChange={(e) => setCustomStartDate(e.target.value)}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">End Date</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
                     <input
                       type="date"
                       value={customEndDate}
                       onChange={(e) => setCustomEndDate(e.target.value)}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     />
                   </div>
                 </>
               )}
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Search</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
                 <input
                   type="text"
                   placeholder="Search by title, hashtag..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
               </div>
             </div>
@@ -711,96 +711,96 @@ export default function AnalyticsPage() {
         )}
 
         {/* KPI Cards with Comparison */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm card-hover">
-            <div className="flex items-center justify-between mb-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <div className="p-2 bg-blue-50 rounded-lg">
-                  <Eye className="w-4 h-4 text-blue-600" />
+                <div className="p-1.5 bg-blue-50 rounded-lg">
+                  <Eye className="w-3 h-3 text-blue-600" />
                 </div>
                 <span className="text-xs text-gray-500">Total Views</span>
               </div>
               {getTrendIcon(comparisonData.views.change)}
             </div>
-            <p className="text-2xl font-bold text-gray-900">{formatNumber(comparisonData.views.current)}</p>
-            <div className="flex items-center gap-2 mt-2">
+            <p className="text-xl font-bold text-gray-900">{formatNumber(comparisonData.views.current)}</p>
+            <div className="flex items-center gap-2 mt-1">
               <span className={`text-xs ${getTrendColor(comparisonData.views.change)}`}>
                 {comparisonData.views.change > 0 ? '+' : ''}{comparisonData.views.change.toFixed(1)}%
               </span>
-              <span className="text-xs text-gray-400">vs período anterior</span>
+              <span className="text-xs text-gray-400">vs anterior</span>
             </div>
           </div>
           
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm card-hover">
-            <div className="flex items-center justify-between mb-3">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <div className="p-2 bg-red-50 rounded-lg">
-                  <Heart className="w-4 h-4 text-red-600" />
+                <div className="p-1.5 bg-red-50 rounded-lg">
+                  <Heart className="w-3 h-3 text-red-600" />
                 </div>
                 <span className="text-xs text-gray-500">Total Likes</span>
               </div>
               {getTrendIcon(comparisonData.likes.change)}
             </div>
-            <p className="text-2xl font-bold text-gray-900">{formatNumber(comparisonData.likes.current)}</p>
-            <div className="flex items-center gap-2 mt-2">
+            <p className="text-xl font-bold text-gray-900">{formatNumber(comparisonData.likes.current)}</p>
+            <div className="flex items-center gap-2 mt-1">
               <span className={`text-xs ${getTrendColor(comparisonData.likes.change)}`}>
                 {comparisonData.likes.change > 0 ? '+' : ''}{comparisonData.likes.change.toFixed(1)}%
               </span>
-              <span className="text-xs text-gray-400">vs período anterior</span>
+              <span className="text-xs text-gray-400">vs anterior</span>
             </div>
           </div>
           
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm card-hover">
-            <div className="flex items-center justify-between mb-3">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <div className="p-2 bg-purple-50 rounded-lg">
-                  <Share2 className="w-4 h-4 text-purple-600" />
+                <div className="p-1.5 bg-purple-50 rounded-lg">
+                  <Share2 className="w-3 h-3 text-purple-600" />
                 </div>
                 <span className="text-xs text-gray-500">Total Shares</span>
               </div>
               {getTrendIcon(comparisonData.shares.change)}
             </div>
-            <p className="text-2xl font-bold text-gray-900">{formatNumber(comparisonData.shares.current)}</p>
-            <div className="flex items-center gap-2 mt-2">
+            <p className="text-xl font-bold text-gray-900">{formatNumber(comparisonData.shares.current)}</p>
+            <div className="flex items-center gap-2 mt-1">
               <span className={`text-xs ${getTrendColor(comparisonData.shares.change)}`}>
                 {comparisonData.shares.change > 0 ? '+' : ''}{comparisonData.shares.change.toFixed(1)}%
               </span>
-              <span className="text-xs text-gray-400">vs período anterior</span>
+              <span className="text-xs text-gray-400">vs anterior</span>
             </div>
           </div>
           
-          <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-6 shadow-sm text-white">
-            <div className="flex items-center justify-between mb-3">
+          <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-4 shadow-sm text-white">
+            <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <div className="p-2 bg-white/20 rounded-lg">
-                  <TrendingUp className="w-4 h-4" />
+                <div className="p-1.5 bg-white/20 rounded-lg">
+                  <TrendingUp className="w-3 h-3" />
                 </div>
                 <span className="text-xs text-blue-100">Engagement Rate</span>
               </div>
-              {comparisonData.engagement.change > 0 ? <ArrowUp className="w-4 h-4 text-green-300" /> : <ArrowDown className="w-4 h-4 text-red-300" />}
+              {comparisonData.engagement.change > 0 ? <ArrowUp className="w-3 h-3 text-green-300" /> : <ArrowDown className="w-3 h-3 text-red-300" />}
             </div>
-            <p className="text-2xl font-bold">{comparisonData.engagement.current.toFixed(1)}%</p>
-            <div className="flex items-center gap-2 mt-2">
+            <p className="text-xl font-bold">{comparisonData.engagement.current.toFixed(1)}%</p>
+            <div className="flex items-center gap-2 mt-1">
               <span className={`text-xs ${comparisonData.engagement.change > 0 ? 'text-green-300' : 'text-red-300'}`}>
                 {comparisonData.engagement.change > 0 ? '+' : ''}{comparisonData.engagement.change.toFixed(1)}%
               </span>
-              <span className="text-xs text-blue-100">vs período anterior</span>
+              <span className="text-xs text-blue-100">vs anterior</span>
             </div>
           </div>
         </div>
 
-        {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+        {/* Charts Grid - Responsive */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Views Trend */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-base font-semibold text-gray-900">Views Trend</h3>
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-gray-900">Views Trend</h3>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-400">Proyección 30d:</span>
-                <span className="text-sm font-semibold text-blue-600">{formatNumber(chartData.predictions.views30d)}</span>
+                <span className="text-xs font-semibold text-blue-600">{formatNumber(chartData.predictions.views30d)}</span>
               </div>
             </div>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={250}>
               <ComposedChart data={chartData.viewsTrend}>
                 <defs>
                   <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
@@ -809,42 +809,45 @@ export default function AnalyticsPage() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                <XAxis dataKey="date" stroke="#9CA3AF" fontSize={12} />
-                <YAxis stroke="#9CA3AF" fontSize={12} tickFormatter={(v) => formatNumber(v)} />
+                <XAxis dataKey="date" stroke="#9CA3AF" fontSize={10} tick={{ fontSize: 10 }} />
+                <YAxis stroke="#9CA3AF" fontSize={10} tick={{ fontSize: 10 }} tickFormatter={(v) => formatNumber(v)} />
                 <Tooltip formatter={(value: any) => formatNumber(value)} />
                 <Area type="monotone" dataKey="views" stroke="#3B82F6" fill="url(#viewsGradient)" />
               </ComposedChart>
             </ResponsiveContainer>
-            <div className="mt-4 pt-3 border-t border-gray-100 flex justify-between text-xs text-gray-500">
-              <span>📊 Confianza predictiva: {chartData.predictions.confidence}%</span>
+            <div className="mt-3 pt-2 border-t border-gray-100 flex justify-between text-xs text-gray-500">
+              <span>📊 Confianza: {chartData.predictions.confidence}%</span>
               <span>📈 Proyección 7d: {formatNumber(chartData.predictions.views7d)}</span>
             </div>
           </div>
 
           {/* Engagement Trend */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-base font-semibold text-gray-900">Engagement Trend</h3>
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-gray-900">Engagement Trend</h3>
               <Target className="w-4 h-4 text-gray-400" />
             </div>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={250}>
               <ReLineChart data={chartData.engagementTrend}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                <XAxis dataKey="date" stroke="#9CA3AF" fontSize={12} />
-                <YAxis stroke="#9CA3AF" fontSize={12} unit="%" />
+                <XAxis dataKey="date" stroke="#9CA3AF" fontSize={10} tick={{ fontSize: 10 }} />
+                <YAxis stroke="#9CA3AF" fontSize={10} tick={{ fontSize: 10 }} unit="%" />
                 <Tooltip formatter={(value: any) => `${value}%`} />
-                <Line type="monotone" dataKey="engagement" stroke="#8B5CF6" strokeWidth={2} dot={{ fill: '#8B5CF6', r: 4 }} />
+                <Line type="monotone" dataKey="engagement" stroke="#8B5CF6" strokeWidth={2} dot={{ fill: '#8B5CF6', r: 3 }} />
               </ReLineChart>
             </ResponsiveContainer>
           </div>
+        </div>
 
-          {/* Engagement by Type (Doughnut) */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-base font-semibold text-gray-900">Engagement by Type</h3>
+        {/* Second row of charts - Responsive */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Engagement by Type */}
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-gray-900">Engagement by Type</h3>
               <PieChart className="w-4 h-4 text-gray-400" />
             </div>
-            <ResponsiveContainer width="100%" height={280}>
+            <ResponsiveContainer width="100%" height={220}>
               <RePieChart>
                 <Pie
                   data={[
@@ -854,39 +857,37 @@ export default function AnalyticsPage() {
                   ]}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
+                  innerRadius={40}
+                  outerRadius={70}
                   paddingAngle={2}
                   dataKey="value"
                   label={({ name, percent }) => {
                     if (percent === undefined) return name
                     return `${name}: ${(percent * 100).toFixed(0)}%`
                   }}
+                  labelLine={false}
                 >
                   <Cell fill="#3B82F6" />
                   <Cell fill="#10B981" />
                   <Cell fill="#8B5CF6" />
                 </Pie>
                 <Tooltip />
-                <Legend />
+                <Legend wrapperStyle={{ fontSize: '11px' }} />
               </RePieChart>
             </ResponsiveContainer>
-            <div className="mt-3 text-center text-xs text-gray-500">
-              Los shares tienen {chartData.engagementByType.shares > chartData.engagementByType.comments * 2 ? 'alto potencial viral' : 'potencial de mejora'}
-            </div>
           </div>
 
           {/* Top Hashtags */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-base font-semibold text-gray-900">Top Hashtags</h3>
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-gray-900">Top Hashtags</h3>
               <Hash className="w-4 h-4 text-gray-400" />
             </div>
-            <ResponsiveContainer width="100%" height={280}>
-              <ReBarChart data={chartData.hashtagsTop} layout="vertical" margin={{ left: 60 }}>
+            <ResponsiveContainer width="100%" height={220}>
+              <ReBarChart data={chartData.hashtagsTop} layout="vertical" margin={{ left: 50 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                <XAxis type="number" stroke="#9CA3AF" fontSize={12} />
-                <YAxis type="category" dataKey="name" stroke="#9CA3AF" fontSize={11} width={70} />
+                <XAxis type="number" stroke="#9CA3AF" fontSize={10} />
+                <YAxis type="category" dataKey="name" stroke="#9CA3AF" fontSize={10} width={60} />
                 <Tooltip />
                 <Bar dataKey="value" fill="#10B981" radius={[0, 4, 4, 0]} />
               </ReBarChart>
@@ -894,232 +895,70 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* Second row of charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+        {/* Third row of charts - Responsive */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Weekday Performance */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-base font-semibold text-gray-900">Performance by Day</h3>
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-gray-900">Performance by Day</h3>
               <CalendarIcon className="w-4 h-4 text-gray-400" />
             </div>
-            <ResponsiveContainer width="100%" height={280}>
+            <ResponsiveContainer width="100%" height={220}>
               <ReBarChart data={chartData.weekdayPerformance}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                <XAxis dataKey="day" stroke="#9CA3AF" fontSize={12} />
-                <YAxis stroke="#9CA3AF" fontSize={12} unit="%" />
+                <XAxis dataKey="day" stroke="#9CA3AF" fontSize={10} />
+                <YAxis stroke="#9CA3AF" fontSize={10} unit="%" />
                 <Tooltip formatter={(value: any) => `${value}%`} />
                 <Bar dataKey="avgEngagement" name="Engagement (%)" fill="#F59E0B" radius={[4, 4, 0, 0]} />
               </ReBarChart>
             </ResponsiveContainer>
-            <div className="mt-3 text-center text-xs text-gray-500">
-              {chartData.weekdayPerformance.reduce((best, current) => 
-                current.avgEngagement > best.avgEngagement ? current : best, 
-                { day: '', avgEngagement: 0 }).day && (
-                <>📌 Mejor día: <strong>{chartData.weekdayPerformance.reduce((best, current) => 
-                  current.avgEngagement > best.avgEngagement ? current : best).day}</strong></>
-              )}
-            </div>
           </div>
 
           {/* Duration Distribution */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-base font-semibold text-gray-900">Duration Distribution</h3>
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-gray-900">Duration Distribution</h3>
               <Clock className="w-4 h-4 text-gray-400" />
             </div>
-            <ResponsiveContainer width="100%" height={280}>
+            <ResponsiveContainer width="100%" height={220}>
               <RePieChart>
                 <Pie
                   data={chartData.durationDistribution}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
+                  innerRadius={40}
+                  outerRadius={70}
                   paddingAngle={2}
                   dataKey="value"
                   label={({ name, percent }) => {
                     if (percent === undefined) return name
                     return `${name}: ${(percent * 100).toFixed(0)}%`
                   }}
+                  labelLine={false}
                 >
                   {chartData.durationDistribution.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
                 <Tooltip />
-                <Legend />
+                <Legend wrapperStyle={{ fontSize: '11px' }} />
               </RePieChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Heatmap Section (toggle) */}
-        <div className="mb-10">
-          <button
-            onClick={() => setShowHeatmap(!showHeatmap)}
-            className="flex items-center justify-between w-full bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:bg-gray-50 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Zap className="w-5 h-5 text-purple-600" />
-              </div>
-              <div className="text-left">
-                <h3 className="text-base font-semibold text-gray-900">Optimal Posting Times</h3>
-                <p className="text-sm text-gray-500">Heatmap of best hours and days to publish</p>
-              </div>
-            </div>
-            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showHeatmap ? 'rotate-180' : ''}`} />
-          </button>
-          
-          {showHeatmap && (
-            <div className="bg-white rounded-xl border border-gray-200 p-6 mt-3 shadow-sm">
-              <div className="overflow-x-auto">
-                <div className="min-w-[800px]">
-                  <div className="grid grid-cols-8 gap-1 mb-3">
-                    <div className="text-xs text-gray-400 font-medium">Hora\Día</div>
-                    {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(day => (
-                      <div key={day} className="text-xs text-gray-400 font-medium text-center">{day}</div>
-                    ))}
-                  </div>
-                  {Array.from({ length: 24 }, (_, i) => i).map(hour => (
-                    <div key={hour} className="grid grid-cols-8 gap-1 mb-1">
-                      <div className="text-xs text-gray-500 font-medium">{hour}:00</div>
-                      {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((day, dayIdx) => {
-                        const cell = chartData.hourlyHeatmap.find(h => h.day === day && h.hour === `${hour}:00`)
-                        const intensity = cell ? Math.min(100, cell.engagement * 10) : 0
-                        return (
-                          <div 
-                            key={`${day}-${hour}`}
-                            className="text-center text-xs py-2 rounded transition-all"
-                            style={{ 
-                              backgroundColor: intensity > 70 ? '#1E40AF' : 
-                                              intensity > 40 ? '#3B82F6' : 
-                                              intensity > 20 ? '#93C5FD' : 
-                                              intensity > 5 ? '#DBEAFE' : '#F3F4F6',
-                              color: intensity > 40 ? 'white' : '#374151'
-                            }}
-                            title={`${day} ${hour}:00 - Engagement: ${cell?.engagement || 0}%`}
-                          >
-                            {cell?.engagement > 0 ? `${cell.engagement}%` : '-'}
-                          </div>
-                        )
-                      })}
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="mt-4 text-center text-xs text-gray-500">
-                🟦 Mayor intensidad = mejor engagement | Basado en {filteredVideos.length} videos
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Alerts Section */}
-        {chartData.alerts.length > 0 && (
-          <div className="mb-10">
-            <button
-              onClick={() => setShowAlerts(!showAlerts)}
-              className="flex items-center justify-between w-full bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-amber-100 rounded-lg">
-                  <AlertTriangle className="w-5 h-5 text-amber-600" />
-                </div>
-                <div className="text-left">
-                  <h3 className="text-base font-semibold text-gray-900">Intelligent Alerts</h3>
-                  <p className="text-sm text-gray-500">{chartData.alerts.length} insights detected</p>
-                </div>
-              </div>
-              <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showAlerts ? 'rotate-180' : ''}`} />
-            </button>
-            
-            {showAlerts && (
-              <div className="bg-white rounded-xl border border-gray-200 p-6 mt-3 shadow-sm">
-                <div className="space-y-3">
-                  {chartData.alerts.map((alert, idx) => (
-                    <div key={idx} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                      <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                      <p className="text-sm text-gray-700">{alert}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Cohorts Section */}
-        {chartData.cohorts.length > 0 && (
-          <div className="mb-10">
-            <button
-              onClick={() => setShowCohorts(!showCohorts)}
-              className="flex items-center justify-between w-full bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-100 rounded-lg">
-                  <BarChart3 className="w-5 h-5 text-indigo-600" />
-                </div>
-                <div className="text-left">
-                  <h3 className="text-base font-semibold text-gray-900">Cohort Analysis</h3>
-                  <p className="text-sm text-gray-500">Compare performance by video duration</p>
-                </div>
-              </div>
-              <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showCohorts ? 'rotate-180' : ''}`} />
-            </button>
-            
-            {showCohorts && (
-              <div className="bg-white rounded-xl border border-gray-200 p-6 mt-3 shadow-sm overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Duration</th>
-                      <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">Videos</th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">Avg Views</th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">Avg Engagement</th>
-                      <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">Trend</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {chartData.cohorts.map((cohort, idx) => (
-                      <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50">
-                        <td className="py-3 px-4 text-sm text-gray-900 font-medium">{cohort.name}</td>
-                        <td className="py-3 px-4 text-sm text-gray-600 text-center">{cohort.videos}</td>
-                        <td className="py-3 px-4 text-sm text-gray-600 text-right">{formatNumber(cohort.avgViews)}</td>
-                        <td className="py-3 px-4 text-sm text-right">
-                          <span className={`font-medium ${cohort.avgEngagement > 5 ? 'text-green-600' : cohort.avgEngagement > 2 ? 'text-yellow-600' : 'text-gray-500'}`}>
-                            {cohort.avgEngagement}%
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-center">
-                          {cohort.trend === 'up' && <TrendingUp className="w-4 h-4 text-green-500 inline" />}
-                          {cohort.trend === 'down' && <TrendingDown className="w-4 h-4 text-red-500 inline" />}
-                          {cohort.trend === 'stable' && <div className="w-4 h-0.5 bg-gray-400 inline-block"></div>}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div className="mt-4 text-xs text-gray-400 text-center">
-                  Los videos de duración óptima generan hasta {Math.max(...chartData.cohorts.map(c => c.avgEngagement)).toFixed(1)}% engagement
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Video Performance Table */}
+        {/* Video Performance Table - Responsive with horizontal scroll */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="px-8 py-5 border-b border-gray-200 flex items-center justify-between">
+          <div className="px-4 py-3 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <h3 className="text-base font-semibold text-gray-900">Video Performance</h3>
-              <p className="text-sm text-gray-500 mt-0.5">{filteredVideos.length} videos in this period</p>
+              <h3 className="text-sm font-semibold text-gray-900">Video Performance</h3>
+              <p className="text-xs text-gray-500 mt-0.5">{filteredVideos.length} videos in this period</p>
             </div>
             <div className="flex items-center gap-3">
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
-                className="text-sm border border-gray-300 rounded-lg px-3 py-1.5"
+                className="text-xs border border-gray-300 rounded-lg px-2 py-1"
               >
                 <option value="engagement">Sort by Engagement</option>
                 <option value="views">Sort by Views</option>
@@ -1136,73 +975,70 @@ export default function AnalyticsPage() {
           </div>
           
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="min-w-[800px] w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-8 py-4 text-left text-xs font-medium text-gray-500 uppercase">Video</th>
-                  <th className="px-8 py-4 text-center text-xs font-medium text-gray-500 uppercase">Duration</th>
-                  <th className="px-8 py-4 text-left text-xs font-medium text-gray-500 uppercase">Hashtags</th>
-                  <th className="px-8 py-4 text-left text-xs font-medium text-gray-500 uppercase">Sound</th>
-                  <th className="px-8 py-4 text-right text-xs font-medium text-gray-500 uppercase">Views</th>
-                  <th className="px-8 py-4 text-right text-xs font-medium text-gray-500 uppercase">Likes</th>
-                  <th className="px-8 py-4 text-right text-xs font-medium text-gray-500 uppercase">Shares</th>
-                  <th className="px-8 py-4 text-right text-xs font-medium text-gray-500 uppercase">Engagement</th>
-                  <th className="px-8 py-4 text-center text-xs font-medium text-gray-500 uppercase">Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Video</th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Dur</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hashtags</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sound</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Views</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Likes</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Shares</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Eng.</th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Date</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredVideos.slice(0, 20).map((video) => (
                   <tr key={video.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                           {video.thumbnail_url ? (
                             <img src={video.thumbnail_url} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-gray-400">
-                              <BarChart3 className="w-4 h-4" />
+                              <BarChart3 className="w-3 h-3" />
                             </div>
                           )}
                         </div>
-                        <span className="text-sm text-gray-900 line-clamp-2 max-w-[250px]">
+                        <span className="text-xs text-gray-900 line-clamp-2 max-w-[150px]">
                           {video.title}
                         </span>
                       </div>
                     </td>
-                    <td className="px-8 py-5 text-center">
-                      <div className="flex items-center justify-center gap-1 text-sm text-gray-600">
-                        <Clock className="w-3 h-3" />
-                        {formatDuration(video.duration)}
-                      </div>
+                    <td className="px-4 py-3 text-center text-xs text-gray-600">
+                      {formatDuration(video.duration)}
                     </td>
-                    <td className="px-8 py-5">
-                      <div className="flex flex-wrap gap-1 max-w-[200px]">
-                        {video.hashtags?.slice(0, 3).map((tag, idx) => (
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1 max-w-[150px]">
+                        {video.hashtags?.slice(0, 2).map((tag, idx) => (
                           <span key={idx} className="text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full">
                             #{tag}
                           </span>
                         ))}
-                        {video.hashtags && video.hashtags.length > 3 && (
-                          <span className="text-xs text-gray-400">+{video.hashtags.length - 3}</span>
+                        {video.hashtags && video.hashtags.length > 2 && (
+                          <span className="text-xs text-gray-400">+{video.hashtags.length - 2}</span>
                         )}
                       </div>
                     </td>
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-1 max-w-[180px]">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1 max-w-[120px]">
                         <Music className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                        <span className="text-sm text-gray-600 truncate">{video.sound || 'Original'}</span>
+                        <span className="text-xs text-gray-600 truncate">{video.sound || 'Original'}</span>
                       </div>
                     </td>
-                    <td className="px-8 py-5 text-right text-sm text-gray-900">{formatNumber(video.views)}</td>
-                    <td className="px-8 py-5 text-right text-sm text-gray-900">{formatNumber(video.likes)}</td>
-                    <td className="px-8 py-5 text-right text-sm text-gray-900">{formatNumber(video.shares)}</td>
-                    <td className="px-8 py-5 text-right">
-                      <span className={`text-sm font-medium ${video.engagement_rate > 0.05 ? 'text-green-600' : 'text-gray-600'}`}>
-                        {(video.engagement_rate * 100).toFixed(2)}%
+                    <td className="px-4 py-3 text-right text-xs text-gray-900">{formatNumber(video.views)}</td>
+                    <td className="px-4 py-3 text-right text-xs text-gray-900">{formatNumber(video.likes)}</td>
+                    <td className="px-4 py-3 text-right text-xs text-gray-900">{formatNumber(video.shares)}</td>
+                    <td className="px-4 py-3 text-right">
+                      <span className={`text-xs font-medium ${video.engagement_rate > 0.05 ? 'text-green-600' : 'text-gray-600'}`}>
+                        {(video.engagement_rate * 100).toFixed(1)}%
                       </span>
                     </td>
-                    <td className="px-8 py-5 text-center text-sm text-gray-500">
-                      {format(new Date(video.published_at), 'dd/MM/yyyy')}
+                    <td className="px-4 py-3 text-center text-xs text-gray-500">
+                      {format(new Date(video.published_at), 'dd/MM/yy')}
                     </td>
                   </tr>
                 ))}
@@ -1211,7 +1047,7 @@ export default function AnalyticsPage() {
           </div>
           
           {filteredVideos.length > 20 && (
-            <div className="px-8 py-4 border-t border-gray-200 text-center text-sm text-gray-500">
+            <div className="px-4 py-3 border-t border-gray-200 text-center text-xs text-gray-500">
               Showing 20 of {filteredVideos.length} videos
             </div>
           )}

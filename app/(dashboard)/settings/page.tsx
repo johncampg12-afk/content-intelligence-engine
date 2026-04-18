@@ -211,22 +211,24 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 lg:p-10 space-y-8">
+      
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Settings</h1>
-        <p className="text-gray-600 mt-1">
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Settings</h1>
+        <p className="text-gray-500 mt-1">
           Configure your account and connect social media platforms
         </p>
       </div>
       
       {/* Barra de progreso de configuración */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-        <div className="flex items-center justify-between mb-2">
+      <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <CheckCircle className="w-4 h-4 text-blue-500" />
-            <span className="text-sm font-medium text-gray-700">Configuración del perfil</span>
+            <span className="text-sm font-medium text-gray-700">Profile Completion</span>
           </div>
-          <span className="text-sm font-medium text-blue-600">{completedCount}/{completionSteps.length} completados</span>
+          <span className="text-sm font-medium text-blue-600">{completedCount}/{completionSteps.length} completed</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
           <div 
@@ -234,26 +236,26 @@ export default function SettingsPage() {
             style={{ width: `${completionPercentage}%` }}
           />
         </div>
-        <p className="text-xs text-gray-500 mt-2">
+        <p className="text-xs text-gray-500 mt-3">
           {completionPercentage === 100 
-            ? '✅ ¡Perfil completo! La IA usará todos estos datos para personalizar tus recomendaciones.' 
-            : '📝 Completa todos los campos para recibir recomendaciones hiper-personalizadas de IA.'}
+            ? '✅ Profile complete! AI will use all this data to personalize your recommendations.' 
+            : '📝 Complete all fields to receive hyper-personalized AI recommendations.'}
         </p>
       </div>
       
       {/* Mensaje de éxito/error */}
       {message && (
-        <div className={`p-4 rounded-md ${message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
+        <div className={`p-4 rounded-xl ${message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
           {message.text}
         </div>
       )}
       
       {/* ============================================ */}
-      {/* SECCIÓN 1: CREATOR CONTEXT (ARRIBA) */}
+      {/* SECCIÓN 1: CREATOR CONTEXT */}
       {/* ============================================ */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardHeader className="px-6 pt-6 pb-3 lg:px-8 lg:pt-8 lg:pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg">
             <User className="w-5 h-5" />
             Creator Context
           </CardTitle>
@@ -261,10 +263,10 @@ export default function SettingsPage() {
             Tell us about your account for hyper-personalized AI recommendations
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleContextSubmit} className="space-y-4">
+        <CardContent className="px-6 pb-6 lg:px-8 lg:pb-8">
+          <form onSubmit={handleContextSubmit} className="space-y-5">
             <div>
-              <label htmlFor="account_bio" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="account_bio" className="block text-sm font-medium text-gray-700 mb-1.5">
                 What is your account about?
               </label>
               <textarea
@@ -273,23 +275,23 @@ export default function SettingsPage() {
                 onChange={(e) => setContextData({...contextData, account_bio: e.target.value})}
                 rows={3}
                 placeholder="Ej: I create comedy skits about adult life. My audience is millennials working in offices..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
               />
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-gray-400 mt-1.5">
                 This helps AI understand your style and specific niche
               </p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label htmlFor="current_phase" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="current_phase" className="block text-sm font-medium text-gray-700 mb-1.5">
                   What phase are you in?
                 </label>
                 <select
                   id="current_phase"
                   value={contextData.current_phase}
                   onChange={(e) => setContextData({...contextData, current_phase: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 >
                   {currentPhases.map(phase => (
                     <option key={phase.value} value={phase.value}>{phase.label}</option>
@@ -298,14 +300,14 @@ export default function SettingsPage() {
               </div>
               
               <div>
-                <label htmlFor="main_struggle" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="main_struggle" className="block text-sm font-medium text-gray-700 mb-1.5">
                   What is your biggest struggle right now?
                 </label>
                 <select
                   id="main_struggle"
                   value={contextData.main_struggle}
                   onChange={(e) => setContextData({...contextData, main_struggle: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 >
                   <option value="">Select your main struggle</option>
                   {mainStruggles.map(struggle => (
@@ -315,12 +317,12 @@ export default function SettingsPage() {
               </div>
             </div>
             
-            <div className="bg-blue-50 rounded-lg p-3 text-sm text-blue-800 flex items-start gap-2">
+            <div className="bg-blue-50 rounded-lg p-4 text-sm text-blue-800 flex items-start gap-2">
               <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
               <p>This information helps AI personalize recommendations based on your specific situation. The more you share, the better the insights.</p>
             </div>
             
-            <Button type="submit" disabled={savingContext} className="w-full md:w-auto">
+            <Button type="submit" disabled={savingContext} className="px-6 py-2.5">
               {savingContext ? 'Saving...' : 'Save Creator Context'}
             </Button>
           </form>
@@ -331,8 +333,8 @@ export default function SettingsPage() {
       {/* SECCIÓN 2: CONTENT STRATEGY CONFIGURATION */}
       {/* ============================================ */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardHeader className="px-6 pt-6 pb-3 lg:px-8 lg:pt-8 lg:pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg">
             <Target className="w-5 h-5" />
             Content Strategy Configuration
           </CardTitle>
@@ -340,10 +342,10 @@ export default function SettingsPage() {
             Define your content niche, goals, and target audience for AI recommendations
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <CardContent className="px-6 pb-6 lg:px-8 lg:pb-8">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="account_type" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="account_type" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Content Niche *
               </label>
               <select
@@ -351,7 +353,7 @@ export default function SettingsPage() {
                 value={formData.account_type_id}
                 onChange={(e) => setFormData({ ...formData, account_type_id: e.target.value })}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
               >
                 <option value="">Select your content niche</option>
                 {accountTypes?.map((type: any) => (
@@ -363,7 +365,7 @@ export default function SettingsPage() {
             </div>
             
             <div>
-              <label htmlFor="content_goal" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="content_goal" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Main Goal *
               </label>
               <select
@@ -371,7 +373,7 @@ export default function SettingsPage() {
                 value={formData.content_goal}
                 onChange={(e) => setFormData({ ...formData, content_goal: e.target.value })}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
               >
                 <option value="">Select your main goal</option>
                 {contentGoals.map((goal) => (
@@ -383,7 +385,7 @@ export default function SettingsPage() {
             </div>
             
             <div>
-              <label htmlFor="target_audience" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="target_audience" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Target Audience *
               </label>
               <select
@@ -391,7 +393,7 @@ export default function SettingsPage() {
                 value={formData.target_audience}
                 onChange={(e) => setFormData({ ...formData, target_audience: e.target.value })}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
               >
                 <option value="">Select your target audience</option>
                 {targetAudiences.map((audience) => (
@@ -402,7 +404,7 @@ export default function SettingsPage() {
               </select>
             </div>
             
-            <Button type="submit" disabled={saving} className="w-full md:w-auto">
+            <Button type="submit" disabled={saving} className="px-6 py-2.5">
               {saving ? 'Saving...' : 'Save Strategy'}
             </Button>
           </form>
@@ -410,29 +412,29 @@ export default function SettingsPage() {
       </Card>
       
       {/* ============================================ */}
-      {/* SECCIÓN 3: CONNECTED ACCOUNTS (ABAJO) */}
+      {/* SECCIÓN 3: CONNECTED ACCOUNTS */}
       {/* ============================================ */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Connected Accounts</h2>
-        <div className="grid gap-6 md:grid-cols-2">
+        <h2 className="text-xl font-semibold text-gray-900 mb-5">Connected Accounts</h2>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {/* TikTok Card */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+            <CardHeader className="px-5 pt-5 pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
                 </svg>
                 TikTok
               </CardTitle>
-              <CardDescription>
-                Connect your TikTok account to analyze video performance and get content recommendations
+              <CardDescription className="text-xs">
+                Connect your TikTok account to analyze video performance
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-5 pb-5">
               {hasTikTok ? (
                 <div className="flex items-center justify-between">
-                  <span className="text-green-600 flex items-center gap-2">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <span className="text-green-600 flex items-center gap-1.5 text-sm">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                     Connected
@@ -440,7 +442,7 @@ export default function SettingsPage() {
                   <form action="/api/oauth/tiktok/disconnect" method="post">
                     <button
                       type="submit"
-                      className="text-red-600 hover:text-red-800 text-sm font-medium"
+                      className="text-red-600 hover:text-red-800 text-sm font-medium transition-colors"
                     >
                       Disconnect
                     </button>
@@ -456,32 +458,32 @@ export default function SettingsPage() {
           
           {/* Instagram Card */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <CardHeader className="px-5 pt-5 pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 2.163c3.204 0 3.584.012 4.85.07 1.366.062 2.633.336 3.608 1.311.975.975 1.249 2.242 1.311 3.608.058 1.266.07 1.646.07 4.85s-.012 3.584-.07 4.85c-.062 1.366-.336 2.633-1.311 3.608-.975.975-2.242 1.249-3.608 1.311-1.266.058-1.646.07-4.85.07s-3.584-.012-4.85-.07c-1.366-.062-2.633-.336-3.608-1.311-.975-.975-1.249-2.242-1.311-3.608-.058-1.266-.07-1.646-.07-4.85s.012-3.584.07-4.85c.062-1.366.336-2.633 1.311-3.608.975-.975 2.242-1.249 3.608-1.311 1.266-.058 1.646-.07 4.85-.07z"/>
                 </svg>
                 Instagram
               </CardTitle>
-              <CardDescription>Coming soon - Connect Instagram to analyze Reels and posts</CardDescription>
+              <CardDescription className="text-xs">Coming soon - Connect Instagram to analyze Reels</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-5 pb-5">
               <Button disabled className="w-full opacity-50">Coming Soon</Button>
             </CardContent>
           </Card>
           
           {/* YouTube Card */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <CardHeader className="px-5 pt-5 pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.376.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.376-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
                 </svg>
                 YouTube
               </CardTitle>
-              <CardDescription>Coming soon - Connect YouTube to analyze video performance</CardDescription>
+              <CardDescription className="text-xs">Coming soon - Connect YouTube to analyze videos</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-5 pb-5">
               <Button disabled className="w-full opacity-50">Coming Soon</Button>
             </CardContent>
           </Card>
