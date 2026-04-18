@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import { useTheme } from 'next-themes'
 import { 
   Zap, 
   Calendar as CalendarIcon,
@@ -23,11 +24,14 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const [loading, setLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
   const supabase = createClient()
+  const { theme } = useTheme()
 
   useEffect(() => {
+    setMounted(true)
     checkUser()
   }, [])
 
@@ -55,18 +59,18 @@ export default function DashboardLayout({
     { href: '/settings', icon: Settings, label: 'Settings' },
   ]
 
-  if (loading) {
+  if (!mounted || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-gray-100 dark:from-slate-950 dark:to-gray-900">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-slate-50 to-gray-100 dark:from-slate-950 dark:to-gray-900">
+    <div className="min-h-screen flex theme-transition">
       {/* Sidebar Desktop */}
-      <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800">
+      <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800">
         <div className="flex flex-col flex-1 pt-5 pb-4 overflow-y-auto">
           {/* Logo */}
           <div className="flex items-center justify-between px-4 mb-8">
@@ -92,8 +96,8 @@ export default function DashboardLayout({
                   href={item.href}
                   className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
                     isActive 
-                      ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' 
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+                      ? 'bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-white' 
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white'
                   }`}
                 >
                   <Icon className={`mr-3 h-5 w-5 ${
@@ -106,10 +110,10 @@ export default function DashboardLayout({
           </nav>
           
           {/* Logout button */}
-          <div className="px-2 mt-auto pt-4 border-t border-gray-200 dark:border-gray-800">
+          <div className="px-2 mt-auto pt-4 border-t border-gray-200 dark:border-slate-800">
             <button
               onClick={handleLogout}
-              className="group flex w-full items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-all duration-200"
+              className="group flex w-full items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white transition-all duration-200"
             >
               <LogOut className="mr-3 h-5 w-5 text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-400" />
               Sign Out
