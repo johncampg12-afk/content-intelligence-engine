@@ -1,12 +1,25 @@
 import { getRequestConfig } from 'next-intl/server'
 import { cookies } from 'next/headers'
 
+// Importar mensajes estáticamente para evitar problemas con import dinámico
+import enMessages from '../messages/en.json'
+import esMessages from '../messages/es.json'
+import frMessages from '../messages/fr.json'
+import itMessages from '../messages/it.json'
+import ptMessages from '../messages/pt.json'
+
+const messagesMap: Record<string, any> = {
+  en: enMessages,
+  es: esMessages,
+  fr: frMessages,
+  it: itMessages,
+  pt: ptMessages
+}
+
 export default getRequestConfig(async () => {
-  // Obtener idioma de las cookies o usar inglés por defecto
   const cookieStore = await cookies()
   let locale = cookieStore.get('locale')?.value || 'en'
   
-  // Validar que el idioma es soportado
   const supportedLocales = ['en', 'es', 'fr', 'it', 'pt']
   if (!supportedLocales.includes(locale)) {
     locale = 'en'
@@ -14,6 +27,6 @@ export default getRequestConfig(async () => {
   
   return {
     locale,
-    messages: (await import(`./messages/${locale}.json`)).default
+    messages: messagesMap[locale] || enMessages
   }
 })
