@@ -4,8 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { User, Info, Target, TrendingUp, Users, Eye, Heart, Share2, CheckCircle, Globe } from 'lucide-react'
-import { LanguageSelector } from '@/components/ui/language-selector'
+import { User, Info, Target, TrendingUp, Users, Eye, Heart, Share2, CheckCircle } from 'lucide-react'
 
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
@@ -216,28 +215,28 @@ export default function SettingsPage() {
       
       {/* Header */}
       <div>
-        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">Settings</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Settings</h1>
+        <p className="text-gray-500 mt-1">
           Configure your account and connect social media platforms
         </p>
       </div>
       
       {/* Barra de progreso de configuración */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+      <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <CheckCircle className="w-4 h-4 text-blue-500" />
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Profile Completion</span>
+            <span className="text-sm font-medium text-gray-700">Profile Completion</span>
           </div>
-          <span className="text-sm font-medium text-blue-600 dark:text-blue-400">{completedCount}/{completionSteps.length} completed</span>
+          <span className="text-sm font-medium text-blue-600">{completedCount}/{completionSteps.length} completed</span>
         </div>
-        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+        <div className="w-full bg-gray-200 rounded-full h-2">
           <div 
             className="bg-blue-600 h-2 rounded-full transition-all duration-500"
             style={{ width: `${completionPercentage}%` }}
           />
         </div>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+        <p className="text-xs text-gray-500 mt-3">
           {completionPercentage === 100 
             ? '✅ Profile complete! AI will use all this data to personalize your recommendations.' 
             : '📝 Complete all fields to receive hyper-personalized AI recommendations.'}
@@ -246,7 +245,7 @@ export default function SettingsPage() {
       
       {/* Mensaje de éxito/error */}
       {message && (
-        <div className={`p-4 rounded-xl ${message.type === 'success' ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800'}`}>
+        <div className={`p-4 rounded-xl ${message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
           {message.text}
         </div>
       )}
@@ -267,7 +266,7 @@ export default function SettingsPage() {
         <CardContent className="px-6 pb-6 lg:px-8 lg:pb-8">
           <form onSubmit={handleContextSubmit} className="space-y-5">
             <div>
-              <label htmlFor="account_bio" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              <label htmlFor="account_bio" className="block text-sm font-medium text-gray-700 mb-1.5">
                 What is your account about?
               </label>
               <textarea
@@ -276,23 +275,23 @@ export default function SettingsPage() {
                 onChange={(e) => setContextData({...contextData, account_bio: e.target.value})}
                 rows={3}
                 placeholder="Ej: I create comedy skits about adult life. My audience is millennials working in offices..."
-                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
               />
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
+              <p className="text-xs text-gray-400 mt-1.5">
                 This helps AI understand your style and specific niche
               </p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label htmlFor="current_phase" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                <label htmlFor="current_phase" className="block text-sm font-medium text-gray-700 mb-1.5">
                   What phase are you in?
                 </label>
                 <select
                   id="current_phase"
                   value={contextData.current_phase}
                   onChange={(e) => setContextData({...contextData, current_phase: e.target.value})}
-                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 >
                   {currentPhases.map(phase => (
                     <option key={phase.value} value={phase.value}>{phase.label}</option>
@@ -301,14 +300,14 @@ export default function SettingsPage() {
               </div>
               
               <div>
-                <label htmlFor="main_struggle" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                <label htmlFor="main_struggle" className="block text-sm font-medium text-gray-700 mb-1.5">
                   What is your biggest struggle right now?
                 </label>
                 <select
                   id="main_struggle"
                   value={contextData.main_struggle}
                   onChange={(e) => setContextData({...contextData, main_struggle: e.target.value})}
-                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 >
                   <option value="">Select your main struggle</option>
                   {mainStruggles.map(struggle => (
@@ -318,7 +317,7 @@ export default function SettingsPage() {
               </div>
             </div>
             
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 text-sm text-blue-800 dark:text-blue-300 flex items-start gap-2">
+            <div className="bg-blue-50 rounded-lg p-4 text-sm text-blue-800 flex items-start gap-2">
               <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
               <p>This information helps AI personalize recommendations based on your specific situation. The more you share, the better the insights.</p>
             </div>
@@ -346,7 +345,7 @@ export default function SettingsPage() {
         <CardContent className="px-6 pb-6 lg:px-8 lg:pb-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="account_type" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              <label htmlFor="account_type" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Content Niche *
               </label>
               <select
@@ -354,7 +353,7 @@ export default function SettingsPage() {
                 value={formData.account_type_id}
                 onChange={(e) => setFormData({ ...formData, account_type_id: e.target.value })}
                 required
-                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
               >
                 <option value="">Select your content niche</option>
                 {accountTypes?.map((type: any) => (
@@ -366,7 +365,7 @@ export default function SettingsPage() {
             </div>
             
             <div>
-              <label htmlFor="content_goal" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              <label htmlFor="content_goal" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Main Goal *
               </label>
               <select
@@ -374,7 +373,7 @@ export default function SettingsPage() {
                 value={formData.content_goal}
                 onChange={(e) => setFormData({ ...formData, content_goal: e.target.value })}
                 required
-                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
               >
                 <option value="">Select your main goal</option>
                 {contentGoals.map((goal) => (
@@ -386,7 +385,7 @@ export default function SettingsPage() {
             </div>
             
             <div>
-              <label htmlFor="target_audience" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              <label htmlFor="target_audience" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Target Audience *
               </label>
               <select
@@ -394,7 +393,7 @@ export default function SettingsPage() {
                 value={formData.target_audience}
                 onChange={(e) => setFormData({ ...formData, target_audience: e.target.value })}
                 required
-                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
               >
                 <option value="">Select your target audience</option>
                 {targetAudiences.map((audience) => (
@@ -413,33 +412,10 @@ export default function SettingsPage() {
       </Card>
       
       {/* ============================================ */}
-      {/* SECCIÓN 3: LANGUAGE SELECTOR */}
-      {/* ============================================ */}
-      <Card>
-        <CardHeader className="px-6 pt-6 pb-3 lg:px-8 lg:pt-8 lg:pb-4">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Globe className="w-5 h-5" />
-            Language / Idioma
-          </CardTitle>
-          <CardDescription>
-            Select your preferred language for the interface / Selecciona tu idioma preferido
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="px-6 pb-6 lg:px-8 lg:pb-8">
-          <div className="flex flex-col gap-3">
-            <LanguageSelector />
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              The interface will reload to apply changes / La interfaz se recargará para aplicar cambios
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* ============================================ */}
-      {/* SECCIÓN 4: CONNECTED ACCOUNTS */}
+      {/* SECCIÓN 3: CONNECTED ACCOUNTS */}
       {/* ============================================ */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-5">Connected Accounts</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-5">Connected Accounts</h2>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {/* TikTok Card */}
           <Card>
@@ -457,7 +433,7 @@ export default function SettingsPage() {
             <CardContent className="px-5 pb-5">
               {hasTikTok ? (
                 <div className="flex items-center justify-between">
-                  <span className="text-green-600 dark:text-green-400 flex items-center gap-1.5 text-sm">
+                  <span className="text-green-600 flex items-center gap-1.5 text-sm">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
@@ -466,7 +442,7 @@ export default function SettingsPage() {
                   <form action="/api/oauth/tiktok/disconnect" method="post">
                     <button
                       type="submit"
-                      className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm font-medium transition-colors"
+                      className="text-red-600 hover:text-red-800 text-sm font-medium transition-colors"
                     >
                       Disconnect
                     </button>
