@@ -17,6 +17,7 @@ import {
   LogOut
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { LanguageSelector } from '@/components/ui/language-selector'
 
 export default function DashboardLayout({
   children,
@@ -72,8 +73,8 @@ export default function DashboardLayout({
       {/* Sidebar Desktop */}
       <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800">
         <div className="flex flex-col flex-1 pt-5 pb-4 overflow-y-auto">
-          {/* Logo */}
-          <div className="flex items-center justify-between px-4 mb-8">
+          {/* Logo y selector de idioma */}
+          <div className="flex items-center justify-between px-4 mb-4">
             <div className="flex items-center gap-2">
               <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg">
                 <Zap className="w-5 h-5 text-white" />
@@ -83,6 +84,11 @@ export default function DashboardLayout({
               </span>
             </div>
             <ThemeToggle />
+          </div>
+          
+          {/* Language Selector en sidebar */}
+          <div className="px-4 mb-6">
+            <LanguageSelector />
           </div>
           
           {/* Navigation */}
@@ -136,6 +142,7 @@ export default function DashboardLayout({
               </span>
             </div>
             <div className="flex items-center gap-2">
+              <LanguageSelector />
               <ThemeToggle />
               <button onClick={handleLogout} className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
                 <LogOut className="w-5 h-5" />
