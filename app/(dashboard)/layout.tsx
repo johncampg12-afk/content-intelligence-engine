@@ -78,7 +78,7 @@ export default function DashboardLayout({
             <div className="flex items-center gap-2">
               <div className="relative w-8 h-8">
                 <Image
-                  src="/logo.png"
+                  src="/anentLogo.jpeg"
                   alt="ContentIntel Logo"
                   width={32}
                   height={32}
