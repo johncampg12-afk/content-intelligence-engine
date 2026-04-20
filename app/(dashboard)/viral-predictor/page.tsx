@@ -364,7 +364,7 @@ Content Intelligence Engine - Professional Analytics Suite
                   onChange={(e) => setVideoIdea(e.target.value)}
                   required
                   rows={3}
-                  placeholder="Ej: Tutorial sobre cómo identificar unfollowers en Instagram sin usar apps de terceros..."
+                  placeholder="Ej: 'Deja de hacer esto' / 'Nadie te cuenta esto' / 'Error que te cuesta dinero"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <p className="text-xs text-gray-400 mt-1">Sé específico: incluye el ángulo principal y el gancho</p>

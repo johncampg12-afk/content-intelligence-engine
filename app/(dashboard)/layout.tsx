@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useTheme } from 'next-themes'
 import { 
   Zap, 
@@ -75,11 +76,17 @@ export default function DashboardLayout({
           {/* Logo */}
           <div className="flex items-center justify-between px-4 mb-8">
             <div className="flex items-center gap-2">
-              <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg">
-                <Zap className="w-5 h-5 text-white" />
+              <div className="relative w-8 h-8">
+                <Image
+                  src="/logo.png"
+                  alt="ContentIntel Logo"
+                  width={32}
+                  height={32}
+                  className="rounded-lg"
+                />
               </div>
               <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                Content<span className="gradient-text">Intel</span>
+                AN<span className="gradient-text">ENT</span>
               </span>
             </div>
             <ThemeToggle />
@@ -128,11 +135,17 @@ export default function DashboardLayout({
         <header className="sticky top-0 z-10 glass lg:hidden">
           <div className="flex h-16 items-center justify-between px-4 sm:px-6">
             <div className="flex items-center gap-3">
-              <div className="p-1.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg shadow-md">
-                <Zap className="w-5 h-5 text-white" />
+              <div className="relative w-7 h-7">
+                <Image
+                  src="/anentLogo.jpeg"
+                  alt="ContentIntel Logo"
+                  width={28}
+                  height={28}
+                  className="rounded-lg"
+                />
               </div>
               <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                Content<span className="gradient-text">Intel</span>
+                AN<span className="gradient-text">ENT</span>
               </span>
             </div>
             <div className="flex items-center gap-2">
