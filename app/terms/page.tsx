@@ -14,7 +14,7 @@ export default function TermsPage() {
               </svg>
             </div>
             <span className="text-xl font-semibold text-gray-900 dark:text-white">
-              Content<span className="gradient-text">Intel</span>
+              AN<span className="gradient-text">ENT</span>
             </span>
           </Link>
           <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-3">
