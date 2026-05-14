@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { 
-  Zap, ArrowRight, TrendingUp, Brain, CheckCircle,
+  ArrowRight, TrendingUp, Brain, CheckCircle,
   Flame, ChartNoAxesCombined, Sparkles, CalendarClock, Lightbulb, ShieldCheck,
   ChevronLeft, ChevronRight, Pause, Play
 } from 'lucide-react'
@@ -62,7 +62,7 @@ const tools = [
   }
 ]
 
-// Componente Carrusel (sin cambios)
+// Componente Carrusel
 function ToolsCarousel() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
@@ -240,7 +240,7 @@ export default function HomePage() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // Animación entrada
+  // Animación de entrada
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -261,7 +261,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 relative overflow-x-hidden">
       <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0" />
 
-      {/* Header mejorado con animaciones y logo */}
+      {/* Header modificado: solo logo + Get started + Login */}
       <motion.header
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -271,6 +271,7 @@ export default function HomePage() {
         } border-b border-gray-200`}
       >
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+          {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
             <motion.div
               whileHover={{ scale: 1.05, rotate: 2 }}
@@ -292,16 +293,18 @@ export default function HomePage() {
               Anent<span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Lab</span>
             </motion.span>
           </Link>
-          <nav className="hidden md:flex gap-6 text-sm font-medium text-gray-600">
-            <a href="#features" className="hover:text-gray-900 transition duration-200">Features</a>
-            <a href="#learning-loop" className="hover:text-gray-900 transition duration-200">How it works</a>
-            <a href="/login" className="hover:text-gray-900 transition duration-200">Login</a>
-          </nav>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Link href="/register" className="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow hover:shadow-md transition">
-              Get started
+
+          {/* Acciones derecha: Get started + Login */}
+          <div className="flex items-center gap-3">
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Link href="/register" className="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow hover:shadow-md transition">
+                Get started
+              </Link>
+            </motion.div>
+            <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition">
+              Login
             </Link>
-          </motion.div>
+          </div>
         </div>
       </motion.header>
 
