@@ -10,11 +10,12 @@ import {
   Sparkles, 
   Shield, 
   ArrowRight,
-  TrendingUp
+  TrendingUp,
+  Brain,
+  CheckCircle
 } from 'lucide-react'
 
 export default function HomePage() {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   // Efecto de partículas flotantes
@@ -117,7 +118,7 @@ export default function HomePage() {
               AnentLab analyzes your TikTok performance and generates AI-powered recommendations to boost engagement and grow your audience — completely free.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/register" className="group px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 flex items-center gap-2">
+              <Link href="/register" className="group px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translateY-0.5 flex items-center gap-2">
                 Start Creating Free
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
@@ -181,6 +182,99 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Learning Loop Section - Diferenciación */}
+      <section className="py-20 bg-gradient-to-r from-indigo-50 via-white to-blue-50 relative z-10 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-indigo-100 rounded-full px-4 py-1.5 mb-4">
+              <TrendingUp className="w-4 h-4 text-indigo-600" />
+              <span className="text-sm font-medium text-indigo-700">The Intelligence Loop</span>
+            </div>
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+              A learning engine that gets <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">smarter with you</span>
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Unlike generic tools, AnentLab learns from your results — and from successful accounts like yours — to deliver hyper-personalized recommendations.
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left side: Steps */}
+            <div className="space-y-6">
+              <div className="flex gap-4 items-start">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg">1</div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">You connect your TikTok</h3>
+                  <p className="text-gray-500">We analyze your videos, metrics, and posting patterns.</p>
+                </div>
+              </div>
+              <div className="flex gap-4 items-start">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg">2</div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">We compare with your niche benchmark</h3>
+                  <p className="text-gray-500">Our database contains anonymized patterns from top-performing accounts in your exact niche.</p>
+                </div>
+              </div>
+              <div className="flex gap-4 items-start">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg">3</div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">AI generates recommendations</h3>
+                  <p className="text-gray-500">Personalized content ideas, optimal posting times, and viral hooks based on what actually works.</p>
+                </div>
+              </div>
+              <div className="flex gap-4 items-start">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg">4</div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">You publish, we learn</h3>
+                  <p className="text-gray-500">The AI tracks which recommendations you follow and how they perform — improving future suggestions.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right side: Value proposition */}
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 space-y-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-indigo-100 rounded-xl">
+                  <Brain className="w-6 h-6 text-indigo-600" />
+                </div>
+                <span className="text-xs font-semibold text-indigo-600 uppercase tracking-wide">Why it's different</span>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900">Closed‑loop, niche‑aware intelligence</h3>
+              <p className="text-gray-600">
+                Most tools give generic advice. AnentLab compares your performance against a <strong>real‑time database of successful accounts in your niche</strong> (tutorials, humor, tech, etc.). Then, it learns from your own results to refine its predictions.
+              </p>
+              <div className="border-t border-gray-100 pt-4 mt-2">
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span>Your data stays private — only patterns are aggregated</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-500 mt-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span>Recommendations adapt as your audience grows</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-500 mt-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span>Benchmarked against top 10% of creators in your niche</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Trust badge */}
+          <div className="mt-16 text-center">
+            <p className="text-sm text-gray-500 uppercase tracking-wider mb-4">Trusted by creators in niches like</p>
+            <div className="flex flex-wrap justify-center gap-6 text-gray-400">
+              <span className="flex items-center gap-2"><span className="w-2 h-2 bg-blue-400 rounded-full"></span> Tutorials</span>
+              <span className="flex items-center gap-2"><span className="w-2 h-2 bg-indigo-400 rounded-full"></span> Humor</span>
+              <span className="flex items-center gap-2"><span className="w-2 h-2 bg-purple-400 rounded-full"></span> Tech</span>
+              <span className="flex items-center gap-2"><span className="w-2 h-2 bg-pink-400 rounded-full"></span> Fitness</span>
+              <span className="flex items-center gap-2"><span className="w-2 h-2 bg-green-400 rounded-full"></span> Food</span>
+              <span className="flex items-center gap-2"><span className="w-2 h-2 bg-yellow-400 rounded-full"></span> Travel</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Stats Section */}
       <section className="py-16 bg-gradient-to-r from-blue-50 to-indigo-50 border-y border-gray-100 relative z-10">
         <div className="max-w-7xl mx-auto px-6">
@@ -236,18 +330,28 @@ export default function HomePage() {
       </footer>
 
       <style jsx>{`
+        .animate-on-scroll {
+          opacity: 0;
+        }
         .animate-slide-up {
           animation: slideUp 0.6s ease-out forwards;
         }
         @keyframes slideUp {
-          from { opacity: 0; transform: translateY(30px); }
-          to { opacity: 1; transform: translateY(0); }
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
       `}</style>
     </div>
   )
 }
 
+// Componente FeatureCard
 function FeatureCard({ icon, title, description, gradient }: { icon: React.ReactNode; title: string; description: string; gradient: string }) {
   return (
     <div className="animate-on-scroll opacity-0 group relative bg-white rounded-xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
