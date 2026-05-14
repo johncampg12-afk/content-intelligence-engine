@@ -330,7 +330,7 @@ export default function HomePage() {
                 How it works
               </Link>
             </div>
-            <p className="text-sm text-gray-500 mt-6">✨ No credit card required • Forever free</p>
+            <p className="text-sm text-gray-500 mt-6">✨ No credit card required</p>
           </div>
         </div>
       </section>
@@ -435,11 +435,11 @@ export default function HomePage() {
           <div className="grid md:grid-cols-3 gap-8 text-center">
             <div className="animate-on-scroll opacity-0">
               <div className="text-4xl font-bold text-gray-900 mb-2">100% Free</div>
-              <div className="text-gray-600">Forever — no credit card</div>
+              <div className="text-gray-600">No credit card</div>
             </div>
             <div className="animate-on-scroll opacity-0" style={{ transitionDelay: '100ms' }}>
               <div className="text-4xl font-bold text-gray-900 mb-2">Real-time AI</div>
-              <div className="text-gray-600">Powered by DeepSeek</div>
+              <div className="text-gray-600">Powered by Multiple</div>
             </div>
             <div className="animate-on-scroll opacity-0" style={{ transitionDelay: '200ms' }}>
               <div className="text-4xl font-bold text-gray-900 mb-2">TikTok</div>
@@ -466,7 +466,7 @@ export default function HomePage() {
               Get Started Free
               <ArrowRight className="w-4 h-4" />
             </Link>
-            <p className="text-sm text-gray-400 mt-4">No credit card • Forever free • Cancel anytime</p>
+            <p className="text-sm text-gray-400 mt-4">No credit card • Cancel anytime</p>
           </div>
         </div>
       </section>
