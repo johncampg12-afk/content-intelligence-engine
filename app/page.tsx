@@ -1,24 +1,224 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  Zap, 
-  BarChart3, 
-  Lightbulb, 
-  Calendar, 
-  Sparkles, 
-  Shield, 
-  ArrowRight,
-  TrendingUp,
-  Brain,
-  CheckCircle
+  Zap, ArrowRight, TrendingUp, Brain, CheckCircle,
+  Flame, ChartNoAxesCombined, Sparkles, CalendarClock, Lightbulb, ShieldCheck,
+  ChevronLeft, ChevronRight, Pause, Play
 } from 'lucide-react'
+
+// Datos de las herramientas para el carrusel
+const tools = [
+  {
+    id: 1,
+    title: 'Viral Predictor',
+    description: 'Validate your content ideas before recording. AI predicts viral potential based on your audience and niche.',
+    icon: <Flame className="w-6 h-6" />,
+    gradient: 'from-orange-500 to-red-500',
+    bgGlow: 'from-orange-500/20 to-red-500/20'
+  },
+  {
+    id: 2,
+    title: 'Advanced Analytics',
+    description: 'Deep dive into your performance metrics with interactive charts and cohort analysis.',
+    icon: <ChartNoAxesCombined className="w-6 h-6" />,
+    gradient: 'from-blue-500 to-cyan-500',
+    bgGlow: 'from-blue-500/20 to-cyan-500/20'
+  },
+  {
+    id: 3,
+    title: 'AI Recommendations',
+    description: 'Get personalized strategies to increase engagement and grow your following.',
+    icon: <Sparkles className="w-6 h-6" />,
+    gradient: 'from-purple-500 to-pink-500',
+    bgGlow: 'from-purple-500/20 to-pink-500/20'
+  },
+  {
+    id: 4,
+    title: 'Content Calendar',
+    description: 'Plan and schedule your posts with optimal timing recommendations from AI.',
+    icon: <CalendarClock className="w-6 h-6" />,
+    gradient: 'from-green-500 to-emerald-500',
+    bgGlow: 'from-green-500/20 to-emerald-500/20'
+  },
+  {
+    id: 5,
+    title: 'Idea Generator',
+    description: 'Never run out of content ideas. AI generates viral hooks based on your niche.',
+    icon: <Lightbulb className="w-6 h-6" />,
+    gradient: 'from-pink-500 to-rose-500',
+    bgGlow: 'from-pink-500/20 to-rose-500/20'
+  },
+  {
+    id: 6,
+    title: 'Privacy First',
+    description: 'Your data is encrypted. We never share your TikTok data with third parties.',
+    icon: <ShieldCheck className="w-6 h-6" />,
+    gradient: 'from-indigo-500 to-purple-500',
+    bgGlow: 'from-indigo-500/20 to-purple-500/20'
+  }
+]
+
+// Componente Carrusel
+function ToolsCarousel() {
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true)
+  const [isPaused, setIsPaused] = useState(false)
+  const intervalRef = useRef<NodeJS.Timeout | null>(null)
+
+  const total = tools.length
+
+  useEffect(() => {
+    if (isAutoPlaying && !isPaused) {
+      intervalRef.current = setInterval(() => {
+        setCurrentIndex((prev) => (prev + 1) % total)
+      }, 4000)
+    } else if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+    }
+  }, [isAutoPlaying, isPaused, total])
+
+  const goTo = (index: number) => {
+    setCurrentIndex(index)
+    setIsAutoPlaying(true)
+    setIsPaused(false)
+  }
+
+  const next = () => {
+    setCurrentIndex((prev) => (prev + 1) % total)
+    setIsAutoPlaying(true)
+    setIsPaused(false)
+  }
+
+  const prev = () => {
+    setCurrentIndex((prev) => (prev - 1 + total) % total)
+    setIsAutoPlaying(true)
+    setIsPaused(false)
+  }
+
+  const toggleAutoPlay = () => {
+    setIsPaused(!isPaused)
+  }
+
+  const getCardStyle = (index: number) => {
+    const diff = (index - currentIndex + total) % total
+    if (diff === 0) return { scale: 1, opacity: 1, zIndex: 10, x: 0, blur: 0 }
+    if (diff === 1) return { scale: 0.85, opacity: 0.7, zIndex: 5, x: '30%', blur: 4 }
+    if (diff === total - 1) return { scale: 0.85, opacity: 0.7, zIndex: 5, x: '-30%', blur: 4 }
+    return { scale: 0.7, opacity: 0.3, zIndex: 0, x: diff === 2 ? '60%' : '-60%', blur: 8, display: 'none' }
+  }
+
+  return (
+    <div className="relative w-full overflow-hidden py-8">
+      {/* Controles */}
+      <div className="flex justify-center gap-3 mb-8">
+        <button
+          onClick={prev}
+          className="p-2 rounded-full bg-white/80 border border-gray-200 shadow-sm hover:bg-gray-50 transition-all"
+          aria-label="Previous"
+        >
+          <ChevronLeft className="w-5 h-5 text-gray-700" />
+        </button>
+        <button
+          onClick={toggleAutoPlay}
+          className={`p-2 rounded-full border shadow-sm transition-all flex items-center gap-1 px-3 ${
+            isPaused ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-gray-200 text-gray-700'
+          }`}
+        >
+          {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+          <span className="text-sm font-medium">{isPaused ? 'Play' : 'Pause'}</span>
+        </button>
+        <button
+          onClick={next}
+          className="p-2 rounded-full bg-white/80 border border-gray-200 shadow-sm hover:bg-gray-50 transition-all"
+          aria-label="Next"
+        >
+          <ChevronRight className="w-5 h-5 text-gray-700" />
+        </button>
+      </div>
+
+      {/* Carrusel */}
+      <div className="relative flex justify-center items-center min-h-[400px]">
+        {tools.map((tool, idx) => {
+          const style = getCardStyle(idx)
+          if (style.display === 'none') return null
+          const isActive = idx === currentIndex
+          return (
+            <motion.div
+              key={tool.id}
+              className="absolute cursor-pointer w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-100 p-6 transition-all duration-500 ease-in-out"
+              style={{
+                x: style.x,
+                scale: style.scale,
+                opacity: style.opacity,
+                zIndex: style.zIndex,
+                filter: `blur(${style.blur}px)`,
+              }}
+              animate={{
+                x: style.x,
+                scale: style.scale,
+                opacity: style.opacity,
+                filter: `blur(${style.blur}px)`,
+              }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              onClick={() => goTo(idx)}
+              onMouseEnter={() => setIsPaused(true)}
+              onMouseLeave={() => setIsPaused(false)}
+            >
+              <div className={`absolute inset-0 bg-gradient-to-br ${tool.bgGlow} rounded-2xl opacity-30 pointer-events-none`} />
+              <div className="relative">
+                <div className={`inline-flex p-3 rounded-xl bg-gradient-to-br ${tool.gradient} text-white mb-4 shadow-md`}>
+                  {tool.icon}
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">{tool.title}</h3>
+                <p className="text-gray-600 leading-relaxed">{tool.description}</p>
+                {isActive && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-4 pt-3 border-t border-gray-100"
+                  >
+                    <button className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
+                      Learn more →
+                    </button>
+                  </motion.div>
+                )}
+              </div>
+            </motion.div>
+          )
+        })}
+      </div>
+
+      {/* Indicadores */}
+      <div className="flex justify-center gap-2 mt-8">
+        {tools.map((_, idx) => (
+          <button
+            key={idx}
+            onClick={() => goTo(idx)}
+            className={`h-2 rounded-full transition-all duration-300 ${
+              idx === currentIndex ? 'w-8 bg-indigo-600' : 'w-2 bg-gray-300 hover:bg-gray-400'
+            }`}
+            aria-label={`Go to slide ${idx + 1}`}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Componente FeatureCard (para otras secciones si se usa, pero aquí ya no es necesario)
+// Se mantiene por si acaso, pero no se usa en la página actual
 
 export default function HomePage() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
-  // Efecto de partículas flotantes (más dinámicas)
+  // Partículas flotantes (más dinámicas)
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -80,7 +280,7 @@ export default function HomePage() {
     }
   }, [])
 
-  // Animación de entrada con Intersection Observer (con delays)
+  // Animación de entrada con Intersection Observer
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -135,7 +335,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Learning Loop Section - Diferenciación (ahora primero) */}
+      {/* Learning Loop Section - Diferenciación */}
       <section id="learning-loop" className="py-20 bg-gradient-to-r from-indigo-50 via-white to-blue-50 relative z-10 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-12">
@@ -152,7 +352,7 @@ export default function HomePage() {
           </div>
 
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left side: Steps con animaciones escalonadas */}
+            {/* Pasos */}
             <div className="space-y-6">
               {[
                 { num: '1', title: 'You connect your TikTok', desc: 'We analyze your videos, metrics, and posting patterns.', delay: '0ms' },
@@ -172,7 +372,7 @@ export default function HomePage() {
               ))}
             </div>
 
-            {/* Right side: Value proposition con animación */}
+            {/* Value proposition */}
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 space-y-4 animate-on-scroll opacity-0 transition-all duration-700 hover:shadow-xl">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 bg-indigo-100 rounded-xl transition-transform duration-300 hover:rotate-6">
@@ -216,60 +416,16 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Features Section (Tools) - ahora después del Learning Loop */}
-      <section id="features" className="py-20 bg-white/60 backdrop-blur-sm relative z-10">
+      {/* Tools Section - Carrusel interactivo */}
+      <section className="py-20 bg-white/60 backdrop-blur-sm relative z-10">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
+          <div className="text-center mb-12">
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Everything you need to <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">go viral</span></h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Our AI analyzes your data and provides actionable insights to optimize your content strategy — all free.
             </p>
           </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <FeatureCard
-              icon={<Zap className="w-6 h-6" />}
-              title="Viral Predictor"
-              description="Validate your content ideas before recording. AI predicts viral potential based on your audience and niche."
-              gradient="from-yellow-500 to-orange-500"
-              delay="0"
-            />
-            <FeatureCard
-              icon={<BarChart3 className="w-6 h-6" />}
-              title="Advanced Analytics"
-              description="Deep dive into your performance metrics with interactive charts and cohort analysis."
-              gradient="from-blue-500 to-cyan-500"
-              delay="100"
-            />
-            <FeatureCard
-              icon={<Lightbulb className="w-6 h-6" />}
-              title="AI Recommendations"
-              description="Get personalized strategies to increase engagement and grow your following."
-              gradient="from-purple-500 to-pink-500"
-              delay="200"
-            />
-            <FeatureCard
-              icon={<Calendar className="w-6 h-6" />}
-              title="Content Calendar"
-              description="Plan and schedule your posts with optimal timing recommendations from AI."
-              gradient="from-green-500 to-emerald-500"
-              delay="0"
-            />
-            <FeatureCard
-              icon={<Sparkles className="w-6 h-6" />}
-              title="Idea Generator"
-              description="Never run out of content ideas. AI generates viral hooks based on your niche."
-              gradient="from-pink-500 to-rose-500"
-              delay="100"
-            />
-            <FeatureCard
-              icon={<Shield className="w-6 h-6" />}
-              title="Privacy First"
-              description="Your data is encrypted. We never share your TikTok data with third parties."
-              gradient="from-indigo-500 to-purple-500"
-              delay="200"
-            />
-          </div>
+          <ToolsCarousel />
         </div>
       </section>
 
@@ -352,22 +508,6 @@ export default function HomePage() {
           50% { opacity: 0.8; transform: scale(0.98); }
         }
       `}</style>
-    </div>
-  )
-}
-
-// Componente FeatureCard con animación de entrada y hover
-function FeatureCard({ icon, title, description, gradient, delay }: { icon: React.ReactNode; title: string; description: string; gradient: string; delay: string }) {
-  return (
-    <div 
-      className="animate-on-scroll opacity-0 group relative bg-white rounded-xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1"
-      style={{ transitionDelay: `${delay}ms` }}
-    >
-      <div className={`inline-flex p-3 rounded-lg bg-gradient-to-br ${gradient} text-white mb-4 shadow-md transition-all duration-300 group-hover:scale-110 group-hover:rotate-3`}>
-        {icon}
-      </div>
-      <h3 className="text-xl font-semibold text-gray-900 mb-2">{title}</h3>
-      <p className="text-gray-600 leading-relaxed">{description}</p>
     </div>
   )
 }
