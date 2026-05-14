@@ -313,7 +313,7 @@ export default function HomePage() {
               <span className="text-sm font-medium text-blue-700">AI-Powered Social Intelligence</span>
             </div>
             <h1 className="text-5xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
-              Predict viral content
+              Predict, Analyze & Structure viral content
               <span className="block bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
                 before you post
               </span>
