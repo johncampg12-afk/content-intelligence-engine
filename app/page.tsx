@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { 
   Zap, 
@@ -9,17 +9,72 @@ import {
   Calendar, 
   Sparkles, 
   Shield, 
-  Users, 
-  Clock,
   ArrowRight,
-  CheckCircle,
-  TrendingUp,
-  Video,
-  Brain,
-  Globe
+  TrendingUp
 } from 'lucide-react'
 
 export default function HomePage() {
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  // Efecto de partículas flotantes
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
+
+    const particles: { x: number; y: number; radius: number; speedX: number; speedY: number; alpha: number }[] = []
+    const particleCount = 80
+
+    for (let i = 0; i < particleCount; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        radius: Math.random() * 3 + 1,
+        speedX: (Math.random() - 0.5) * 0.5,
+        speedY: (Math.random() - 0.5) * 0.5,
+        alpha: Math.random() * 0.5 + 0.2,
+      })
+    }
+
+    let animationId: number
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      
+      particles.forEach(p => {
+        p.x += p.speedX
+        p.y += p.speedY
+        if (p.x < 0) p.x = canvas.width
+        if (p.x > canvas.width) p.x = 0
+        if (p.y < 0) p.y = canvas.height
+        if (p.y > canvas.height) p.y = 0
+        
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(59, 130, 246, ${p.alpha * 0.6})`
+        ctx.fill()
+      })
+      
+      animationId = requestAnimationFrame(animate)
+    }
+    animate()
+
+    const handleResize = () => {
+      canvas.width = window.innerWidth
+      canvas.height = window.innerHeight
+    }
+    window.addEventListener('resize', handleResize)
+    
+    return () => {
+      cancelAnimationFrame(animationId)
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [])
+
   // Animación de entrada con Intersection Observer
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -39,176 +94,168 @@ export default function HomePage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 relative overflow-x-hidden">
       
-      {/* Hero Section con efecto neon */}
-      <section className="relative overflow-hidden">
-        {/* Fondo con efecto de gradiente móvil */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-500/20 via-transparent to-transparent" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-purple-500/10 rounded-full blur-3xl" />
-        
-        <div className="max-w-7xl mx-auto px-6 py-20 lg:py-32 relative z-10">
+      {/* Canvas de partículas flotantes */}
+      <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0" />
+
+      {/* Hero Section */}
+      <section className="relative z-10 overflow-hidden pt-20 pb-32">
+        <div className="max-w-7xl mx-auto px-6">
           <div className="text-center">
-            <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-sm rounded-full px-4 py-1.5 mb-6 border border-white/10 animate-pulse-slow">
-              <Sparkles className="w-4 h-4 text-blue-400" />
-              <span className="text-sm font-medium text-blue-300">AI-Powered Social Intelligence</span>
+            <div className="inline-flex items-center gap-2 bg-blue-100/80 backdrop-blur-sm rounded-full px-4 py-1.5 mb-6 border border-blue-200 shadow-sm">
+              <Sparkles className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-700">AI-Powered Social Intelligence</span>
             </div>
-            <h1 className="text-5xl lg:text-7xl font-bold text-white mb-6 leading-tight">
+            <h1 className="text-5xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
               Predict viral content
-              <span className="block bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+              <span className="block bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
                 before you post
               </span>
             </h1>
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-8">
-              AnentLab analyzes your TikTok performance and generates AI-powered recommendations to boost engagement and grow your audience — all for free.
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
+              AnentLab analyzes your TikTok performance and generates AI-powered recommendations to boost engagement and grow your audience — completely free.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/register" className="group px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300 transform hover:-translate-y-0.5 flex items-center gap-2">
+              <Link href="/register" className="group px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 flex items-center gap-2">
                 Start Creating Free
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link href="#features" className="px-8 py-3 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl font-semibold text-gray-200 hover:bg-white/10 transition-all duration-300">
+              <Link href="#features" className="px-8 py-3 bg-white border border-gray-200 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition-all duration-300 shadow-sm">
                 Explore Features
               </Link>
             </div>
+            <p className="text-sm text-gray-500 mt-6">✨ No credit card required • Forever free</p>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 lg:py-32 relative">
+      <section id="features" className="py-20 bg-white/60 backdrop-blur-sm relative z-10">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">Everything you need to <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">go viral</span></h2>
-            <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-              Our AI analyzes your data and provides actionable insights to optimize your content strategy — completely free.
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Everything you need to <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">go viral</span></h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Our AI analyzes your data and provides actionable insights to optimize your content strategy — all free.
             </p>
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Feature cards con efecto neon al hover */}
             <FeatureCard
               icon={<Zap className="w-6 h-6" />}
               title="Viral Predictor"
               description="Validate your content ideas before recording. AI predicts viral potential based on your audience and niche."
               gradient="from-yellow-500 to-orange-500"
-              delay="0"
             />
             <FeatureCard
               icon={<BarChart3 className="w-6 h-6" />}
               title="Advanced Analytics"
               description="Deep dive into your performance metrics with interactive charts and cohort analysis."
               gradient="from-blue-500 to-cyan-500"
-              delay="100"
             />
             <FeatureCard
               icon={<Lightbulb className="w-6 h-6" />}
               title="AI Recommendations"
               description="Get personalized strategies to increase engagement and grow your following."
               gradient="from-purple-500 to-pink-500"
-              delay="200"
             />
             <FeatureCard
               icon={<Calendar className="w-6 h-6" />}
               title="Content Calendar"
               description="Plan and schedule your posts with optimal timing recommendations from AI."
               gradient="from-green-500 to-emerald-500"
-              delay="0"
             />
             <FeatureCard
               icon={<Sparkles className="w-6 h-6" />}
               title="Idea Generator"
               description="Never run out of content ideas. AI generates viral hooks based on your niche."
               gradient="from-pink-500 to-rose-500"
-              delay="100"
             />
             <FeatureCard
               icon={<Shield className="w-6 h-6" />}
               title="Privacy First"
               description="Your data is encrypted. We never share your TikTok data with third parties."
               gradient="from-indigo-500 to-purple-500"
-              delay="200"
             />
           </div>
         </div>
       </section>
 
-      {/* Stats / Social Proof Section */}
-      <section className="py-16 border-t border-b border-white/5">
+      {/* Stats Section */}
+      <section className="py-16 bg-gradient-to-r from-blue-50 to-indigo-50 border-y border-gray-100 relative z-10">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid md:grid-cols-3 gap-8 text-center">
             <div className="animate-on-scroll opacity-0">
-              <div className="text-4xl font-bold text-white mb-2">100%</div>
-              <div className="text-gray-400">Free forever</div>
-              <div className="text-sm text-gray-500 mt-1">No credit card required</div>
+              <div className="text-4xl font-bold text-gray-900 mb-2">100% Free</div>
+              <div className="text-gray-600">Forever — no credit card</div>
             </div>
             <div className="animate-on-scroll opacity-0" style={{ transitionDelay: '100ms' }}>
-              <div className="text-4xl font-bold text-white mb-2">Real-time</div>
-              <div className="text-gray-400">AI analysis</div>
-              <div className="text-sm text-gray-500 mt-1">Powered by DeepSeek</div>
+              <div className="text-4xl font-bold text-gray-900 mb-2">Real-time AI</div>
+              <div className="text-gray-600">Powered by DeepSeek</div>
             </div>
             <div className="animate-on-scroll opacity-0" style={{ transitionDelay: '200ms' }}>
-              <div className="text-4xl font-bold text-white mb-2">TikTok</div>
-              <div className="text-gray-400">Official Partner</div>
-              <div className="text-sm text-gray-500 mt-1">Compliant API usage</div>
+              <div className="text-4xl font-bold text-gray-900 mb-2">TikTok</div>
+              <div className="text-gray-600">Official API Partner</div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* CTA final */}
-      <section className="py-20 lg:py-28">
+      {/* Final CTA */}
+      <section className="py-20 relative z-10">
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 blur-3xl" />
-            <div className="relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 lg:p-12">
-              <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
-                Ready to level up your content?
-              </h2>
-              <p className="text-lg text-gray-300 mb-8 max-w-xl mx-auto">
-                Join thousands of creators using AnentLab to predict viral content and grow their audience.
-              </p>
-              <Link
-                href="/register"
-                className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300 transform hover:-translate-y-0.5"
-              >
-                Get Started Free
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-              <p className="text-sm text-gray-400 mt-4">No credit card. No commitment. Forever free.</p>
-            </div>
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 lg:p-12">
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+              Ready to level up your content?
+            </h2>
+            <p className="text-lg text-gray-600 mb-8 max-w-xl mx-auto">
+              Join thousands of creators using AnentLab to predict viral content and grow their audience.
+            </p>
+            <Link
+              href="/register"
+              className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5"
+            >
+              Get Started Free
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+            <p className="text-sm text-gray-400 mt-4">No credit card • Forever free • Cancel anytime</p>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/5 py-8">
-        <div className="max-w-7xl mx-auto px-6 text-center text-sm text-gray-400">
+      <footer className="border-t border-gray-200 py-8 bg-white/50 relative z-10">
+        <div className="max-w-7xl mx-auto px-6 text-center text-sm text-gray-500">
           <div className="flex flex-wrap justify-center gap-6 mb-4">
-            <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
-            <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
-            <Link href="/contact" className="hover:text-white transition-colors">Contact</Link>
+            <Link href="/terms" className="hover:text-gray-800 transition-colors">Terms of Service</Link>
+            <Link href="/privacy" className="hover:text-gray-800 transition-colors">Privacy Policy</Link>
+            <Link href="/contact" className="hover:text-gray-800 transition-colors">Contact</Link>
           </div>
           <p>&copy; {new Date().getFullYear()} AnentLab. All rights reserved.</p>
         </div>
       </footer>
+
+      <style jsx>{`
+        .animate-slide-up {
+          animation: slideUp 0.6s ease-out forwards;
+        }
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(30px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   )
 }
 
-// Componente FeatureCard con animaciones
-function FeatureCard({ icon, title, description, gradient, delay }: { icon: React.ReactNode; title: string; description: string; gradient: string; delay: string }) {
+function FeatureCard({ icon, title, description, gradient }: { icon: React.ReactNode; title: string; description: string; gradient: string }) {
   return (
-    <div 
-      className="animate-on-scroll opacity-0 group relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:border-white/20 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10"
-      style={{ transitionDelay: `${delay}ms` }}
-    >
-      <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-10 rounded-xl transition-opacity duration-300`} />
-      <div className={`inline-flex p-3 rounded-lg bg-gradient-to-br ${gradient} text-white mb-4 shadow-lg`}>
+    <div className="animate-on-scroll opacity-0 group relative bg-white rounded-xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+      <div className={`inline-flex p-3 rounded-lg bg-gradient-to-br ${gradient} text-white mb-4 shadow-md`}>
         {icon}
       </div>
-      <h3 className="text-xl font-semibold text-white mb-2">{title}</h3>
-      <p className="text-gray-400 leading-relaxed">{description}</p>
+      <h3 className="text-xl font-semibold text-gray-900 mb-2">{title}</h3>
+      <p className="text-gray-600 leading-relaxed">{description}</p>
     </div>
   )
 }
