@@ -207,7 +207,7 @@ export default function HomePage() {
           </div>
         </div>
         <div className="max-w-7xl mx-auto mt-8 pt-8 border-t border-gray-200 dark:border-gray-800 text-center text-sm text-gray-500 dark:text-gray-400">
-          © 2026 Anent. All rights reserved.
+          © 2026 AnentLab. All rights reserved.
         </div>
       </footer>
     </div>

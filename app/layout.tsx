@@ -3,8 +3,13 @@ import './globals.css'
 import { ThemeProvider } from '@/components/theme/theme-provider'
 
 export const metadata: Metadata = {
-  title: 'Content Intelligence Engine',
-  description: 'AI-powered content intelligence for social media',
+  title: 'AnentLab - AI Content Intelligence',
+  description: 'Predict viral content and optimize your TikTok strategy with AI-powered analytics.',
+  icons: {
+    icon: '/favicon.png',    // Ruta al archivo dentro de public
+    shortcut: '/favicon.png',
+    apple: '/favicon.png',
+  },
 }
 
 export default function RootLayout({
