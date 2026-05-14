@@ -212,13 +212,10 @@ function ToolsCarousel() {
   )
 }
 
-// Componente FeatureCard (para otras secciones si se usa, pero aquí ya no es necesario)
-// Se mantiene por si acaso, pero no se usa en la página actual
-
 export default function HomePage() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
-  // Partículas flotantes (más dinámicas)
+  // Partículas flotantes
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -304,8 +301,30 @@ export default function HomePage() {
       {/* Canvas de partículas flotantes */}
       <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0" />
 
+      {/* HEADER FIJO CON LOGO Y NOMBRE */}
+      <header className="fixed top-0 left-0 right-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-md transition-transform group-hover:scale-105">
+              <Sparkles className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-xl font-bold text-gray-800">
+              Anent<span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Lab</span>
+            </span>
+          </Link>
+          <nav className="hidden md:flex gap-6 text-sm font-medium text-gray-600">
+            <a href="#features" className="hover:text-gray-900 transition">Features</a>
+            <a href="#learning-loop" className="hover:text-gray-900 transition">How it works</a>
+            <a href="/login" className="hover:text-gray-900 transition">Login</a>
+          </nav>
+          <Link href="/register" className="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow hover:shadow-md transition">
+            Get started
+          </Link>
+        </div>
+      </header>
+
       {/* Hero Section */}
-      <section className="relative z-10 overflow-hidden pt-20 pb-20 lg:pb-28">
+      <section className="relative z-10 overflow-hidden pt-28 pb-20 lg:pb-28">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center">
             <div className="inline-flex items-center gap-2 bg-blue-100/80 backdrop-blur-sm rounded-full px-4 py-1.5 mb-6 border border-blue-200 shadow-sm animate-pulse-slow">
@@ -313,9 +332,9 @@ export default function HomePage() {
               <span className="text-sm font-medium text-blue-700">AI-Powered Social Intelligence</span>
             </div>
             <h1 className="text-5xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
-              Predict, Analyze & Structure viral content
-              <span className="block bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                before you post
+              <span className="block">AnentLab: Predict, Analyze & Structure</span>
+              <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                viral content
               </span>
             </h1>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
@@ -417,7 +436,7 @@ export default function HomePage() {
       </section>
 
       {/* Tools Section - Carrusel interactivo */}
-      <section className="py-20 bg-white/60 backdrop-blur-sm relative z-10">
+      <section id="features" className="py-20 bg-white/60 backdrop-blur-sm relative z-10">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-12">
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Everything you need to <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">go viral</span></h2>
