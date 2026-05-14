@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -64,7 +64,7 @@ function LoginForm() {
   }
 
   return (
-    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-8 w-full max-w-md">
+    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-8 w-full max-w-md transform transition-all duration-500 hover:shadow-2xl">
       <div className="text-center mb-6">
         <div className="flex justify-center mb-4">
           <Link href="/" className="flex items-center gap-2 group">
@@ -73,7 +73,7 @@ function LoginForm() {
                 src="/anentLogo.jpeg"
                 alt="AnentLab Logo"
                 fill
-                className="rounded-lg object-cover"
+                className="rounded-lg object-cover transition-transform group-hover:scale-105"
               />
             </div>
             <span className="text-xl font-bold text-gray-800 dark:text-white">
@@ -144,13 +144,13 @@ function LoginForm() {
           <div className="w-full border-t border-gray-300 dark:border-gray-600" />
         </div>
         <div className="relative flex justify-center text-sm">
-          <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">Or continue with</span>
+          <span className="px-2 bg-white/80 dark:bg-gray-800/80 text-gray-500 dark:text-gray-400">Or continue with</span>
         </div>
       </div>
 
       <button
         onClick={handleGoogleLogin}
-        className="w-full py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition flex items-center justify-center gap-2"
+        className="w-full py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg font-medium text-gray-700 dark:text-gray-200 bg-white/80 dark:bg-gray-800/80 hover:bg-gray-50 dark:hover:bg-gray-700 transition flex items-center justify-center gap-2 backdrop-blur-sm"
       >
         <svg className="w-5 h-5" viewBox="0 0 24 24">
           <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -171,69 +171,74 @@ function LoginForm() {
   )
 }
 
-// Componente principal con Suspense y fondo animado
+// Componente principal con el mismo fondo de partículas que la landing page
 export default function LoginPage() {
-  const [particles, setParticles] = useState<Array<{ x: number; y: number; size: number; speedX: number; speedY: number; opacity: number }>>([])
+  const canvasRef = useRef<HTMLCanvasElement>(null)
 
+  // Animación de partículas (mismo código que en la landing page)
   useEffect(() => {
-    const initParticles = () => {
-      const newParticles = []
-      for (let i = 0; i < 80; i++) {
-        newParticles.push({
-          x: Math.random() * window.innerWidth,
-          y: Math.random() * window.innerHeight,
-          size: Math.random() * 4 + 1,
-          speedX: (Math.random() - 0.5) * 0.4,
-          speedY: (Math.random() - 0.5) * 0.4,
-          opacity: Math.random() * 0.5 + 0.2,
-        })
-      }
-      setParticles(newParticles)
-    }
-    initParticles()
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
 
-    let animationFrame: number
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
+
+    const particles: { x: number; y: number; radius: number; speedX: number; speedY: number; alpha: number; pulse: number }[] = []
+    const particleCount = 100
+
+    for (let i = 0; i < particleCount; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        radius: Math.random() * 4 + 1,
+        speedX: (Math.random() - 0.5) * 0.4,
+        speedY: (Math.random() - 0.5) * 0.4,
+        alpha: Math.random() * 0.5 + 0.2,
+        pulse: Math.random() * Math.PI * 2,
+      })
+    }
+
+    let animationId: number
+    let time = 0
     const animate = () => {
-      setParticles(prev =>
-        prev.map(p => ({
-          ...p,
-          x: p.x + p.speedX,
-          y: p.y + p.speedY,
-          opacity: p.opacity + (Math.random() - 0.5) * 0.02,
-        })).map(p => ({
-          ...p,
-          x: p.x < 0 ? window.innerWidth : p.x > window.innerWidth ? 0 : p.x,
-          y: p.y < 0 ? window.innerHeight : p.y > window.innerHeight ? 0 : p.y,
-          opacity: Math.min(0.7, Math.max(0.1, p.opacity)),
-        }))
-      )
-      animationFrame = requestAnimationFrame(animate)
+      time += 0.02
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      particles.forEach(p => {
+        p.x += p.speedX
+        p.y += p.speedY
+        if (p.x < 0) p.x = canvas.width
+        if (p.x > canvas.width) p.x = 0
+        if (p.y < 0) p.y = canvas.height
+        if (p.y > canvas.height) p.y = 0
+        const pulseAlpha = p.alpha + Math.sin(time + p.pulse) * 0.15
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, p.radius + Math.sin(time + p.pulse) * 0.5, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(59, 130, 246, ${Math.max(0.1, Math.min(0.7, pulseAlpha))})`
+        ctx.fill()
+      })
+      animationId = requestAnimationFrame(animate)
     }
     animate()
-    return () => cancelAnimationFrame(animationFrame)
+
+    const handleResize = () => {
+      canvas.width = window.innerWidth
+      canvas.height = window.innerHeight
+    }
+    window.addEventListener('resize', handleResize)
+    return () => {
+      cancelAnimationFrame(animationId)
+      window.removeEventListener('resize', handleResize)
+    }
   }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative overflow-hidden flex items-center justify-center p-4">
-      {/* Partículas flotantes */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        {particles.map((p, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full bg-blue-400 dark:bg-blue-500"
-            style={{
-              left: p.x,
-              top: p.y,
-              width: p.size,
-              height: p.size,
-              opacity: p.opacity,
-              transform: 'translate(-50%, -50%)',
-            }}
-          />
-        ))}
-      </div>
+      {/* Canvas de partículas (mismo estilo que landing) */}
+      <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0" />
 
-      {/* Contenido principal con Suspense */}
+      {/* Contenido con Suspense para evitar el error de prerrenderizado */}
       <Suspense
         fallback={
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-2xl shadow-xl p-8 w-full max-w-md text-center">
