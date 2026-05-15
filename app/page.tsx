@@ -75,7 +75,7 @@ function ToolsCarousel() {
     if (isAutoPlaying && !isPaused) {
       intervalRef.current = setInterval(() => {
         setCurrentIndex((prev) => (prev + 1) % total)
-      }, 4000)
+      }, 2000)
     } else if (intervalRef.current) {
       clearInterval(intervalRef.current)
       intervalRef.current = null
