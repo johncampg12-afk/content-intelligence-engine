@@ -5,6 +5,19 @@ import { NextResponse } from 'next/server'
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
+  const error = requestUrl.searchParams.get('error')
+  const errorDescription = requestUrl.searchParams.get('error_description')
+
+  console.log('=== AUTH CALLBACK RECEIVED ===')
+  console.log('Code present:', !!code)
+  console.log('Error:', error)
+  console.log('Error description:', errorDescription)
+
+  // Si hay un error de OAuth, redirigir al login con el error
+  if (error) {
+    console.error('OAuth error:', error, errorDescription)
+    return NextResponse.redirect(new URL(`/login?error=oauth_failed&details=${errorDescription || error}`, requestUrl.origin))
+  }
 
   if (code) {
     const cookieStore = await cookies()
@@ -28,8 +41,18 @@ export async function GET(request: Request) {
         },
       }
     )
-    await supabase.auth.exchangeCodeForSession(code)
+
+    console.log('Exchanging code for session...')
+    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+    if (exchangeError) {
+      console.error('Error exchanging code for session:', exchangeError)
+      return NextResponse.redirect(new URL('/login?error=exchange_failed', requestUrl.origin))
+    }
+    console.log('Session exchanged successfully')
   }
 
-  return NextResponse.redirect(new URL('/dashboard', requestUrl.origin))
+  // Redirigir siempre al dashboard (si no hubo error)
+  const dashboardUrl = new URL('/dashboard', requestUrl.origin)
+  console.log('Redirecting to:', dashboardUrl.toString())
+  return NextResponse.redirect(dashboardUrl)
 }
