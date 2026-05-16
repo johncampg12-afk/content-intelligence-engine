@@ -18,6 +18,7 @@ import {
   LogOut
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { ParticlesCanvas } from '@/components/ui/particles-canvas'
 
 export default function DashboardLayout({
   children,
@@ -70,6 +71,7 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen flex theme-transition">
+      <div className="fixed inset-0 z-0"><ParticlesCanvas /></div>
       {/* Sidebar Desktop */}
       <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800">
         <div className="flex flex-col flex-1 pt-5 pb-4 overflow-y-auto">
