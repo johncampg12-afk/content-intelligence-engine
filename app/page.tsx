@@ -9,7 +9,7 @@ import { useTheme } from 'next-themes'
 import { 
   ArrowRight, TrendingUp, Brain, CheckCircle,
   Flame, ChartNoAxesCombined, Sparkles, CalendarClock, Lightbulb, ShieldCheck,
-  ChevronLeft, ChevronRight, Pause, Play
+  ChevronLeft, ChevronRight, Pause, Play, Moon, Sun
 } from 'lucide-react'
 
 // Datos de las herramientas para el carrusel
@@ -64,7 +64,7 @@ const tools = [
   }
 ]
 
-// Componente Carrusel (sin cambios internos, pero se adapta al tema mediante clases)
+// Componente Carrusel (se adapta al tema mediante clases)
 function ToolsCarousel() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
@@ -178,7 +178,7 @@ function ToolsCarousel() {
 export default function HomePage() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [scrolled, setScrolled] = useState(false)
-  const { theme } = useTheme()
+  const { theme, setTheme } = useTheme()
 
   // Partículas flotantes adaptadas al tema
   useEffect(() => {
@@ -286,7 +286,7 @@ export default function HomePage() {
       {/* Canvas de partículas */}
       <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0" />
 
-      {/* Header (mejorado con dark mode) */}
+      {/* Header con botón de cambio de tema */}
       <motion.header
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -314,6 +314,14 @@ export default function HomePage() {
             </motion.span>
           </Link>
           <div className="flex items-center gap-3">
+            {/* Botón de cambio de tema */}
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Link href="/register" className="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow hover:shadow-md transition">
                 Get started
