@@ -314,7 +314,7 @@ AnentLab - Professional Analytics Suite
 
         {/* Perfil del usuario (info contextual) */}
         {userProfile && (
-          <div className="mb-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
+          <div className="mb-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-2">
               <User className="w-4 h-4 text-gray-400" />
               <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Tu configuración actual</span>
@@ -343,8 +343,8 @@ AnentLab - Professional Analytics Suite
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
           {/* Formulario */}
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
               <div className="flex items-center gap-2">
                 <Target className="w-5 h-5 text-blue-600" />
                 <h2 className="text-base font-semibold text-gray-900 dark:text-white">Describe tu idea</h2>
@@ -479,7 +479,7 @@ AnentLab - Professional Analytics Suite
                   </p>
                 </div>
                 
-                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
                   <div className="grid grid-cols-3 gap-4 mb-4">
                     <div className="text-center">
                       <p className="text-xs text-gray-400">Rango de vistas</p>
@@ -529,7 +529,7 @@ AnentLab - Professional Analytics Suite
             )}
             
             {!prediction && !error && (
-              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center shadow-sm">
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center shadow-sm">
                 <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Zap className="w-8 h-8 text-gray-300 dark:text-gray-500" />
                 </div>
@@ -546,7 +546,7 @@ AnentLab - Professional Analytics Suite
         <div className="mt-12">
           <button
             onClick={() => setShowHistory(!showHistory)}
-            className="flex items-center justify-between w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+            className="flex items-center justify-between w-full bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
             <div className="flex items-center gap-3">
               <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
@@ -565,7 +565,7 @@ AnentLab - Professional Analytics Suite
               {loadingHistory ? (
                 <div className="text-center py-8 text-gray-400 dark:text-gray-500">Cargando historial...</div>
               ) : history.length === 0 ? (
-                <div className="text-center py-8 text-gray-400 dark:text-gray-500 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+                <div className="text-center py-8 text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
                   No hay validaciones guardadas aún. Valida tu primera idea arriba.
                 </div>
               ) : (
@@ -574,9 +574,9 @@ AnentLab - Professional Analytics Suite
                   const VeredictoIcon = veredictoConfig.icon
                   
                   return (
-                    <div key={item.id} className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+                    <div key={item.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
                       <div 
-                        className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                        className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                         onClick={() => toggleExpand(item.id)}
                       >
                         <div className="flex-1 min-w-0">
@@ -621,7 +621,7 @@ AnentLab - Professional Analytics Suite
                       </div>
                       
                       {expandedItems.has(item.id) && (
-                        <div className="px-5 pb-5 pt-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
+                        <div className="px-5 pb-5 pt-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
                           <div className="grid grid-cols-2 gap-3 mb-4">
                             <div className="bg-white dark:bg-gray-800 rounded-lg p-2 text-center border border-gray-100 dark:border-gray-700">
                               <p className="text-xs text-gray-400">Probabilidad de éxito</p>
