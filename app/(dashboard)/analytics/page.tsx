@@ -393,7 +393,7 @@ export default function AnalyticsPage() {
       shares: periodVideos.reduce((sum, v) => sum + v.shares, 0)
     }
     
-    // 7. Hourly Heatmap (simulado con datos reales)
+    // 7. Hourly Heatmap
     const hours = Array.from({ length: 24 }, (_, i) => i)
     const weekdaysShort = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
     const hourlyData = weekdaysShort.map((day, dayIdx) => {
@@ -607,7 +607,7 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <div className="p-4 md:p-6 lg:p-8">
         
         {/* Header */}
