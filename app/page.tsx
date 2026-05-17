@@ -1,9 +1,11 @@
+// app/page.tsx
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
+import { useTheme } from 'next-themes'
 import { 
   ArrowRight, TrendingUp, Brain, CheckCircle,
   Flame, ChartNoAxesCombined, Sparkles, CalendarClock, Lightbulb, ShieldCheck,
@@ -62,7 +64,7 @@ const tools = [
   }
 ]
 
-// Componente Carrusel
+// Componente Carrusel (sin cambios internos, pero se adapta al tema mediante clases)
 function ToolsCarousel() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
@@ -75,7 +77,7 @@ function ToolsCarousel() {
     if (isAutoPlaying && !isPaused) {
       intervalRef.current = setInterval(() => {
         setCurrentIndex((prev) => (prev + 1) % total)
-      }, 2000)
+      }, 4000)
     } else if (intervalRef.current) {
       clearInterval(intervalRef.current)
       intervalRef.current = null
@@ -118,15 +120,15 @@ function ToolsCarousel() {
   return (
     <div className="relative w-full overflow-hidden py-8">
       <div className="flex justify-center gap-3 mb-8">
-        <button onClick={prev} className="p-2 rounded-full bg-white/80 border border-gray-200 shadow-sm hover:bg-gray-50 transition-all">
-          <ChevronLeft className="w-5 h-5 text-gray-700" />
+        <button onClick={prev} className="p-2 rounded-full bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-all">
+          <ChevronLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
         </button>
-        <button onClick={toggleAutoPlay} className={`p-2 rounded-full border shadow-sm transition-all flex items-center gap-1 px-3 ${isPaused ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-gray-200 text-gray-700'}`}>
+        <button onClick={toggleAutoPlay} className={`p-2 rounded-full border shadow-sm transition-all flex items-center gap-1 px-3 ${isPaused ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700 text-blue-600 dark:text-blue-400' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'}`}>
           {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
           <span className="text-sm font-medium">{isPaused ? 'Play' : 'Pause'}</span>
         </button>
-        <button onClick={next} className="p-2 rounded-full bg-white/80 border border-gray-200 shadow-sm hover:bg-gray-50 transition-all">
-          <ChevronRight className="w-5 h-5 text-gray-700" />
+        <button onClick={next} className="p-2 rounded-full bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-all">
+          <ChevronRight className="w-5 h-5 text-gray-700 dark:text-gray-300" />
         </button>
       </div>
       <div className="relative flex justify-center items-center min-h-[400px]">
@@ -137,7 +139,7 @@ function ToolsCarousel() {
           return (
             <motion.div
               key={tool.id}
-              className="absolute cursor-pointer w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-100 p-6"
+              className="absolute cursor-pointer w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-6"
               style={{ x: style.x, scale: style.scale, opacity: style.opacity, zIndex: style.zIndex, filter: `blur(${style.blur}px)` }}
               animate={{ x: style.x, scale: style.scale, opacity: style.opacity, filter: `blur(${style.blur}px)` }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
@@ -150,11 +152,13 @@ function ToolsCarousel() {
                 <div className={`inline-flex p-3 rounded-xl bg-gradient-to-br ${tool.gradient} text-white mb-4 shadow-md`}>
                   {tool.icon}
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{tool.title}</h3>
-                <p className="text-gray-600 leading-relaxed">{tool.description}</p>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{tool.title}</h3>
+                <p className="text-gray-600 dark:text-gray-300 leading-relaxed">{tool.description}</p>
                 {isActive && (
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4 pt-3 border-t border-gray-100">
-                    <button className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors">Learn more →</button>
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+                    <button className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">
+                      Learn more →
+                    </button>
                   </motion.div>
                 )}
               </div>
@@ -164,7 +168,7 @@ function ToolsCarousel() {
       </div>
       <div className="flex justify-center gap-2 mt-8">
         {tools.map((_, idx) => (
-          <button key={idx} onClick={() => goTo(idx)} className={`h-2 rounded-full transition-all duration-300 ${idx === currentIndex ? 'w-8 bg-indigo-600' : 'w-2 bg-gray-300 hover:bg-gray-400'}`} />
+          <button key={idx} onClick={() => goTo(idx)} className={`h-2 rounded-full transition-all duration-300 ${idx === currentIndex ? 'w-8 bg-indigo-600 dark:bg-indigo-500' : 'w-2 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500'}`} />
         ))}
       </div>
     </div>
@@ -174,64 +178,84 @@ function ToolsCarousel() {
 export default function HomePage() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [scrolled, setScrolled] = useState(false)
+  const { theme } = useTheme()
 
-  // Partículas flotantes
+  // Partículas flotantes adaptadas al tema
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    canvas.width = window.innerWidth
-    canvas.height = window.innerHeight
+    let width = window.innerWidth
+    let height = window.innerHeight
+    canvas.width = width
+    canvas.height = height
 
-    const particles: { x: number; y: number; radius: number; speedX: number; speedY: number; alpha: number; pulse: number }[] = []
-    const particleCount = 100
+    let particles: { x: number; y: number; radius: number; speedX: number; speedY: number; opacity: number; pulse: number }[] = []
+    let animationFrame: number
+    let time = 0
 
-    for (let i = 0; i < particleCount; i++) {
-      particles.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        radius: Math.random() * 4 + 1,
-        speedX: (Math.random() - 0.5) * 0.4,
-        speedY: (Math.random() - 0.5) * 0.4,
-        alpha: Math.random() * 0.5 + 0.2,
-        pulse: Math.random() * Math.PI * 2,
-      })
+    const initParticles = () => {
+      const count = Math.min(150, Math.floor((width * height) / 10000))
+      particles = []
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          radius: Math.random() * 5 + 1,
+          speedX: (Math.random() - 0.5) * 0.3,
+          speedY: (Math.random() - 0.5) * 0.3,
+          opacity: Math.random() * 0.5 + 0.2,
+          pulse: Math.random() * Math.PI * 2,
+        })
+      }
     }
 
-    let animationId: number
-    let time = 0
     const animate = () => {
+      if (!ctx || !canvas) return
       time += 0.02
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-      particles.forEach(p => {
+      ctx.clearRect(0, 0, width, height)
+
+      const isDark = theme === 'dark'
+      const baseColor = isDark ? '200, 200, 255' : '59, 130, 246'
+
+      for (const p of particles) {
         p.x += p.speedX
         p.y += p.speedY
-        if (p.x < 0) p.x = canvas.width
-        if (p.x > canvas.width) p.x = 0
-        if (p.y < 0) p.y = canvas.height
-        if (p.y > canvas.height) p.y = 0
-        const pulseAlpha = p.alpha + Math.sin(time + p.pulse) * 0.15
+        if (p.x < 0) p.x = width
+        if (p.x > width) p.x = 0
+        if (p.y < 0) p.y = height
+        if (p.y > height) p.y = 0
+
+        const pulseAlpha = p.opacity + Math.sin(time + p.pulse) * 0.15
+        const alpha = Math.min(0.5, Math.max(0.1, pulseAlpha)) * (isDark ? 0.6 : 0.8)
+
         ctx.beginPath()
-        ctx.arc(p.x, p.y, p.radius + Math.sin(time + p.pulse) * 0.5, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(59, 130, 246, ${Math.max(0.1, Math.min(0.7, pulseAlpha))})`
+        ctx.arc(p.x, p.y, p.radius + Math.sin(time + p.pulse) * 0.3, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(${baseColor}, ${alpha})`
         ctx.fill()
-      })
-      animationId = requestAnimationFrame(animate)
+      }
+
+      animationFrame = requestAnimationFrame(animate)
     }
-    animate()
 
     const handleResize = () => {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
+      width = window.innerWidth
+      height = window.innerHeight
+      canvas.width = width
+      canvas.height = height
+      initParticles()
     }
+
+    initParticles()
+    animate()
     window.addEventListener('resize', handleResize)
     return () => {
-      cancelAnimationFrame(animationId)
+      cancelAnimationFrame(animationFrame)
       window.removeEventListener('resize', handleResize)
     }
-  }, [])
+  }, [theme])
 
   // Efecto de scroll para header
   useEffect(() => {
@@ -258,20 +282,20 @@ export default function HomePage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 relative overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-black dark:via-gray-900 dark:to-black relative overflow-x-hidden">
+      {/* Canvas de partículas */}
       <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0" />
 
-      {/* Header modificado: solo logo + Get started + Login */}
+      {/* Header (mejorado con dark mode) */}
       <motion.header
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
         className={`fixed top-0 left-0 right-0 z-20 transition-all duration-300 ${
-          scrolled ? 'bg-white/90 backdrop-blur-md shadow-md' : 'bg-white/60 backdrop-blur-sm'
-        } border-b border-gray-200`}
+          scrolled ? 'bg-white/90 dark:bg-black/90 backdrop-blur-md shadow-md' : 'bg-white/60 dark:bg-black/60 backdrop-blur-sm'
+        } border-b border-gray-200 dark:border-gray-800`}
       >
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-          {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
             <motion.div
               whileHover={{ scale: 1.05, rotate: 2 }}
@@ -283,25 +307,19 @@ export default function HomePage() {
                 alt="AnentLab Logo"
                 fill
                 className="rounded-lg object-cover shadow-sm"
-                sizes="32px"
               />
             </motion.div>
-            <motion.span
-              whileHover={{ scale: 1.02 }}
-              className="text-xl font-bold text-gray-800"
-            >
+            <motion.span whileHover={{ scale: 1.02 }} className="text-xl font-bold text-gray-800 dark:text-white">
               Anent<span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Lab</span>
             </motion.span>
           </Link>
-
-          {/* Acciones derecha: Get started + Login */}
           <div className="flex items-center gap-3">
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Link href="/register" className="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow hover:shadow-md transition">
                 Get started
               </Link>
             </motion.div>
-            <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition">
+            <Link href="/login" className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition">
               Login
             </Link>
           </div>
@@ -316,16 +334,16 @@ export default function HomePage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-2 bg-blue-100/80 backdrop-blur-sm rounded-full px-4 py-1.5 mb-6 border border-blue-200 shadow-sm animate-pulse-slow"
+              className="inline-flex items-center gap-2 bg-blue-100/80 dark:bg-blue-900/30 backdrop-blur-sm rounded-full px-4 py-1.5 mb-6 border border-blue-200 dark:border-blue-800 shadow-sm animate-pulse-slow"
             >
-              <Sparkles className="w-4 h-4 text-blue-600" />
-              <span className="text-sm font-medium text-blue-700">AI-Powered Social Intelligence</span>
+              <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <span className="text-sm font-medium text-blue-700 dark:text-blue-300">AI-Powered Social Intelligence</span>
             </motion.div>
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="text-5xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight"
+              className="text-5xl lg:text-7xl font-bold text-gray-900 dark:text-white mb-6 leading-tight"
             >
               <span className="block">AnentLab: Predict, Analyze & Structure</span>
               <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">viral content</span>
@@ -334,7 +352,7 @@ export default function HomePage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="text-xl text-gray-600 max-w-2xl mx-auto mb-8"
+              className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-8"
             >
               AnentLab analyzes your TikTok performance and generates AI-powered recommendations to boost engagement and grow your audience — completely free.
             </motion.p>
@@ -348,16 +366,11 @@ export default function HomePage() {
                 Start Creating Free
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link href="#learning-loop" className="px-8 py-3 bg-white border border-gray-200 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition-all duration-300 shadow-sm">
+              <Link href="#learning-loop" className="px-8 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 shadow-sm">
                 How it works
               </Link>
             </motion.div>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6 }}
-              className="text-sm text-gray-500 mt-6"
-            >
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-sm text-gray-500 dark:text-gray-400 mt-6">
               ✨ No credit card required
             </motion.p>
           </div>
@@ -365,17 +378,17 @@ export default function HomePage() {
       </section>
 
       {/* Learning Loop Section */}
-      <section id="learning-loop" className="py-20 bg-gradient-to-r from-indigo-50 via-white to-blue-50 relative z-10 overflow-hidden">
+      <section id="learning-loop" className="py-20 bg-gradient-to-r from-indigo-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative z-10 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-indigo-100 rounded-full px-4 py-1.5 mb-4">
-              <TrendingUp className="w-4 h-4 text-indigo-600" />
-              <span className="text-sm font-medium text-indigo-700">The Intelligence Loop</span>
+            <div className="inline-flex items-center gap-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-full px-4 py-1.5 mb-4">
+              <TrendingUp className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">The Intelligence Loop</span>
             </div>
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
               A learning engine that gets <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">smarter with you</span>
             </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
               Unlike generic tools, AnentLab learns from your results — and from successful accounts like yours — to deliver hyper-personalized recommendations.
             </p>
           </div>
@@ -388,37 +401,37 @@ export default function HomePage() {
                 { num: '4', title: 'You publish, we learn', desc: 'The AI tracks which recommendations you follow and how they perform — improving future suggestions.', delay: '450ms' },
               ].map((step) => (
                 <div key={step.num} className="flex gap-4 items-start animate-on-scroll opacity-0" style={{ transitionDelay: step.delay }}>
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg shadow-sm transition-transform duration-300 hover:scale-110">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-lg shadow-sm transition-transform duration-300 hover:scale-110">
                     {step.num}
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{step.title}</h3>
-                    <p className="text-gray-500">{step.desc}</p>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{step.title}</h3>
+                    <p className="text-gray-500 dark:text-gray-400">{step.desc}</p>
                   </div>
                 </div>
               ))}
             </div>
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 space-y-4 animate-on-scroll opacity-0 transition-all duration-700 hover:shadow-xl">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-8 space-y-4 animate-on-scroll opacity-0 transition-all duration-700 hover:shadow-xl">
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-indigo-100 rounded-xl transition-transform duration-300 hover:rotate-6">
-                  <Brain className="w-6 h-6 text-indigo-600" />
+                <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-xl transition-transform duration-300 hover:rotate-6">
+                  <Brain className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                 </div>
-                <span className="text-xs font-semibold text-indigo-600 uppercase tracking-wide">Why it's different</span>
+                <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">Why it's different</span>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900">Closed‑loop, niche‑aware intelligence</h3>
-              <p className="text-gray-600">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Closed‑loop, niche‑aware intelligence</h3>
+              <p className="text-gray-600 dark:text-gray-300">
                 Most tools give generic advice. AnentLab compares your performance against a <strong>real‑time database of successful accounts in your niche</strong> (tutorials, humor, tech, etc.). Then, it learns from your own results to refine its predictions.
               </p>
-              <div className="border-t border-gray-100 pt-4 mt-2">
-                <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="border-t border-gray-100 dark:border-gray-700 pt-4 mt-2">
+                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                   <CheckCircle className="w-4 h-4 text-green-500" />
                   <span>Your data stays private — only patterns are aggregated</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-500 mt-2">
+                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mt-2">
                   <CheckCircle className="w-4 h-4 text-green-500" />
                   <span>Recommendations adapt as your audience grows</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-500 mt-2">
+                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mt-2">
                   <CheckCircle className="w-4 h-4 text-green-500" />
                   <span>Benchmarked against top 10% of creators in your niche</span>
                 </div>
@@ -426,8 +439,8 @@ export default function HomePage() {
             </div>
           </div>
           <div className="mt-16 text-center animate-on-scroll opacity-0">
-            <p className="text-sm text-gray-500 uppercase tracking-wider mb-4">Trusted by creators in niches like</p>
-            <div className="flex flex-wrap justify-center gap-6 text-gray-400">
+            <p className="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Trusted by creators in niches like</p>
+            <div className="flex flex-wrap justify-center gap-6 text-gray-400 dark:text-gray-500">
               <span className="flex items-center gap-2"><span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span> Tutorials</span>
               <span className="flex items-center gap-2"><span className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></span> Humor</span>
               <span className="flex items-center gap-2"><span className="w-2 h-2 bg-purple-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></span> Tech</span>
@@ -440,11 +453,11 @@ export default function HomePage() {
       </section>
 
       {/* Tools Section - Carrusel */}
-      <section id="features" className="py-20 bg-white/60 backdrop-blur-sm relative z-10">
+      <section id="features" className="py-20 bg-white/60 dark:bg-black/30 backdrop-blur-sm relative z-10">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-12">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Everything you need to <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">go viral</span></h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">Everything you need to <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">go viral</span></h2>
+            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
               Our AI analyzes your data and provides actionable insights to optimize your content strategy — all free.
             </p>
           </div>
@@ -453,20 +466,20 @@ export default function HomePage() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 bg-gradient-to-r from-blue-50 to-indigo-50 border-y border-gray-100 relative z-10">
+      <section className="py-16 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 border-y border-gray-100 dark:border-gray-800 relative z-10">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid md:grid-cols-3 gap-8 text-center">
             <div className="animate-on-scroll opacity-0">
-              <div className="text-4xl font-bold text-gray-900 mb-2">100% Free</div>
-              <div className="text-gray-600">No credit card</div>
+              <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">100% Free</div>
+              <div className="text-gray-600 dark:text-gray-400">No credit card</div>
             </div>
             <div className="animate-on-scroll opacity-0" style={{ transitionDelay: '100ms' }}>
-              <div className="text-4xl font-bold text-gray-900 mb-2">Real-time AI</div>
-              <div className="text-gray-600">Powered by Multiple</div>
+              <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Real-time AI</div>
+              <div className="text-gray-600 dark:text-gray-400">Powered by Multiple</div>
             </div>
             <div className="animate-on-scroll opacity-0" style={{ transitionDelay: '200ms' }}>
-              <div className="text-4xl font-bold text-gray-900 mb-2">TikTok</div>
-              <div className="text-gray-600">Official API Partner</div>
+              <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">TikTok</div>
+              <div className="text-gray-600 dark:text-gray-400">Official API Partner</div>
             </div>
           </div>
         </div>
@@ -475,25 +488,32 @@ export default function HomePage() {
       {/* Final CTA */}
       <section className="py-20 relative z-10">
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 lg:p-12 transition-all duration-500 hover:shadow-2xl">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Ready to level up your content?</h2>
-            <p className="text-lg text-gray-600 mb-8 max-w-xl mx-auto">Join thousands of creators using AnentLab to predict viral content and grow their audience.</p>
-            <Link href="/register" className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-8 lg:p-12 transition-all duration-500 hover:shadow-2xl">
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              Ready to level up your content?
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 max-w-xl mx-auto">
+              Join thousands of creators using AnentLab to predict viral content and grow their audience.
+            </p>
+            <Link
+              href="/register"
+              className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5"
+            >
               Get Started Free
               <ArrowRight className="w-4 h-4" />
             </Link>
-            <p className="text-sm text-gray-400 mt-4">No credit card • Cancel anytime</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 mt-4">No credit card • Cancel anytime</p>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200 py-8 bg-white/50 relative z-10">
-        <div className="max-w-7xl mx-auto px-6 text-center text-sm text-gray-500">
+      <footer className="border-t border-gray-200 dark:border-gray-800 py-8 bg-white/50 dark:bg-black/30 relative z-10">
+        <div className="max-w-7xl mx-auto px-6 text-center text-sm text-gray-500 dark:text-gray-400">
           <div className="flex flex-wrap justify-center gap-6 mb-4">
-            <Link href="/terms" className="hover:text-gray-800 transition-colors">Terms of Service</Link>
-            <Link href="/privacy" className="hover:text-gray-800 transition-colors">Privacy Policy</Link>
-            <Link href="/contact" className="hover:text-gray-800 transition-colors">Contact</Link>
+            <Link href="/terms" className="hover:text-gray-800 dark:hover:text-gray-200 transition-colors">Terms of Service</Link>
+            <Link href="/privacy" className="hover:text-gray-800 dark:hover:text-gray-200 transition-colors">Privacy Policy</Link>
+            <Link href="/contact" className="hover:text-gray-800 dark:hover:text-gray-200 transition-colors">Contact</Link>
           </div>
           <p>&copy; {new Date().getFullYear()} AnentLab. All rights reserved.</p>
         </div>
