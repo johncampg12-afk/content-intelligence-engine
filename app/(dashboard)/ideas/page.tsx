@@ -160,7 +160,8 @@ export default function IdeasPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    // ELIMINADO bg-gray-50 – ahora hereda el gradiente del body y las partículas se ven
+    <div className="min-h-screen">
       <div className="p-8">
         
         {/* Header */}
@@ -198,9 +199,9 @@ export default function IdeasPage() {
           </div>
         </div>
 
-        {/* Perfil del usuario (contexto) */}
+        {/* Perfil del usuario (contexto) – fondo blanco pero con opacidad para que no tape partículas */}
         {userProfile && (
-          <div className="mb-6 bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <div className="mb-6 bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200 p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-2">
               <Target className="w-4 h-4 text-gray-400" />
               <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Contexto para la generación</span>
@@ -230,7 +231,7 @@ export default function IdeasPage() {
 
         {/* Error */}
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
+          <div className="mb-6 bg-red-50/90 backdrop-blur-sm border border-red-200 rounded-xl p-4 text-red-700">
             <div className="flex items-center gap-2">
               <AlertCircle className="w-5 h-5" />
               <span className="font-medium">Error</span>
@@ -249,6 +250,7 @@ export default function IdeasPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {ideas.map((idea, idx) => (
                 <div key={idx} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                  {/* ... contenido de la tarjeta (sin cambios) ... */}
                   <div className="px-5 py-3 bg-gradient-to-r from-purple-50 to-white border-b border-gray-100">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -324,7 +326,7 @@ export default function IdeasPage() {
         <div>
           <button
             onClick={() => setShowHistory(!showHistory)}
-            className="flex items-center justify-between w-full bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:bg-gray-50 transition-colors"
+            className="flex items-center justify-between w-full bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200 p-4 shadow-sm hover:bg-gray-50 transition-colors"
           >
             <div className="flex items-center gap-3">
               <div className="p-2 bg-gray-100 rounded-lg">
@@ -343,7 +345,7 @@ export default function IdeasPage() {
               {loadingHistory ? (
                 <div className="text-center py-8 text-gray-400">Cargando historial...</div>
               ) : savedIdeas.length === 0 ? (
-                <div className="text-center py-8 text-gray-400 bg-white rounded-xl border border-gray-200">
+                <div className="text-center py-8 text-gray-400 bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200">
                   No hay ideas guardadas aún. Genera tu primera idea arriba.
                 </div>
               ) : (
@@ -369,12 +371,8 @@ export default function IdeasPage() {
                             )}
                             <span className="text-xs text-gray-400">{formatDate(saved.created_at)}</span>
                           </div>
-                          <p className="text-sm font-medium text-gray-900 mt-1 line-clamp-1">
-                            {idea.title}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
-                            Hook: {idea.hook}
-                          </p>
+                          <p className="text-sm font-medium text-gray-900 mt-1 line-clamp-1">{idea.title}</p>
+                          <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">Hook: {idea.hook}</p>
                         </div>
                         <div className="flex items-center gap-2 ml-4">
                           <button
@@ -396,7 +394,7 @@ export default function IdeasPage() {
                       </div>
                       
                       {isExpanded && (
-                        <div className="px-5 pb-5 pt-3 border-t border-gray-100 bg-gray-50">
+                        <div className="px-5 pb-5 pt-3 border-t border-gray-100 bg-gray-50/90">
                           <div className="mb-3">
                             <p className="text-xs font-medium text-gray-500 uppercase mb-1">Descripción</p>
                             <p className="text-sm text-gray-700">{idea.description}</p>
@@ -433,7 +431,7 @@ export default function IdeasPage() {
 
         {/* Loading state while generating */}
         {generating && !ideas.length && (
-          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200 p-12 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
             <p className="text-gray-500">Analizando tu contexto y generando ideas...</p>
             <p className="text-sm text-gray-400 mt-2">Esto puede tomar unos segundos</p>
@@ -442,7 +440,7 @@ export default function IdeasPage() {
 
         {/* Empty state */}
         {!generating && ideas.length === 0 && savedIdeas.length === 0 && !error && (
-          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200 p-12 text-center">
             <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Lightbulb className="w-10 h-10 text-purple-400" />
             </div>

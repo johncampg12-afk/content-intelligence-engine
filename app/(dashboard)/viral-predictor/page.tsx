@@ -89,14 +89,12 @@ export default function ViralPredictorPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       
-      // Obtener perfil
       const { data: profile } = await supabase
         .from('profiles')
         .select('content_goal, target_audience, account_type_id')
         .eq('id', user.id)
         .single()
       
-      // Obtener nombre del tipo de cuenta
       let accountTypeName = 'No especificado'
       if (profile?.account_type_id) {
         const { data: accountType } = await supabase
@@ -269,7 +267,7 @@ CAMBIOS OBLIGATORIOS
 ${pred.cambios_obligatorios?.map((r: string, i: number) => `${i + 1}. ${r}`).join('\n') || 'No hay cambios obligatorios'}
 
 ---
-Content Intelligence Engine - Professional Analytics Suite
+AnentLab - Professional Analytics Suite
     `
     
     const blob = new Blob([report], { type: 'text/plain' })
@@ -283,7 +281,7 @@ Content Intelligence Engine - Professional Analytics Suite
 
   if (loadingProfile) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-500">Cargando tu perfil...</p>
@@ -293,21 +291,21 @@ Content Intelligence Engine - Professional Analytics Suite
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="p-8">
+    <div className="min-h-screen">
+      <div className="p-4 md:p-6 lg:p-8">
         
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-blue-600 rounded-xl">
+                <div className="p-2 bg-blue-600 rounded-xl shadow-md">
                   <Zap className="w-6 h-6 text-white" />
                 </div>
-                <h1 className="text-2xl font-bold text-gray-900">Idea Validator</h1>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Idea Validator</h1>
                 <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">PRO</span>
               </div>
-              <p className="text-gray-500 ml-11">
+              <p className="text-gray-500 dark:text-gray-400 ml-11">
                 Valida tus ideas de contenido antes de grabarlas. Basado en tu objetivo y datos reales.
               </p>
             </div>
@@ -316,7 +314,7 @@ Content Intelligence Engine - Professional Analytics Suite
 
         {/* Perfil del usuario (info contextual) */}
         {userProfile && (
-          <div className="mb-6 bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <div className="mb-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-2">
               <User className="w-4 h-4 text-gray-400" />
               <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Tu configuración actual</span>
@@ -324,15 +322,15 @@ Content Intelligence Engine - Professional Analytics Suite
             <div className="flex flex-wrap gap-4 text-sm">
               <div className="flex items-center gap-1">
                 <span className="text-gray-500">Objetivo:</span>
-                <span className="font-medium text-gray-900">{userProfile.content_goal}</span>
+                <span className="font-medium text-gray-900 dark:text-white">{userProfile.content_goal}</span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="text-gray-500">Audiencia:</span>
-                <span className="font-medium text-gray-900">{userProfile.target_audience}</span>
+                <span className="font-medium text-gray-900 dark:text-white">{userProfile.target_audience}</span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="text-gray-500">Nicho:</span>
-                <span className="font-medium text-gray-900">{userProfile.account_type}</span>
+                <span className="font-medium text-gray-900 dark:text-white">{userProfile.account_type}</span>
               </div>
             </div>
             <p className="text-xs text-gray-400 mt-2 flex items-center gap-1">
@@ -344,19 +342,19 @@ Content Intelligence Engine - Professional Analytics Suite
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
-          {/* Formulario simplificado */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+          {/* Formulario */}
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
               <div className="flex items-center gap-2">
                 <Target className="w-5 h-5 text-blue-600" />
-                <h2 className="text-base font-semibold text-gray-900">Describe tu idea</h2>
+                <h2 className="text-base font-semibold text-gray-900 dark:text-white">Describe tu idea</h2>
               </div>
-              <p className="text-sm text-gray-500 mt-0.5">La IA validará si funciona para tu objetivo</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">La IA validará si funciona para tu objetivo</p>
             </div>
             
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   ¿Qué vas a grabar? *
                 </label>
                 <textarea
@@ -365,18 +363,18 @@ Content Intelligence Engine - Professional Analytics Suite
                   required
                   rows={3}
                   placeholder="Ej: 'Deja de hacer esto' / 'Nadie te cuenta esto' / 'Error que te cuesta dinero"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 />
-                <p className="text-xs text-gray-400 mt-1">Sé específico: incluye el ángulo principal y el gancho</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Sé específico: incluye el ángulo principal y el gancho</p>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de contenido</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de contenido</label>
                   <select
                     value={contentType}
                     onChange={(e) => setContentType(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   >
                     {contentTypes.map(type => (
                       <option key={type.value} value={type.value}>{type.icon} {type.label}</option>
@@ -385,8 +383,8 @@ Content Intelligence Engine - Professional Analytics Suite
                 </div>
                 <div>
                   <div className="flex justify-between mb-1">
-                    <label className="text-sm font-medium text-gray-700">Duración</label>
-                    <span className="text-sm text-gray-500">{duration}s</span>
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Duración</label>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">{duration}s</span>
                   </div>
                   <input
                     type="range"
@@ -400,7 +398,7 @@ Content Intelligence Engine - Professional Analytics Suite
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Hashtags</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Hashtags</label>
                 <div className="flex items-center gap-2">
                   <Hash className="w-4 h-4 text-gray-400" />
                   <input
@@ -408,14 +406,14 @@ Content Intelligence Engine - Professional Analytics Suite
                     value={hashtags}
                     onChange={(e) => setHashtags(e.target.value)}
                     placeholder="tutorial, instagramtips, privacidad"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   />
                 </div>
-                <p className="text-xs text-gray-400 mt-1">Separados por comas, sin #</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Separados por comas, sin #</p>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Sonido / Música</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sonido / Música</label>
                 <div className="flex items-center gap-2">
                   <Music className="w-4 h-4 text-gray-400" />
                   <input
@@ -423,7 +421,7 @@ Content Intelligence Engine - Professional Analytics Suite
                     value={sound}
                     onChange={(e) => setSound(e.target.value)}
                     placeholder="Original Sound o nombre de tendencia"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   />
                 </div>
               </div>
@@ -431,7 +429,7 @@ Content Intelligence Engine - Professional Analytics Suite
               <button
                 type="submit"
                 disabled={loading || !videoIdea}
-                className="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
@@ -451,12 +449,12 @@ Content Intelligence Engine - Professional Analytics Suite
           {/* Resultado actual */}
           <div>
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-5">
-                <div className="flex items-center gap-2 text-red-700 mb-2">
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-5">
+                <div className="flex items-center gap-2 text-red-700 dark:text-red-300 mb-2">
                   <AlertCircle className="w-5 h-5" />
                   <span className="font-medium">Error</span>
                 </div>
-                <p className="text-sm text-red-600">{error}</p>
+                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
               </div>
             )}
             
@@ -476,41 +474,41 @@ Content Intelligence Engine - Professional Analytics Suite
                       {prediction.probabilidad_exito} de éxito
                     </span>
                   </div>
-                  <p className="text-sm text-gray-700 leading-relaxed">
+                  <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
                     {prediction.razon_brutal}
                   </p>
                 </div>
                 
-                <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
                   <div className="grid grid-cols-3 gap-4 mb-4">
                     <div className="text-center">
                       <p className="text-xs text-gray-400">Rango de vistas</p>
-                      <p className="text-lg font-bold text-gray-900">{prediction.rango_views_esperado}</p>
+                      <p className="text-lg font-bold text-gray-900 dark:text-white">{prediction.rango_views_esperado}</p>
                     </div>
                     <div className="text-center">
                       <p className="text-xs text-gray-400">KPI a optimizar</p>
-                      <p className="text-sm font-semibold text-gray-900">{prediction.kpi_a_optimizar}</p>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">{prediction.kpi_a_optimizar}</p>
                     </div>
                     <div className="text-center">
                       <p className="text-xs text-gray-400">Viral Score</p>
-                      <p className="text-lg font-bold text-gray-900">{prediction.viral_score}</p>
+                      <p className="text-lg font-bold text-gray-900 dark:text-white">{prediction.viral_score}</p>
                     </div>
                   </div>
                   
                   {prediction.dinero_potencial && prediction.dinero_potencial !== 'N/A' && (
-                    <div className="bg-green-50 rounded-lg p-3 mb-4 text-center border border-green-200">
-                      <p className="text-sm text-green-800 font-medium">
+                    <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 mb-4 text-center border border-green-200 dark:border-green-800">
+                      <p className="text-sm text-green-800 dark:text-green-300 font-medium">
                         💰 Potencial de ingresos: {prediction.dinero_potencial}
                       </p>
                     </div>
                   )}
                   
                   {prediction.cambios_obligatorios && prediction.cambios_obligatorios.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <p className="text-sm font-semibold text-gray-700 mb-3">✏️ Cambios necesarios:</p>
+                    <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                      <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">✏️ Cambios necesarios:</p>
                       <ul className="space-y-2">
                         {prediction.cambios_obligatorios.map((rec: string, idx: number) => (
-                          <li key={idx} className="flex items-start gap-2 text-sm text-gray-600">
+                          <li key={idx} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
                             <span className="text-amber-500 font-bold min-w-[20px]">{idx + 1}.</span>
                             <span className="leading-relaxed">{rec}</span>
                           </li>
@@ -521,7 +519,7 @@ Content Intelligence Engine - Professional Analytics Suite
                   
                   <button
                     onClick={() => handleExportReport(prediction)}
-                    className="w-full mt-5 py-2 text-sm text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
+                    className="w-full mt-5 py-2 text-sm text-blue-600 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center justify-center gap-2"
                   >
                     <Download className="w-4 h-4" />
                     Exportar informe completo
@@ -531,12 +529,12 @@ Content Intelligence Engine - Professional Analytics Suite
             )}
             
             {!prediction && !error && (
-              <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Zap className="w-8 h-8 text-gray-300" />
+              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center shadow-sm">
+                <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Zap className="w-8 h-8 text-gray-300 dark:text-gray-500" />
                 </div>
-                <h3 className="text-gray-500 font-medium">Sin validación generada</h3>
-                <p className="text-sm text-gray-400 mt-1">
+                <h3 className="text-gray-500 dark:text-gray-400 font-medium">Sin validación generada</h3>
+                <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
                   Completa el formulario para validar tu idea con IA
                 </p>
               </div>
@@ -548,15 +546,15 @@ Content Intelligence Engine - Professional Analytics Suite
         <div className="mt-12">
           <button
             onClick={() => setShowHistory(!showHistory)}
-            className="flex items-center justify-between w-full bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:bg-gray-50 transition-colors"
+            className="flex items-center justify-between w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-gray-100 rounded-lg">
-                <History className="w-5 h-5 text-gray-600" />
+              <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                <History className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               </div>
               <div className="text-left">
-                <h3 className="text-base font-semibold text-gray-900">Historial de validaciones</h3>
-                <p className="text-sm text-gray-500">{history.length} ideas analizadas</p>
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white">Historial de validaciones</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{history.length} ideas analizadas</p>
               </div>
             </div>
             <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showHistory ? 'rotate-180' : ''}`} />
@@ -565,9 +563,9 @@ Content Intelligence Engine - Professional Analytics Suite
           {showHistory && (
             <div className="mt-3 space-y-3">
               {loadingHistory ? (
-                <div className="text-center py-8 text-gray-400">Cargando historial...</div>
+                <div className="text-center py-8 text-gray-400 dark:text-gray-500">Cargando historial...</div>
               ) : history.length === 0 ? (
-                <div className="text-center py-8 text-gray-400 bg-white rounded-xl border border-gray-200">
+                <div className="text-center py-8 text-gray-400 dark:text-gray-500 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
                   No hay validaciones guardadas aún. Valida tu primera idea arriba.
                 </div>
               ) : (
@@ -576,9 +574,9 @@ Content Intelligence Engine - Professional Analytics Suite
                   const VeredictoIcon = veredictoConfig.icon
                   
                   return (
-                    <div key={item.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div key={item.id} className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
                       <div 
-                        className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
+                        className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                         onClick={() => toggleExpand(item.id)}
                       >
                         <div className="flex-1 min-w-0">
@@ -589,7 +587,7 @@ Content Intelligence Engine - Professional Analytics Suite
                             </div>
                             <span className="text-xs text-gray-400">{formatDate(item.created_at)}</span>
                           </div>
-                          <p className="text-sm font-medium text-gray-900 mt-1 line-clamp-2">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white mt-1 line-clamp-2">
                             {item.video_idea}
                           </p>
                           <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
@@ -602,14 +600,14 @@ Content Intelligence Engine - Professional Analytics Suite
                         <div className="flex items-center gap-2 ml-4">
                           <button
                             onClick={(e) => { e.stopPropagation(); handleExportReport(item); }}
-                            className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg"
+                            className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg"
                             title="Exportar informe"
                           >
                             <Download className="w-4 h-4" />
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); deletePrediction(item.id); }}
-                            className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg"
+                            className="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg"
                             title="Eliminar"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -623,28 +621,28 @@ Content Intelligence Engine - Professional Analytics Suite
                       </div>
                       
                       {expandedItems.has(item.id) && (
-                        <div className="px-5 pb-5 pt-3 border-t border-gray-100 bg-gray-50">
+                        <div className="px-5 pb-5 pt-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
                           <div className="grid grid-cols-2 gap-3 mb-4">
-                            <div className="bg-white rounded-lg p-2 text-center border border-gray-100">
+                            <div className="bg-white dark:bg-gray-800 rounded-lg p-2 text-center border border-gray-100 dark:border-gray-700">
                               <p className="text-xs text-gray-400">Probabilidad de éxito</p>
-                              <p className="text-base font-bold text-gray-900">{item.probabilidad_exito || 'N/A'}</p>
+                              <p className="text-base font-bold text-gray-900 dark:text-white">{item.probabilidad_exito || 'N/A'}</p>
                             </div>
-                            <div className="bg-white rounded-lg p-2 text-center border border-gray-100">
+                            <div className="bg-white dark:bg-gray-800 rounded-lg p-2 text-center border border-gray-100 dark:border-gray-700">
                               <p className="text-xs text-gray-400">Rango de vistas</p>
-                              <p className="text-base font-bold text-gray-900">{item.rango_views_esperado || 'N/A'}</p>
+                              <p className="text-base font-bold text-gray-900 dark:text-white">{item.rango_views_esperado || 'N/A'}</p>
                             </div>
                           </div>
                           
-                          <p className="text-sm text-gray-700 leading-relaxed mb-4">
+                          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
                             {item.razon_brutal || item.reasoning}
                           </p>
                           
                           {item.cambios_obligatorios && item.cambios_obligatorios.length > 0 && (
                             <div className="mb-4">
-                              <p className="text-sm font-semibold text-gray-700 mb-2">Cambios necesarios:</p>
+                              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Cambios necesarios:</p>
                               <ul className="space-y-2">
                                 {item.cambios_obligatorios.map((rec: string, idx: number) => (
-                                  <li key={idx} className="flex items-start gap-2 text-sm text-gray-600">
+                                  <li key={idx} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
                                     <span className="text-amber-500 font-bold min-w-[20px]">{idx + 1}.</span>
                                     <span className="leading-relaxed">{rec}</span>
                                   </li>
@@ -655,7 +653,7 @@ Content Intelligence Engine - Professional Analytics Suite
                           
                           <button
                             onClick={() => handleExportReport(item)}
-                            className="w-full py-2 text-sm text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
+                            className="w-full py-2 text-sm text-blue-600 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center justify-center gap-2"
                           >
                             <Download className="w-4 h-4" />
                             Exportar informe completo
